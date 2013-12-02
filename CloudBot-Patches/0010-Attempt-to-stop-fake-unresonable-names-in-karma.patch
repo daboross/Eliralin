@@ -1,0 +1,22 @@
+From f4e3abc4725cc802ff81e377d50490d2ad45b7d4 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Wed, 27 Nov 2013 03:23:13 -0800
+Subject: [PATCH] Attempt to stop fake/unresonable names in karma.
+
+
+diff --git a/plugins/karma.py b/plugins/karma.py
+index dd259a3..834b41b 100644
+--- a/plugins/karma.py
++++ b/plugins/karma.py
+@@ -66,7 +66,7 @@ def allowed(db, nick, nick_vote):
+ # TODO Make this work on multiple matches in a string, right now it'll only
+ # work on one match.
+ # karma_re = ('((\S+)(\+\+|\-\-))+', re.I)
+-karma_re = ('(.+)(\+\+|\-\-)$', re.I)
++karma_re = ('([a-zA-Z][a-zA-Z0-9`\-_\{\}\[\]]*)(\+\+|\-\-)$', re.I)
+ 
+ 
+ @hook.regex(*karma_re)
+-- 
+1.8.3.2
+

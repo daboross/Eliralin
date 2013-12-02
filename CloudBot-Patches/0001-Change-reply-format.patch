@@ -1,0 +1,30 @@
+From 9e4157618340fd4963d4b0919222532db4acf890 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Wed, 27 Nov 2013 03:03:45 -0800
+Subject: [PATCH] Change reply format
+
+
+diff --git a/core/main.py b/core/main.py
+index 0054b0a..7081530 100644
+--- a/core/main.py
++++ b/core/main.py
+@@ -1,7 +1,6 @@
+ import thread
+ import traceback
+ 
+-
+ thread.stack_size(1024 * 512)  # reduce vm size
+ 
+ 
+@@ -22,7 +21,7 @@ class Input(dict):
+             if target == nick:
+                 conn.msg(target, message)
+             else:
+-                conn.msg(target, u"({}) {}".format(nick, message))
++                conn.msg(target, u"{}, {}".format(nick, message))
+ 
+         def action(message, target=chan):
+             """sends an action to the current channel/user or a specific channel/user"""
+-- 
+1.8.3.2
+

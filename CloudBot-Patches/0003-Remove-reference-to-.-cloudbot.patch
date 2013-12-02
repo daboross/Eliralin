@@ -1,0 +1,22 @@
+From 0b7b3469c561d880bfb01d0e1bdb1c2ee65433f5 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Wed, 27 Nov 2013 03:08:20 -0800
+Subject: [PATCH] Remove reference to ./cloudbot
+
+
+diff --git a/plugins/admin.py b/plugins/admin.py
+index 37601b1..59f3871 100644
+--- a/plugins/admin.py
++++ b/plugins/admin.py
+@@ -111,7 +111,7 @@ def stop(inp, nick=None, conn=None):
+     else:
+         conn.cmd("QUIT", ["Killed by {}.".format(nick)])
+     time.sleep(5)
+-    os.execl("./cloudbot", "cloudbot", "stop")
++    sys.exit()
+ 
+ 
+ @hook.command(autohelp=False, permissions=["botcontrol"])
+-- 
+1.8.3.2
+

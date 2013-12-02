@@ -1,0 +1,33 @@
+From 8d5a59ca26da3c39e85cd7f24b7e26940291539f Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Sun, 1 Dec 2013 22:17:28 +0100
+Subject: [PATCH] Hugs and pets
+
+
+diff --git a/plugins/hugsandpets.py b/plugins/hugsandpets.py
+new file mode 100644
+index 0000000..9860e55
+--- /dev/null
++++ b/plugins/hugsandpets.py
+@@ -0,0 +1,18 @@
++from util import hook
++import time
++import re
++from random import random
++
++@hook.regex("(?i)(^ )*pets Eliralin *$")
++def pet(inp, action=None, nick=None, chan=None):
++    r = random();
++    if r > 0.85:
++        action("huggles {}".format(nick))
++
++@hook.command()
++@hook.command("hug")
++def huggle(inp, action=None, nick=None):
++    if inp:
++        action("huggles {}".format(inp))
++    else:
++        action("huggles {}".format(nick))
+-- 
+1.8.3.2
+

@@ -1,0 +1,23 @@
+From 45ba0b821cfb437a7705c47bed5dc927e627f6f3 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Wed, 27 Nov 2013 03:28:55 -0800
+Subject: [PATCH] Add reply plugin to reply when addressed with 'Eliralin, '
+
+
+diff --git a/plugins/reply.py b/plugins/reply.py
+new file mode 100644
+index 0000000..a745820
+--- /dev/null
++++ b/plugins/reply.py
+@@ -0,0 +1,8 @@
++from util import hook
++from time import sleep
++
++
++@hook.regex(r'^Eliralin[,;:.](| .*)$')
++def reply(match, message=None, nick=None):
++    sleep(0.2)
++    message(match.group(0).replace("Eliralin", nick))
+-- 
+1.8.3.2
+

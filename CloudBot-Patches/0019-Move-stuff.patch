@@ -1,0 +1,83 @@
+From 0c15861d15dccec0ed5783893d3cf610ed0d23fe Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Sun, 1 Dec 2013 22:16:22 +0100
+Subject: [PATCH] Move stuff
+
+
+diff --git a/plugins/hump.py b/plugins/hump.py
+index 1e3dd4e..6b2014c 100644
+--- a/plugins/hump.py
++++ b/plugins/hump.py
+@@ -4,6 +4,7 @@ import re
+ 
+ 
+ strip_regex = re.compile("\x03(?:\d{1,2}(?:,\d{1,2})?)?", re.UNICODE)
++name_regex = re.compile(".*e.*l.*i.*r.*a.*l.*i.*n.*", re.UNICODE)
+ enabled_chans = ["#aem", "#olive"]
+ 
+ 
+@@ -12,8 +13,10 @@ def hump(inp, action=None, nick=None, chan=None):
+     """hump - humps"""
+     if not chan in enabled_chans:
+         return
+-    time.sleep(10)
+-    action("humps {}".format(nick))
++    if inp:
++        action("humps {}".format(nick))
++    else:
++        action("humps {}".format(nick))
+ 
+ 
+ @hook.regex("(?<=humps ).+")
+@@ -21,29 +24,8 @@ def hump_action(match, action=None, nick=None, chan=None):
+     if not chan in enabled_chans:
+         return
+     str = strip_regex.sub("", match.group(0))
+-    if re.search(".*e.*l.*i.*r.*a.*l.*i.*n.*", str.lower()):
++    if name_regex.search(str.lower()):
+         str = nick
+     else:
+         time.sleep(1)
+     action("humps {}".format(str))
+-
+-
+-@hook.regex("Hello Eliralin(!| |\\.)*")
+-def hello(match, nick=None, chan=None):
+-    if not chan in enabled_chans:
+-        return
+-    return "Hello {}!".format(nick)
+-
+-
+-@hook.regex("Hello Eliralin\\?*")
+-def hello(match, nick=None, chan=None):
+-    if not chan in enabled_chans:
+-        return
+-    return "Hi {}. What's your question?".format(nick)
+-
+-
+-@hook.regex("(^ )*pets Eliralin")
+-def pet(inp, action=None, nick=None, chan=None):
+-    if not chan in enabled_chans:
+-        return
+-    action("hugs {}".format(nick))
+diff --git a/plugins/reply.py b/plugins/reply.py
+index a745820..27bbcae 100644
+--- a/plugins/reply.py
++++ b/plugins/reply.py
+@@ -6,3 +6,13 @@ from time import sleep
+ def reply(match, message=None, nick=None):
+     sleep(0.2)
+     message(match.group(0).replace("Eliralin", nick))
++
++
++@hook.regex("(?i)(Hello|Hi) Eliralin(!| |\\.)*")
++def hello(match, nick=None, chan=None):
++    return "Hello {}!".format(nick)
++
++
++@hook.regex("(?i)(Hello|Hi) Eliralin\\?*")
++def hello(match, nick=None, chan=None, message=None):
++    message("Hi {}. What's your question?".format(nick))
+-- 
+1.8.3.2
+

@@ -1,0 +1,21 @@
+From 15222d58a1d30c19a45813edac7846d6f0ee7c58 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Wed, 27 Nov 2013 03:04:00 -0800
+Subject: [PATCH] Don't run regex if a command is run.
+
+
+diff --git a/core/main.py b/core/main.py
+index 7081530..e262394 100644
+--- a/core/main.py
++++ b/core/main.py
+@@ -183,6 +183,7 @@ def main(conn, out):
+ 
+                 func, args = bot.commands[command]
+                 dispatch(input, "command", func, args, autohelp=True)
++                return
+ 
+         # REGEXES
+         for func, args in bot.plugs['regex']:
+-- 
+1.8.3.2
+

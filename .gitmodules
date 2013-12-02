@@ -1,0 +1,3 @@
+[submodule "CloudBot"]
+	path = CloudBot
+	url = https://github.com/ClouDev/CloudBot.git

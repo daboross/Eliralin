@@ -1,0 +1,23 @@
+From 38a1f7ce3c109b1935efdafaead31953f291060f Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Wed, 27 Nov 2013 03:25:31 -0800
+Subject: [PATCH] Changed from using adminOnly=true to
+ permissions=["adminonly"] in plpaste
+
+
+diff --git a/plugins/plpaste.py b/plugins/plpaste.py
+index 238037d..bf039fc 100644
+--- a/plugins/plpaste.py
++++ b/plugins/plpaste.py
+@@ -1,7 +1,7 @@
+ from util import hook, web
+ 
+ 
+-@hook.command(adminonly=True)
++@hook.command(permissions=["adminonly"])
+ def plpaste(inp):
+     if "/" in inp and inp.split("/")[0] != "util":
+         return "Invalid input"
+-- 
+1.8.3.2
+

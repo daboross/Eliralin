@@ -1,0 +1,29 @@
+From cb30cf5f1f36fdd4f69b29de94c9bfca33e8837e Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Sat, 30 Nov 2013 15:03:04 -0800
+Subject: [PATCH] Munge reply nick
+
+
+diff --git a/core/main.py b/core/main.py
+index e262394..b1886d0 100644
+--- a/core/main.py
++++ b/core/main.py
+@@ -1,5 +1,6 @@
+ import thread
+ import traceback
++from util import text
+ 
+ thread.stack_size(1024 * 512)  # reduce vm size
+ 
+@@ -21,7 +22,7 @@ class Input(dict):
+             if target == nick:
+                 conn.msg(target, message)
+             else:
+-                conn.msg(target, u"{}, {}".format(nick, message))
++                conn.msg(target, u"{}, {}".format(text.munge(nick), message))
+ 
+         def action(message, target=chan):
+             """sends an action to the current channel/user or a specific channel/user"""
+-- 
+1.8.3.2
+

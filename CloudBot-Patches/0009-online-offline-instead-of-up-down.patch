@@ -1,0 +1,22 @@
+From 6bc3f72c10c4f137d44f858f1e6b0a81c9ffa8c1 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Wed, 27 Nov 2013 03:17:35 -0800
+Subject: [PATCH] online/offline instead of up/down
+
+
+diff --git a/plugins/down.py b/plugins/down.py
+index f03c078..d2de38d 100644
+--- a/plugins/down.py
++++ b/plugins/down.py
+@@ -15,6 +15,6 @@ def down(inp):
+     # http://mail.python.org/pipermail/python-list/2006-December/589854.html
+     try:
+         http.get(inp, get_method='HEAD')
+-        return '{} seems to be up'.format(inp)
++        return '{} seems to be online'.format(inp)
+     except http.URLError:
+-        return '{} seems to be down'.format(inp)
++        return '{} seems to be offline'.format(inp)
+-- 
+1.8.3.2
+

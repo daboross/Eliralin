@@ -1,0 +1,22 @@
+From 70f4851566cffff10b444f2dc196a647600b0bb5 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Wed, 27 Nov 2013 03:14:22 -0800
+Subject: [PATCH] Nicer correction output format
+
+
+diff --git a/plugins/correction.py b/plugins/correction.py
+index 517c6e3..f08afc5 100644
+--- a/plugins/correction.py
++++ b/plugins/correction.py
+@@ -20,7 +20,7 @@ def correction(inp, message=None, input=None, notice=None, db=None):
+                 message = last_message[1].replace("\x01ACTION ", "/me ").replace("\x01", "")
+             else:
+                 message = last_message[1]
+-            message(u"{} meant to say: {}".format(message.replace(find, "\x02" + replace + "\x02"), nick))
++            message(u"Correction, <{}> {}".format(message.replace(find, "\x02" + replace + "\x02"), nick))
+         else:
+             notice(u"{} can't be found in your last message".format(find))
+     else:
+-- 
+1.8.3.2
+
