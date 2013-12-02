@@ -1,5 +1,0 @@
-language: java
-before_install:
-  - git config --global user.email "daboross@daboross.net"
-  - git config --global user.name "Dabo Ross"
-  - ./applyPatches.sh
