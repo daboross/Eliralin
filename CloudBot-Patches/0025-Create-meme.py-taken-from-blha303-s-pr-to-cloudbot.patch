@@ -1,8 +1,7 @@
-From 8be9d14a1417ce324a43bb88824ccebeb8b54dc5 Mon Sep 17 00:00:00 2001
+From fd6b452201cc68f7bfca393fbbb625528debcfe5 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 2 Dec 2013 10:09:49 +0100
-Subject: [PATCH] Create meme.py - taken from
- https://github.com/ClouDev/CloudBot/pull/170
+Subject: [PATCH] Create meme.py - taken from blha303's pr to cloudbot
 
 
 diff --git a/plugins/meme.py b/plugins/meme.py
