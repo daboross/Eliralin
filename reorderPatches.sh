@@ -10,7 +10,7 @@ cleanPatches() {
         NEW_NAME="${NEW_NUM}${NAME_WITHOUT}"
         if [[ "$NEW_NAME" != "$NAME" ]]; then
             echo "(${OLD_NUM} -> ${NEW_NUM})${NAME_WITHOUT}"
-#            mv "$NAME" "${NEW_NUM}${NAME_WITHOUT}"
+            mv "$NAME" "${NEW_NAME}"
         fi
         NUM="$((NUM + 1))"
     done
