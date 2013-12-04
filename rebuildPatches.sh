@@ -15,6 +15,7 @@ function cleanupPatches {
 
         if [ "x$diffs" == "x" ] ; then
             git reset HEAD $patch >/dev/null
+            git add $patch
             git checkout -- $patch >/dev/null
         fi
     done
