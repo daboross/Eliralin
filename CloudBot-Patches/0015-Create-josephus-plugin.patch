@@ -1,4 +1,4 @@
-From 8dcce57ad2c7ef2a1244793a1cb3351e06fea18a Mon Sep 17 00:00:00 2001
+From 2ed123bb411add5113ad6c53c6518f4ad6c8a785 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 27 Nov 2013 03:29:25 -0800
 Subject: [PATCH] Create josephus plugin
