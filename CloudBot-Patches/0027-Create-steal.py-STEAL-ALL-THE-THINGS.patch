@@ -1,0 +1,76 @@
+From 1202b8f371aa2d74a22550d1d44b81c83618d5f9 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Tue, 3 Dec 2013 23:42:15 +0100
+Subject: [PATCH] Create steal.py - STEAL ALL THE THINGS!
+
+
+diff --git a/plugins/steal.py b/plugins/steal.py
+new file mode 100644
+index 0000000..7cd2a2a
+--- /dev/null
++++ b/plugins/steal.py
+@@ -0,0 +1,61 @@
++from util import hook
++from random import randint
++
++
++def db_init(db):
++    db.execute("CREATE TABLE IF NOT EXISTS stolen(word, PRIMARY KEY (word))")
++    db.commit()
++
++
++def get_random(db):
++    count = db.execute("SELECT COUNT(word) FROM stolen").fetchone()[0]
++    row = db.execute("SELECT word FROM stolen LIMIT 1 OFFSET ?", [randint(0, int(count-1))]).fetchone()
++    if row:
++        return row[0]
++    else:
++        return None
++
++
++def list_steals(db):
++    row = db.execute("SELECT word FROM STOLEN").fetchall()
++    return row    
++
++
++def add_word(db, stolen):
++    db.execute("REPLACE INTO stolen (word) VALUES(?)", [stolen])
++    db.commit()
++
++
++@hook.command(autoHelp=False)
++@hook.command("steal", autoHelp=False)
++def stealit(inp, db=None, nick=None, action=None):
++    db_init(db)
++    args = inp.strip().split()
++    if not args:
++        steal_from = nick
++        to_steal = get_random(db)
++        action("steals {}'s {}".format(steal_from, to_steal))
++    elif len(args) < 2:
++        steal_from = args[0]
++        to_steal = get_random(db)
++        action("steals {}'s {}".format(steal_from, to_steal))
++    else:
++        steal_from = args[len(args) - 1]
++        to_steal = " ".join(args[0:-1])
++        action("steals {}'s {}".format(steal_from, to_steal))
++        add_word(db, to_steal)
++
++
++@hook.command(autoHelp=False, permissions=["adminonly"])
++def liststolen(inp, db=None, reply=None):
++    db_init(db)
++    text = False
++    for word in list_steals(db):
++        if not text:
++            text = word[0]
++        else:
++            text += ", {}".format(word[0])
++        if len(text) > 400:
++            reply(text.rsplit(', ', 1)[0])
++            text = word[0]
++    return text
+-- 
+1.8.3.2
+
