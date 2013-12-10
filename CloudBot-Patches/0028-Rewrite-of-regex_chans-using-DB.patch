@@ -1,0 +1,158 @@
+From e1f98b7741df2ef0b5350c83f5382298512a6849 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Tue, 10 Dec 2013 19:53:49 +0100
+Subject: [PATCH] Rewrite of regex_chans using DB
+
+
+diff --git a/plugins/regex_chans.py b/plugins/regex_chans.py
+index cd2e2ba..0361cd4 100644
+--- a/plugins/regex_chans.py
++++ b/plugins/regex_chans.py
+@@ -1,20 +1,137 @@
+ from util import hook
+ 
+-regex_chans = ["#aem", "#simplicitemc", "#ltttalk", "#shadowboxnetwork",
+-                "#newlanders", "#daboross", "#skywars", "#eliralin",
+-                "#ten.java", "#skybirdsoar", "#jamiesinn", "#olive"]
++#regex_chans = ["#aem", "#simplicitemc", "#ltttalk", "#shadowboxnetwork",
++#                "#newlanders", "#daboross", "#skywars", "#eliralin",
++#                "#ten.java", "#skybirdsoar", "#jamiesinn", "#olive"]
++#print "Regex allowed chans: {}".format(regex_chans)
+ 
+ 
+-print "Regex allowed chans: {}".format(regex_chans)
++def db_init(db):
++    db.execute("CREATE TABLE IF NOT EXISTS regexchans(channel PRIMARY KEY, status)")
++    db.commit()
++
++
++def get_status(db, channel):
++    row = db.execute("SELECT status FROM regexchans WHERE channel = ?", [channel]).fetchone()
++    if row:
++        return row[0]
++    else:
++        return None
++
++
++def set_status(db, channel, status):
++    row = db.execute("REPLACE INTO regexchans (channel, status) VALUES(?, ?)", [channel, status])
++    db.commit()
++
++
++def delete_status(db, channel):
++    row = db.execute("DELETE FROM regexchans WHERE channel = ?", [channel])
++    db.commit()
++
++
++def list_status(db):
++    row = db.execute("SELECT * FROM regexchans").fetchall()
++    result = ""
++    for values in row:
++        if result:
++            result += ", {}: {}".format(values[0], values[1])
++        else:
++            result = "{}: {}".format(values[0], values[1])
++    return result
++
++
++def clean_status_db(db):
++    row = db.execute("SELECT * FROM regexchans").fetchall()
++    for values in row:
++        chan = values[0]
++        chanstatus = values[1]
++        if chan != chan.lower():
++            delete_status(db, chan)
++            set_status(db, chan.lower(), chanstatus)
+ 
+ 
+ @hook.sieve
+ def sieve_regex(bot, input, func, kind, args):
+-    if kind is 'regex':
+-        if input.chan in regex_chans or not input.chan.startswith("#"):
++    db = bot.get_db_connection(input.conn)
++    db_init(db)
++    if kind is 'regex' and input.chan.startswith("#"):
++        chanstatus = get_status(db, input.chan)
++        if chanstatus == "ENABLED":
+             print "Allowing input.raw={}, kind={}, args={} from {}".format(input.raw, kind, args, input.chan)
+         else:
++#            if chanstatus not in ("DISABLED", "NOT_CHOSEN"):
++#                print "Initializing channel {}. Previous status was {}.".format(input.chan, chanstatus)
++#                set_status(db, input.chan, "NOT_CHOSEN")
++#                input.message("Regex matching (youtube, etc) is disabled in this channel. Ask Dabo to enable it if you would like it enabled. This message will not be repeated")
+             print "Denying input.raw={}, kind={}, args={} from {}".format(input.raw, kind, args, input.chan)
+             return None
+-
+     return input
++
++@hook.command(permissions=["adminonly"])
++def enableregex(inp, db=None, message=None, chan=None, nick=None):
++    db_init(db)
++    inp = inp.strip()
++    if not inp:
++        channel = chan
++    elif inp.startswith("#"):
++        channel = inp
++    else:
++        channel = "#{}".format(inp)
++    print "Enabling regex matching (youtube, etc) in channel {} (issued by {})".format(channel, nick)
++    message("Enabling regex matching (youtube, etc) in channel {} (issued by {})".format(channel, nick))
++    set_status(db, channel, "ENABLED")
++
++@hook.command(permissions=["adminonly"])
++def disableregex(inp, db=None, message=None, chan=None, nick=None):
++    db_init(db)
++    inp = inp.strip().lower()
++    if not inp:
++        channel = chan
++    elif inp.startswith("#"):
++        channel = inp
++    else:
++        channel = "#{}".format(inp)
++    print "Disabling regex matching (youtube, etc) in channel {} (issued by {})".format(channel, nick)
++    message("Disabling regex matching (youtube, etc) in channel {} (issued by {})".format(channel, nick))
++    set_status(db, channel, "DISABLED")
++
++@hook.command(permissions=["adminonly"])
++def resetregex(inp, db=None, message=None, chan=None, nick=None):
++    db_init(db)
++    inp = inp.strip().lower()
++    if not inp:
++        channel = chan
++    elif inp.startswith("#"):
++        channel = inp
++    else:
++        channel = "#{}".format(inp)
++    print "Resetting regex matching (youtube, etc) in channel {} (issued by {})".format(channel, nick)
++    message("Resetting initial setting for regex matching (youtube, etc) in channel {} (issued by {})".format(channel, nick))
++    delete_status(db, channel)
++
++
++@hook.command(permissions=["adminonly"])
++def regexstatus(inp, db=None, chan=None):
++    db_init(db)
++    inp = inp.strip().lower()
++    if not inp:
++        channel = chan
++    elif inp.startswith("#"):
++        channel = inp
++    else:
++        channel = "#{}".format(inp)
++    return "Regex status for {}: {}".format(channel, get_status(db, channel))
++
++
++@hook.command(permissions=["adminonly"])
++def listregex(inp, db=None):
++    db_init(db)
++    return list_status(db)
++
++
++@hook.command(permissions=["adminonly"])
++def cleanregex(inp, db=None, reply=None):
++    db_init(db)
++    reply("Initial: {}".format(list_status(db)))
++    clean_status_db(db)
++    return "After: {}".format(list_status(db))
+-- 
+1.8.3.2
+
