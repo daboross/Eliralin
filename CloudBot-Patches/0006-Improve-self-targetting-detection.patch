@@ -1,4 +1,4 @@
-From 7cf575305f34ba8ab398cea5651b70ad0a751724 Mon Sep 17 00:00:00 2001
+From 7b0fa627fd20daedc06a3df78ab4a34ce214f7c7 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 27 Nov 2013 03:12:55 -0800
 Subject: [PATCH] Improve self-targetting detection
