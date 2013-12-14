@@ -1,4 +1,4 @@
-From 6cb7b4fa019d3c0b604e95c217370e9ba6da51d0 Mon Sep 17 00:00:00 2001
+From e9731ecaf0290a4f95e3470dba8c4237343cf46d Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 27 Nov 2013 03:17:35 -0800
 Subject: [PATCH] online/offline instead of up/down

@@ -1,4 +1,4 @@
-From b01efc0d6bf753b84c869febda0540f7d38b4962 Mon Sep 17 00:00:00 2001
+From f0af5aa67e7db37b2095de4ca10283caadabaf4b Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 2 Dec 2013 10:09:49 +0100
 Subject: [PATCH] Create meme.py - taken from blha303's pr to cloudbot

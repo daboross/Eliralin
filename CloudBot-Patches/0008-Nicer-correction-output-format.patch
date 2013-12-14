@@ -1,4 +1,4 @@
-From 9c2202414c15fa22078d4c804bc9cdfb22d72af9 Mon Sep 17 00:00:00 2001
+From a66100ac773549c86b3d6708447649d2b4bac34b Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 27 Nov 2013 03:14:22 -0800
 Subject: [PATCH] Nicer correction output format

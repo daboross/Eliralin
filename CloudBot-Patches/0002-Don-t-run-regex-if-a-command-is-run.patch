@@ -1,4 +1,4 @@
-From d5e5e3ea7e934c67f98aa7df777baed88dec6843 Mon Sep 17 00:00:00 2001
+From e60fc60cc5b8237282e9e3203cc72850f58117e6 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 27 Nov 2013 03:04:00 -0800
 Subject: [PATCH] Don't run regex if a command is run.
