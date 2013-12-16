@@ -1,0 +1,22 @@
+From eff18d9b153037fe90ecf6072c1cd7be055259f5 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Mon, 16 Dec 2013 22:24:56 +0100
+Subject: [PATCH] Always allow factoids
+
+
+diff --git a/plugins/regex_chans.py b/plugins/regex_chans.py
+index 0361cd4..74c5be9 100644
+--- a/plugins/regex_chans.py
++++ b/plugins/regex_chans.py
+@@ -54,7 +54,7 @@ def clean_status_db(db):
+ def sieve_regex(bot, input, func, kind, args):
+     db = bot.get_db_connection(input.conn)
+     db_init(db)
+-    if kind is 'regex' and input.chan.startswith("#"):
++    if kind == 'regex' and input.chan.startswith("#") and func.__name__ != 'factoid':
+         chanstatus = get_status(db, input.chan)
+         if chanstatus == "ENABLED":
+             print "Allowing input.raw={}, kind={}, args={} from {}".format(input.raw, kind, args, input.chan)
+-- 
+1.8.3.2
+

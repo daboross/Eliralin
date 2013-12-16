@@ -1,0 +1,22 @@
+From 7fb26d964a3815ee860c811d4d222709322f4301 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Mon, 16 Dec 2013 22:24:13 +0100
+Subject: [PATCH] Split and join message to remove repeated whitespaces
+
+
+diff --git a/plugins/minecraft_ping.py b/plugins/minecraft_ping.py
+index 423c714..15fefed 100644
+--- a/plugins/minecraft_ping.py
++++ b/plugins/minecraft_ping.py
+@@ -78,7 +78,7 @@ def mcping_modern(host, port):
+         online = data["players"]["online"]
+     except Exception as e:
+         return "Invalid data: {}; error: {}".format(data, e)
+-    return mc_color_format(u"{}\x0f - {}\x0f - {}/{} players *".format(desc, version, online, max)).replace("\n", u"\x0f - ")
++    return mc_color_format(u" ".join(u"{}\x0f - {}\x0f - {}/{} players *".format(desc.replace("\n", u"\x0f - "), version, online, max).split()))
+ 
+ 
+ def mcping_legacy(host, port):
+-- 
+1.8.3.2
+

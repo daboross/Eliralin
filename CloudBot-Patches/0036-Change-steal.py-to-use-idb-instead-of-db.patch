@@ -1,0 +1,52 @@
+From 6b553e5ec2963c55e9c11f6fd855279294cef801 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Mon, 16 Dec 2013 22:39:44 +0100
+Subject: [PATCH] Change steal.py to use idb instead of db.
+
+
+diff --git a/plugins/steal.py b/plugins/steal.py
+index 60bc9f6..f1a3527 100644
+--- a/plugins/steal.py
++++ b/plugins/steal.py
+@@ -28,29 +28,30 @@ def add_word(db, stolen):
+ 
+ @hook.command(autoHelp=False)
+ @hook.command("steal", autoHelp=False)
+-def stealit(inp, db=None, nick=None, action=None):
+-    db_init(db)
++def stealit(inp, idb=None, nick=None, action=None):
++    """steal [[object] username]- Steals an object from a user or randomly chooses a previously stolen object if none is given"""
++    db_init(idb)
+     args = inp.strip().split()
+     if not args:
+         steal_from = nick
+-        to_steal = get_random(db)
++        to_steal = get_random(idb)
+         action("steals {}'s {}".format(steal_from, to_steal))
+     elif len(args) < 2:
+         steal_from = args[0]
+-        to_steal = get_random(db)
++        to_steal = get_random(idb)
+         action("steals {}'s {}".format(steal_from, to_steal))
+     else:
+         steal_from = args[len(args) - 1]
+         to_steal = " ".join(args[0:-1])
+         action("steals {}'s {}".format(steal_from, to_steal))
+-        add_word(db, to_steal)
++        add_word(idb, to_steal)
+ 
+ 
+ @hook.command(autoHelp=False, permissions=["adminonly"])
+-def liststolen(inp, db=None, reply=None):
+-    db_init(db)
++def liststolen(inp, idb=None, reply=None):
++    db_init(idb)
+     text = False
+-    for word in list_steals(db):
++    for word in list_steals(idb):
+         if not text:
+             text = word[0]
+         else:
+-- 
+1.8.3.2
+

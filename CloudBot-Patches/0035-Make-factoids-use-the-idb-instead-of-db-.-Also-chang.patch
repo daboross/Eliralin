@@ -1,0 +1,106 @@
+From 556f3e1f811c5144ff58a6619a9657de26a00d8d Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Mon, 16 Dec 2013 22:39:11 +0100
+Subject: [PATCH] Make factoids use the 'idb' instead of 'db'. Also change
+ character from ? to ^
+
+
+diff --git a/plugins/factoids.py b/plugins/factoids.py
+index 1d90e66..9530b4c 100644
+--- a/plugins/factoids.py
++++ b/plugins/factoids.py
+@@ -32,10 +32,10 @@ def get_memory(db, word):
+ 
+ @hook.command("r", permissions=["addfactoid"])
+ @hook.command(permissions=["addfactoid"])
+-def remember(inp, nick='', db=None, notice=None):
++def remember(inp, nick='', idb=None, notice=None):
+     """remember <word> [+]<data> -- Remembers <data> with <word>. Add +
+     to <data> to append."""
+-    db_init(db)
++    db_init(idb)
+ 
+     append = False
+ 
+@@ -44,7 +44,7 @@ def remember(inp, nick='', db=None, notice=None):
+     except ValueError:
+         return remember.__doc__
+ 
+-    old_data = get_memory(db, word)
++    old_data = get_memory(idb, word)
+ 
+     if data.startswith('+') and old_data:
+         append = True
+@@ -64,19 +64,18 @@ def remember(inp, nick='', db=None, notice=None):
+         if append:
+             notice("Appending \x02{}\x02 to \x02{}\x02".format(new_data, old_data))
+         else:
+-            notice('Remembering \x02{}\x02 for \x02{}\x02. Type ?{} to see it.'.format(data, word, word))
++            notice('Remembering \x02{}\x02 for \x02{}\x02. Type ^{} to see it.'.format(data, word, word))
+             notice('Previous data was \x02{}\x02'.format(old_data))
+     else:
+-        notice('Remembering \x02{}\x02 for \x02{}\x02. Type ?{} to see it.'.format(data, word, word))
++        notice('Remembering \x02{}\x02 for \x02{}\x02. Type ^{} to see it.'.format(data, word, word))
+ 
+ 
+ @hook.command("f", permissions=["delfactoid"])
+ @hook.command(permissions=["delfactoid"])
+-def forget(inp, db=None, notice=None):
++def forget(inp, idb=None, notice=None):
+     """forget <word> -- Forgets a remembered <word>."""
+-
+-    db_init(db)
+-    data = get_memory(db, inp)
++    db_init(idb)
++    data = get_memory(idb, inp)
+ 
+     if data:
+         db.execute("delete from mem where word=lower(?)",
+@@ -90,13 +89,12 @@ def forget(inp, db=None, notice=None):
+ 
+ 
+ @hook.command
+-def info(inp, notice=None, db=None):
++def info(inp, notice=None, idb=None):
+     """info <factoid> -- Shows the source of a factoid."""
+-
+-    db_init(db)
++    db_init(idb)
+ 
+     # attempt to get the factoid from the database
+-    data = get_memory(db, inp.strip())
++    data = get_memory(idb, inp.strip())
+ 
+     if data:
+         notice(data)
+@@ -104,15 +102,15 @@ def info(inp, notice=None, db=None):
+         notice("Unknown Factoid.")
+ 
+ 
+-@hook.regex(r'^\? ?(.+)')
+-def factoid(inp, message=None, db=None, bot=None, action=None, conn=None, input=None):
++@hook.regex(r'^\^ ?(.+)')
++def factoid(inp, message=None, idb=None, bot=None, action=None, conn=None, input=None):
+     "?<word> -- Shows what data is associated with <word>."
+     try:
+         prefix_on = bot.config["plugins"]["factoids"].get("prefix", False)
+     except KeyError:
+         prefix_on = False
+ 
+-    db_init(db)
++    db_init(idb)
+ 
+     # split up the input
+     split = inp.group(1).strip().split(" ")
+@@ -123,7 +121,7 @@ def factoid(inp, message=None, db=None, bot=None, action=None, conn=None, input=
+     else:
+         arguments = ""
+ 
+-    data = get_memory(db, factoid_id)
++    data = get_memory(idb, factoid_id)
+ 
+     if data:
+         # factoid preprocessors
+-- 
+1.8.3.2
+
