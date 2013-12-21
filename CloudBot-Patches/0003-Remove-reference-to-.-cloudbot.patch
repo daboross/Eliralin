@@ -1,4 +1,4 @@
-From 22433b809e863a512e91a79afb1a32db79e8fe2a Mon Sep 17 00:00:00 2001
+From 7d4fbfa7a2eefe83b6f4111795ce37f8107f424d Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 27 Nov 2013 03:08:20 -0800
 Subject: [PATCH] Remove reference to ./cloudbot

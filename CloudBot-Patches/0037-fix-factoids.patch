@@ -1,0 +1,37 @@
+From a463ba1df5abb9fdfec9748080ecafcc7342a966 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Wed, 18 Dec 2013 01:17:43 +0100
+Subject: [PATCH] fix factoids
+
+
+diff --git a/plugins/factoids.py b/plugins/factoids.py
+index 9530b4c..72587af 100644
+--- a/plugins/factoids.py
++++ b/plugins/factoids.py
+@@ -56,9 +56,9 @@ def remember(inp, nick='', idb=None, notice=None):
+         else:
+             data = old_data + ' ' + new_data
+ 
+-    db.execute("replace into mem(word, data, nick) values"
++    idb.execute("replace into mem(word, data, nick) values"
+                " (lower(?),?,?)", (word, data, nick))
+-    db.commit()
++    idb.commit()
+ 
+     if old_data:
+         if append:
+@@ -78,9 +78,9 @@ def forget(inp, idb=None, notice=None):
+     data = get_memory(idb, inp)
+ 
+     if data:
+-        db.execute("delete from mem where word=lower(?)",
++        idb.execute("delete from mem where word=lower(?)",
+                    [inp])
+-        db.commit()
++        idb.commit()
+         notice('"%s" has been forgotten.' % data.replace('`', "'"))
+         return
+     else:
+-- 
+1.8.3.2
+

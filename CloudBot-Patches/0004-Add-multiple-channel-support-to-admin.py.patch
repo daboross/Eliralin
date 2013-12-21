@@ -1,4 +1,4 @@
-From 938eaa4ca29586418c623a49c403c7d93798af20 Mon Sep 17 00:00:00 2001
+From 94d0c4c8de6158668c788cb9d0f4993a3581488c Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 27 Nov 2013 03:10:57 -0800
 Subject: [PATCH] Add multiple channel support to admin.py
