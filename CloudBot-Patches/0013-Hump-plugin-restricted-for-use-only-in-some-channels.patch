@@ -1,4 +1,4 @@
-From 3264f68d36d23b75ca8cb067d8add808dea72707 Mon Sep 17 00:00:00 2001
+From 3b292f37248871283193ed3928de00e1a521350a Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 27 Nov 2013 03:28:02 -0800
 Subject: [PATCH] Hump plugin - restricted for use only in some channels

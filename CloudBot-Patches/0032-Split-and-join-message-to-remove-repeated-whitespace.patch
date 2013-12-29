@@ -1,4 +1,4 @@
-From 730a1c1f004bbf9d1e8cfad6dfed85a996081460 Mon Sep 17 00:00:00 2001
+From b7f6d3d1a7a0eda2cbc8241cd94cd8411ef724d8 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 16 Dec 2013 22:24:13 +0100
 Subject: [PATCH] Split and join message to remove repeated whitespaces

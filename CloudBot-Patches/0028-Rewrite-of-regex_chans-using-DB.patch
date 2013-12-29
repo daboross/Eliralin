@@ -1,4 +1,4 @@
-From a57d3899e44ca47fd74a34b8a685f58945b71685 Mon Sep 17 00:00:00 2001
+From 4064023c4c675996d816779c1ec344f57b7d9d84 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 10 Dec 2013 19:53:49 +0100
 Subject: [PATCH] Rewrite of regex_chans using DB

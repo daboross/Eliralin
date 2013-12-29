@@ -1,4 +1,4 @@
-From 852ed9bcf988cdb65d455575754deb0eb497a983 Mon Sep 17 00:00:00 2001
+From 9da5f27f482d8bf107f1fcda39c58eceb76bb5de Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 2 Dec 2013 10:08:10 +0100
 Subject: [PATCH] Create regex_chans.py for limiting regex

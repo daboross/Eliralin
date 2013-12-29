@@ -1,4 +1,4 @@
-From 51fb22d9194f8de3bf5b32d55e5f976ada9bd7cc Mon Sep 17 00:00:00 2001
+From d8d3b5148c1d8b0e00986460a5bbc17d9a1714d6 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 27 Nov 2013 03:11:37 -0800
 Subject: [PATCH] Add sayto command to say to user/channel

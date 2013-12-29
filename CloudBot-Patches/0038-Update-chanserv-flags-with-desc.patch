@@ -1,0 +1,19 @@
+From 9c7b6d052a22fc1a0bcd8e6966d994a3f77752cf Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Sun, 29 Dec 2013 11:05:29 +0100
+Subject: [PATCH] Update chanserv flags with desc
+
+
+diff --git a/plugins/chanserv_flags.py b/plugins/chanserv_flags.py
+index 2c519c2..a7decd1 100644
+--- a/plugins/chanserv_flags.py
++++ b/plugins/chanserv_flags.py
+@@ -3,4 +3,5 @@ from util import hook
+ 
+ @hook.command(permissions=["adminonly"])
+ def flags(inp, message=None, chan=None):
++    """flags - flags"""
+     message("flags {}".format(inp if inp.startswith("#") else "{} {}".format(chan, inp)), target="ChanServ")
+-- 
+1.8.3.2
+

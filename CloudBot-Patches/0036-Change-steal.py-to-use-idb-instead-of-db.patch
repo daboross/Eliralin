@@ -1,4 +1,4 @@
-From a5fddc631ad480b7dedee6909eacdfce319fe0bd Mon Sep 17 00:00:00 2001
+From 20b0db7b8c9ccbf2863ba4c0300ddc576904c2f7 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 16 Dec 2013 22:39:44 +0100
 Subject: [PATCH] Change steal.py to use idb instead of db.

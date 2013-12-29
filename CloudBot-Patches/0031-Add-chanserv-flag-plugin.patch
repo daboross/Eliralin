@@ -1,4 +1,4 @@
-From 69c06935d638ae66783627636d481ac0cd9016ff Mon Sep 17 00:00:00 2001
+From 134e63a51ca87a437ba00c3392d592f70b149b3a Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 16 Dec 2013 22:23:25 +0100
 Subject: [PATCH] Add chanserv flag plugin
