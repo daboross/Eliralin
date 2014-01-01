@@ -1,4 +1,4 @@
-From d24791553ec68b19922b95c0eeb65010ddfb9aa3 Mon Sep 17 00:00:00 2001
+From 922f911e86c0a4fa80d71f9d1a8b19c110742053 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 27 Nov 2013 03:28:55 -0800
 Subject: [PATCH] Add reply plugin to reply when addressed with 'Eliralin, '

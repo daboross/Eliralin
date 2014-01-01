@@ -1,4 +1,4 @@
-From 4bb1a04a4f785b7a48d133989b0c2b5ed424700f Mon Sep 17 00:00:00 2001
+From 9681cfc74510e9492be4db28799f010a1817aed7 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 16 Dec 2013 22:24:56 +0100
 Subject: [PATCH] Always allow factoids

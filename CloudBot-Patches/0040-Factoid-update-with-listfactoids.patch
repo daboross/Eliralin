@@ -1,0 +1,31 @@
+From 2767240534be261ec463503f3ff6be7acae3e071 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Wed, 1 Jan 2014 03:58:20 +0100
+Subject: [PATCH] Factoid update with listfactoids
+
+
+diff --git a/plugins/factoids.py b/plugins/factoids.py
+index 72587af..bc41046 100644
+--- a/plugins/factoids.py
++++ b/plugins/factoids.py
+@@ -151,3 +151,17 @@ def factoid(inp, message=None, idb=None, bot=None, action=None, conn=None, input
+                 message("\x02[{}]:\x02 {}".format(factoid_id, result))
+             else:
+                 message(result)
++
++@hook.command(autoHelp=False, permissions=["adminonly"])
++def listfactoids(inp, idb=None, reply=None):
++    db_init(idb)
++    text = False
++    for word in idb.execute("select word from mem").fetchall():
++        if not text:
++            text = word[0]
++        else:
++            text += ", {}".format(word[0])
++        if len(text) > 400:
++            reply(text.rsplit(', ', 1)[0])
++            text = word[0]
++    return text
+-- 
+1.8.3.2
+

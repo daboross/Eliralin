@@ -1,4 +1,4 @@
-From ff49489b8540315b375bfbad97bd3ab2d0dc8083 Mon Sep 17 00:00:00 2001
+From 5ace55523cf885f1dcbd5ee0038d99e369fb268d Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 16 Dec 2013 22:39:11 +0100
 Subject: [PATCH] Make factoids use the 'idb' instead of 'db'. Also change

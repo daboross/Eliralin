@@ -1,4 +1,4 @@
-From 45b6d450808ef53a6c14192003ead14ffbfbe841 Mon Sep 17 00:00:00 2001
+From 9c4d388da1968c780307a34e542210d81b025aa9 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 1 Dec 2013 22:17:52 +0100
 Subject: [PATCH] Fix bot stopping

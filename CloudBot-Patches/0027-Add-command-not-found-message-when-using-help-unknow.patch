@@ -1,4 +1,4 @@
-From c86c805c88a26235c4637e761b25108e74ec89fa Mon Sep 17 00:00:00 2001
+From ffd8abbff5ac05f9e92ae8466129e9c8f433286b Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 10 Dec 2013 19:53:20 +0100
 Subject: [PATCH] Add command not found message when using `help <unknown

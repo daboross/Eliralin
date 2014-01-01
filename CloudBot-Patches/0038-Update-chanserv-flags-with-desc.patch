@@ -1,4 +1,4 @@
-From 9c7b6d052a22fc1a0bcd8e6966d994a3f77752cf Mon Sep 17 00:00:00 2001
+From 9aae5d50705f86180a82b9e240605f0ea124a838 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 29 Dec 2013 11:05:29 +0100
 Subject: [PATCH] Update chanserv flags with desc

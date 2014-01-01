@@ -1,4 +1,4 @@
-From 3b58af834f78307cd1ebe4bc2577389ebc0f2eda Mon Sep 17 00:00:00 2001
+From a1c3549edb3c772ce0919f15682899caf1839a28 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 16 Dec 2013 22:38:27 +0100
 Subject: [PATCH] Add 'idb' independent database, to be used instead of the
