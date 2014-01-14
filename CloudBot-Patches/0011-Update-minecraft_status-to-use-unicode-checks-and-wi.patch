@@ -1,29 +1,31 @@
-From 0666be0190029b20cf4f7f72c5f00ea02714ee57 Mon Sep 17 00:00:00 2001
+From f489cca16294ec98c5b3ef0aa49f91a93ce9f88a Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
-Date: Wed, 27 Nov 2013 03:25:00 -0800
-Subject: [PATCH] Somewhat nicer minecraft status message
+Date: Mon, 13 Jan 2014 23:05:12 -0800
+Subject: [PATCH] Update minecraft_status to use unicode checks, and with a new
+ format.
 
 
 diff --git a/plugins/minecraft_status.py b/plugins/minecraft_status.py
-index 98fce4a..6d1ab3a 100644
+index 98fce4a..a1aeca8 100644
 --- a/plugins/minecraft_status.py
 +++ b/plugins/minecraft_status.py
-@@ -1,8 +1,14 @@
- from util import hook, http
- import json
+@@ -3,9 +3,15 @@ import json
  
-+yes_prefix = u"\x02\x0f"
-+yes_suffix = u": \x033\x02\u2714"
-+no_prefix = u"\x02\x0f"
-+no_suffix = u": \x034\x02\u2716"
-+
  
  @hook.command(autohelp=False)
 +@hook.command("mcs", autohelp=False)
  def mcstatus(inp):
      """mcstatus -- Checks the status of various Mojang (the creators of Minecraft) servers."""
  
-@@ -14,25 +20,29 @@ def mcstatus(inp):
++    yes_prefix = u"\x02\x0f"
++    yes_suffix = u": \x033\x02\u2714"
++    no_prefix = u"\x02\x0f"
++    no_suffix = u": \x034\x02\u2716"
++
+     try:
+         request = http.get("http://status.mojang.com/check")
+     except (http.URLError, http.HTTPError) as e:
+@@ -14,25 +20,21 @@ def mcstatus(inp):
      # lets just reformat this data to get in a nice format
      data = json.loads(request.replace("}", "").replace("{", "").replace("]", "}").replace("[", "{"))
  
@@ -34,20 +36,12 @@ index 98fce4a..6d1ab3a 100644
 -    no = []
 +    servers = []
      for server, status in data.items():
-+        if server == "account.mojang.com":
-+            server = "MJ|Account"
-+        elif server == "skins.minecraft.net":
-+            server = "MC|Skins"
-+        elif server == "auth.mojang.com":
-+            server = "MJ|Auth"
-+        elif server == "authserver.mojang.com":
-+            server = "MJ|AuthServer"
-+        elif server == "login.minecraft.net":
-+            server = "MC|Login"
-+        elif server == "session.minecraft.net":
-+            server = "MC|Session"
-+        elif server == "minecraft.net":
++        if server == "minecraft.net":
 +            server = "MC|Website"
++        elif server.endswith(".mojang.com"):
++            server = "MJ|{}".format(server[:-11].capitalize())
++        elif server.endswith(".minecraft.net"):
++            server = "MC|{}".format(server[:-14].capitalize())
 +
          if status == "green":
 -            yes.append(server)

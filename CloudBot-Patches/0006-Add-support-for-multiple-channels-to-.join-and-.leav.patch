@@ -1,14 +1,14 @@
-From b08aa2a2dfc504961fae78639fa81b6727384f0b Mon Sep 17 00:00:00 2001
+From d2302c943fbc62decbc7513edbf39dda84e6a2bf Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
-Date: Wed, 27 Nov 2013 03:10:57 -0800
-Subject: [PATCH] Add multiple channel support to admin.py
+Date: Mon, 13 Jan 2014 19:10:43 -0800
+Subject: [PATCH] Add support for multiple channels to .join and .leave
 
 
 diff --git a/plugins/admin.py b/plugins/admin.py
-index 59f3871..987e1b4 100644
+index 39bbce1..ede2e3f 100644
 --- a/plugins/admin.py
 +++ b/plugins/admin.py
-@@ -138,8 +138,11 @@ def clearlogs(inp, input=None):
+@@ -139,8 +139,11 @@ def clearlogs(inp, input=None):
  @hook.command(permissions=["botcontrol"])
  def join(inp, conn=None, notice=None):
      """join <channel> -- Joins <channel>."""
@@ -22,7 +22,7 @@ index 59f3871..987e1b4 100644
  
  
  @hook.command(autohelp=False, permissions=["botcontrol"])
-@@ -148,11 +151,14 @@ def part(inp, conn=None, chan=None, notice=None):
+@@ -149,11 +152,14 @@ def part(inp, conn=None, chan=None, notice=None):
      If [channel] is blank the bot will leave the
      channel the command was used in."""
      if inp:

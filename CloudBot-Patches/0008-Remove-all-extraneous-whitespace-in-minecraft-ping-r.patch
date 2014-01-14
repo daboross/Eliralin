@@ -1,7 +1,7 @@
-From b044a261dec4dfb1ccff787515cdeae4a338f7e0 Mon Sep 17 00:00:00 2001
+From 89ee070a37c8e4ec21fe056d785598d8dcceb2f0 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
-Date: Mon, 16 Dec 2013 22:24:13 +0100
-Subject: [PATCH] Split and join message to remove repeated whitespaces
+Date: Mon, 13 Jan 2014 22:54:10 -0800
+Subject: [PATCH] Remove all extraneous whitespace in minecraft ping response
 
 
 diff --git a/plugins/minecraft_ping.py b/plugins/minecraft_ping.py

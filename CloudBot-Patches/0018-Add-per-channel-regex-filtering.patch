@@ -1,26 +1,18 @@
-From 39d0f32e91f9c4a075aaed2e7743132e21a72508 Mon Sep 17 00:00:00 2001
+From 5d8b406304cc02e5b24a52c9ade07246efb189f7 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
-Date: Tue, 10 Dec 2013 19:53:49 +0100
-Subject: [PATCH] Rewrite of regex_chans using DB
+Date: Mon, 13 Jan 2014 23:18:39 -0800
+Subject: [PATCH] Add per-channel regex filtering.
 
 
 diff --git a/plugins/regex_chans.py b/plugins/regex_chans.py
-index cd2e2ba..0361cd4 100644
---- a/plugins/regex_chans.py
+new file mode 100644
+index 0000000..a6cf1f7
+--- /dev/null
 +++ b/plugins/regex_chans.py
-@@ -1,20 +1,137 @@
- from util import hook
- 
--regex_chans = ["#aem", "#simplicitemc", "#ltttalk", "#shadowboxnetwork",
--                "#newlanders", "#daboross", "#skywars", "#eliralin",
--                "#ten.java", "#skybirdsoar", "#jamiesinn", "#olive"]
-+#regex_chans = ["#aem", "#simplicitemc", "#ltttalk", "#shadowboxnetwork",
-+#                "#newlanders", "#daboross", "#skywars", "#eliralin",
-+#                "#ten.java", "#skybirdsoar", "#jamiesinn", "#olive"]
-+#print "Regex allowed chans: {}".format(regex_chans)
- 
- 
--print "Regex allowed chans: {}".format(regex_chans)
+@@ -0,0 +1,131 @@
++from util import hook
++
++
 +def db_init(db):
 +    db.execute("CREATE TABLE IF NOT EXISTS regexchans(channel PRIMARY KEY, status)")
 +    db.commit()
@@ -63,29 +55,23 @@ index cd2e2ba..0361cd4 100644
 +        if chan != chan.lower():
 +            delete_status(db, chan)
 +            set_status(db, chan.lower(), chanstatus)
- 
- 
- @hook.sieve
- def sieve_regex(bot, input, func, kind, args):
--    if kind is 'regex':
--        if input.chan in regex_chans or not input.chan.startswith("#"):
++
++
++@hook.sieve
++def sieve_regex(bot, input, func, kind, args):
 +    db = bot.get_db_connection(input.conn)
 +    db_init(db)
-+    if kind is 'regex' and input.chan.startswith("#"):
++    if kind == 'regex' and input.chan.startswith("#") and func.__name__ != 'factoid':
 +        chanstatus = get_status(db, input.chan)
 +        if chanstatus == "ENABLED":
-             print "Allowing input.raw={}, kind={}, args={} from {}".format(input.raw, kind, args, input.chan)
-         else:
-+#            if chanstatus not in ("DISABLED", "NOT_CHOSEN"):
-+#                print "Initializing channel {}. Previous status was {}.".format(input.chan, chanstatus)
-+#                set_status(db, input.chan, "NOT_CHOSEN")
-+#                input.message("Regex matching (youtube, etc) is disabled in this channel. Ask Dabo to enable it if you would like it enabled. This message will not be repeated")
-             print "Denying input.raw={}, kind={}, args={} from {}".format(input.raw, kind, args, input.chan)
-             return None
--
-     return input
++            print "Allowing input.raw={}, kind={}, args={} from {}".format(input.raw, kind, args, input.chan)
++        else:
++            print "Denying input.raw={}, kind={}, args={} from {}".format(input.raw, kind, args, input.chan)
++            return None
++    return input
 +
-+@hook.command(permissions=["adminonly"])
++
++@hook.command(permissions=["botcontrol"])
 +def enableregex(inp, db=None, message=None, chan=None, nick=None):
 +    db_init(db)
 +    inp = inp.strip()
@@ -99,7 +85,8 @@ index cd2e2ba..0361cd4 100644
 +    message("Enabling regex matching (youtube, etc) in channel {} (issued by {})".format(channel, nick))
 +    set_status(db, channel, "ENABLED")
 +
-+@hook.command(permissions=["adminonly"])
++
++@hook.command(permissions=["botcontrol"])
 +def disableregex(inp, db=None, message=None, chan=None, nick=None):
 +    db_init(db)
 +    inp = inp.strip().lower()
@@ -113,7 +100,8 @@ index cd2e2ba..0361cd4 100644
 +    message("Disabling regex matching (youtube, etc) in channel {} (issued by {})".format(channel, nick))
 +    set_status(db, channel, "DISABLED")
 +
-+@hook.command(permissions=["adminonly"])
++
++@hook.command(permissions=["botcontrol"])
 +def resetregex(inp, db=None, message=None, chan=None, nick=None):
 +    db_init(db)
 +    inp = inp.strip().lower()
@@ -128,7 +116,7 @@ index cd2e2ba..0361cd4 100644
 +    delete_status(db, channel)
 +
 +
-+@hook.command(permissions=["adminonly"])
++@hook.command(permissions=["botcontrol"])
 +def regexstatus(inp, db=None, chan=None):
 +    db_init(db)
 +    inp = inp.strip().lower()
@@ -141,13 +129,13 @@ index cd2e2ba..0361cd4 100644
 +    return "Regex status for {}: {}".format(channel, get_status(db, channel))
 +
 +
-+@hook.command(permissions=["adminonly"])
++@hook.command(permissions=["botcontrol"])
 +def listregex(inp, db=None):
 +    db_init(db)
 +    return list_status(db)
 +
 +
-+@hook.command(permissions=["adminonly"])
++@hook.command(permissions=["botcontrol"])
 +def cleanregex(inp, db=None, reply=None):
 +    db_init(db)
 +    reply("Initial: {}".format(list_status(db)))

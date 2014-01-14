@@ -1,11 +1,11 @@
-From 132a86652d1151a12bcd819da46ca44075583824 Mon Sep 17 00:00:00 2001
+From d278d896f611c6aa8c6b9b211b6ffbad3b7e6467 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
-Date: Wed, 27 Nov 2013 03:12:55 -0800
-Subject: [PATCH] Improve self-targetting detection
+Date: Mon, 13 Jan 2014 23:11:02 -0800
+Subject: [PATCH] Improve self-attack matching.
 
 
 diff --git a/plugins/attacks.py b/plugins/attacks.py
-index 643a184..189cfaf 100644
+index 643a184..6746f11 100644
 --- a/plugins/attacks.py
 +++ b/plugins/attacks.py
 @@ -1,5 +1,6 @@
@@ -38,11 +38,11 @@ index 643a184..189cfaf 100644
  
  @hook.command
 -def flirt(inp, action=None, conn=None, notice=None):
-+def flirt(inp, nick=None, action=None, conn=None, notice=None):
++def flirt(inp, nick=None, message=None, conn=None, notice=None):
      """flirt <user> -- Make the bot flirt with <user>."""
      target = inp.strip()
  
-@@ -61,8 +62,8 @@ def flirt(inp, action=None, conn=None, notice=None):
+@@ -61,10 +62,9 @@ def flirt(inp, action=None, conn=None, notice=None):
          notice("Invalid username!")
          return
  
@@ -53,6 +53,9 @@ index 643a184..189cfaf 100644
      else:
          target = inp
  
+-    out = 'flirts with {}... "{}"'.format(target, random.choice(flirts))
+-    action(out)
++    message('{}, {}'.format(target, random.choice(flirts)))
 -- 
 1.8.3.2
 

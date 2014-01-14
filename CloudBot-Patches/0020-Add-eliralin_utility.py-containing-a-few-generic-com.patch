@@ -1,0 +1,121 @@
+From fb125d4174cd3660adc1007c78a3c1b413f1e9f0 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Mon, 13 Jan 2014 23:19:10 -0800
+Subject: [PATCH] Add eliralin_utility.py, containing a few generic commands
+ added for Eliralin
+
+
+diff --git a/plugins/eliralin_utility.py b/plugins/eliralin_utility.py
+new file mode 100644
+index 0000000..9eabd96
+--- /dev/null
++++ b/plugins/eliralin_utility.py
+@@ -0,0 +1,105 @@
++from util import hook
++from random import random
++import time
++import re
++
++
++@hook.command
++def josephus(inp):
++    """jose [size] [every x] [starting person] - Calculates who dies last """
++    split = inp.split()
++    if len(split) != 3:
++        return "Not enough / too many arguments. {}".format(len(split))
++    size, every_x, current = [int(x) for x in split]
++    alive, till_kill = [True] * size, 0
++    while True:
++        if alive[current]:
++            if sum(alive) == 1:
++                break
++            elif till_kill == 0:
++                alive[current] = False
++                till_kill = every_x - 1
++            else:
++                till_kill -= 1
++        current += 1 if current < size - 1 else 1 - size
++    return "Josephus should be at position {} to survive.".format(current)
++
++
++@hook.regex("(?i)(^ )*pets Eliralin *$")
++def pet(inp, action=None, nick=None, chan=None):
++    r = random()
++    if r > 0.7:
++        action("huggles {}".format(nick))
++
++
++@hook.command
++@hook.command("hug")
++def huggle(inp, action=None, nick=None):
++    if inp:
++        action("huggles {}".format(inp))
++    else:
++        action("huggles {}".format(nick))
++
++
++@hook.command
++def colors(inp):
++    if inp:
++        intinp = int(inp)
++        if intinp > 70:
++            return "Please use a number smaller than or equal to 70"
++        forrange = range(intinp)
++    else:
++        forrange = range(30)
++    result = ""
++    for i in forrange if inp else range(30):
++        result += u"\x03{0:02d} {0}".format(i)
++    return result
++
++
++@hook.regex(r'^Eliralin[,;:.](| .*)$')
++def reply(match, message=None, nick=None):
++    time.sleep(0.2)
++    message(match.group(0).replace("Eliralin", nick))
++
++
++@hook.regex("(?i)(Hello|Hi) Eliralin(!| |\\.|\\?)*")
++def hello_regex(match, nick=None, chan=None):
++    return ("Hi {}. What's your question?" if match.group(3) == "?" else "Hello {}!").format(nick)
++
++
++@hook.command(permissions=['adminonly'])
++def tree(inp, message=None, notice=None):
++    """tree [type] [text] - Tree text"""
++    type_input = inp.split(None, 1)
++    if len(type_input) < 2:
++        notice("tree [type] [text] - Tree text")
++        return
++    type = type_input[0]
++    if type == "1":
++        func = lambda c: c[1:-1]
++    elif type == "2":
++        func = lambda c: c[2:]
++    elif type == "3":
++        func = lambda c: c[:-2]
++    else:
++        return "Invalid tree type '{}'.".format(type)
++    current = type_input[1]
++    while len(current) > 0:
++        spaces += 1
++        message(spaces * ' ' + current)
++        current = func(current)
++
++    message((spaces - 1) * ' ' + ('----' if len(type_input[1]) % 2 == 0 else '---'))
++
++
++@hook.command
++def threaddump(inp):
++    print "Running thread dump"
++    code = []
++    for threadId, stack in sys._current_frames().items():
++        code.append("\n# ThreadID: %s" % threadId)
++        for filename, lineno, name, line in traceback.extract_stack(stack):
++            code.append('File: "%s", line %d, in %s' % (filename, lineno, name))
++            if line:
++                code.append("  %s" % (line.strip()))
++    return "Thread dump located at {}".format(web.haste("\n".join(code), ext='txt'))
+-- 
+1.8.3.2
+

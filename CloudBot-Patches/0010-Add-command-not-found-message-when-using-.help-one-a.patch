@@ -1,12 +1,12 @@
-From ffd8abbff5ac05f9e92ae8466129e9c8f433286b Mon Sep 17 00:00:00 2001
+From 3fec33abd2db357a2b4ef42ab3274f355aaa4b9c Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
-Date: Tue, 10 Dec 2013 19:53:20 +0100
-Subject: [PATCH] Add command not found message when using `help <unknown
- command>
+Date: Mon, 13 Jan 2014 22:56:40 -0800
+Subject: [PATCH] Add command not found message when using .help one a
+ non-command
 
 
 diff --git a/plugins/help.py b/plugins/help.py
-index f6b5143..5394b39 100644
+index f6b5143..4a4fd47 100644
 --- a/plugins/help.py
 +++ b/plugins/help.py
 @@ -46,3 +46,5 @@ def help(inp, notice=None, input=None, conn=None, bot=None):
@@ -14,7 +14,7 @@ index f6b5143..5394b39 100644
          if inp in commands:
              notice(conn.conf["command_prefix"] + commands[inp].__doc__)
 +        else:
-+            notice("Command `{} not found".format(inp))
++            notice("Command {}{} not found".format(conn.conf["command_prefix"], inp))
 -- 
 1.8.3.2
 

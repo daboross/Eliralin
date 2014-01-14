@@ -1,14 +1,22 @@
-From 8e1757fe8b36e06bc81c5ebff488529a5ee9c808 Mon Sep 17 00:00:00 2001
+From cf6e92faaa060b8a23b770dc311942554438778d Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
-Date: Tue, 3 Dec 2013 10:40:32 +0100
-Subject: [PATCH] Make more sense possibly?
+Date: Mon, 13 Jan 2014 18:58:30 -0800
+Subject: [PATCH] Change reply format from `(<nick>) <message>` to `<munged
+ nick>, <message>`
 
 
 diff --git a/core/main.py b/core/main.py
-index b1886d0..7e32995 100644
+index 0054b0a..55f3231 100644
 --- a/core/main.py
 +++ b/core/main.py
-@@ -12,6 +12,7 @@ class Input(dict):
+@@ -1,5 +1,6 @@
+ import thread
+ import traceback
++from util import text
+ 
+ 
+ thread.stack_size(1024 * 512)  # reduce vm size
+@@ -12,6 +13,7 @@ class Input(dict):
          chan = paraml[0].lower()
          if chan == conn.nick.lower():  # is a PM
              chan = nick
@@ -16,11 +24,11 @@ index b1886d0..7e32995 100644
  
          def message(message, target=chan):
              """sends a message to a specific or current channel/user"""
-@@ -22,7 +23,7 @@ class Input(dict):
+@@ -22,7 +24,7 @@ class Input(dict):
              if target == nick:
                  conn.msg(target, message)
              else:
--                conn.msg(target, u"{}, {}".format(text.munge(nick), message))
+-                conn.msg(target, u"({}) {}".format(nick, message))
 +                conn.msg(target, u"{}, {}".format(mnick, message))
  
          def action(message, target=chan):

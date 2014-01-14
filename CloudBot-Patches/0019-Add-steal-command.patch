@@ -1,15 +1,15 @@
-From 50342fc94089c11c549c0b41e6b2d5f1784529a0 Mon Sep 17 00:00:00 2001
+From b75e141a4d96559ebbaa65f3e84fce2c27ab4a2a Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
-Date: Tue, 3 Dec 2013 23:42:15 +0100
-Subject: [PATCH] Create steal.py - STEAL ALL THE THINGS!
+Date: Mon, 13 Jan 2014 23:18:52 -0800
+Subject: [PATCH] Add 'steal' command.
 
 
 diff --git a/plugins/steal.py b/plugins/steal.py
 new file mode 100644
-index 0000000..7cd2a2a
+index 0000000..78ccddb
 --- /dev/null
 +++ b/plugins/steal.py
-@@ -0,0 +1,61 @@
+@@ -0,0 +1,62 @@
 +from util import hook
 +from random import randint
 +
@@ -29,8 +29,8 @@ index 0000000..7cd2a2a
 +
 +
 +def list_steals(db):
-+    row = db.execute("SELECT word FROM STOLEN").fetchall()
-+    return row    
++    row = db.execute("SELECT word FROM stolen").fetchall()
++    return row
 +
 +
 +def add_word(db, stolen):
@@ -40,29 +40,30 @@ index 0000000..7cd2a2a
 +
 +@hook.command(autoHelp=False)
 +@hook.command("steal", autoHelp=False)
-+def stealit(inp, db=None, nick=None, action=None):
-+    db_init(db)
++def stealit(inp, idb=None, nick=None, action=None):
++    """steal [[object] username]- Steals an object from a user or randomly chooses a previously stolen object if none is given"""
++    db_init(idb)
 +    args = inp.strip().split()
 +    if not args:
 +        steal_from = nick
-+        to_steal = get_random(db)
++        to_steal = get_random(idb)
 +        action("steals {}'s {}".format(steal_from, to_steal))
 +    elif len(args) < 2:
 +        steal_from = args[0]
-+        to_steal = get_random(db)
++        to_steal = get_random(idb)
 +        action("steals {}'s {}".format(steal_from, to_steal))
 +    else:
 +        steal_from = args[len(args) - 1]
 +        to_steal = " ".join(args[0:-1])
 +        action("steals {}'s {}".format(steal_from, to_steal))
-+        add_word(db, to_steal)
++        add_word(idb, to_steal)
 +
 +
 +@hook.command(autoHelp=False, permissions=["adminonly"])
-+def liststolen(inp, db=None, reply=None):
-+    db_init(db)
++def liststolen(inp, idb=None, reply=None):
++    db_init(idb)
 +    text = False
-+    for word in list_steals(db):
++    for word in list_steals(idb):
 +        if not text:
 +            text = word[0]
 +        else:

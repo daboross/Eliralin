@@ -1,7 +1,7 @@
-From 9c4d388da1968c780307a34e542210d81b025aa9 Mon Sep 17 00:00:00 2001
+From 73f74828dd03ff7814bb56a1542044d5980356e3 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
-Date: Sun, 1 Dec 2013 22:17:52 +0100
-Subject: [PATCH] Fix bot stopping
+Date: Mon, 13 Jan 2014 19:08:25 -0800
+Subject: [PATCH] Add proper bot stopping
 
 
 diff --git a/cloudbot.py b/cloudbot.py
@@ -33,10 +33,10 @@ index 91515db..8e17d78 100755
 +    while all(conn.out.empty() for conn in bot.conns.itervalues()) and not bot.stop:
          time.sleep(.1)
 diff --git a/plugins/admin.py b/plugins/admin.py
-index 0aec0a2..9289c4b 100644
+index 37601b1..39bbce1 100644
 --- a/plugins/admin.py
 +++ b/plugins/admin.py
-@@ -104,13 +104,15 @@ def adduser(inp, bot=None, notice=None):
+@@ -104,14 +104,15 @@ def adduser(inp, bot=None, notice=None):
  
  @hook.command("quit", autohelp=False, permissions=["botcontrol"])
  @hook.command(autohelp=False, permissions=["botcontrol"])
@@ -48,11 +48,12 @@ index 0aec0a2..9289c4b 100644
      else:
          conn.cmd("QUIT", ["Killed by {}.".format(nick)])
      time.sleep(5)
-+    print "Quit - killed by {}".format(nick)
+-    os.execl("./cloudbot", "cloudbot", "stop")
 +    bot.stop = True
-     sys.exit()
++    sys.exit()
  
  
+ @hook.command(autohelp=False, permissions=["botcontrol"])
 -- 
 1.8.3.2
 

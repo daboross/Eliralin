@@ -1,0 +1,27 @@
+From 46745b82e3516d97bfa9f5fdd7cf173b28094b21 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Mon, 13 Jan 2014 23:10:17 -0800
+Subject: [PATCH] Fix correction to actually work, and change format
+
+
+diff --git a/plugins/correction.py b/plugins/correction.py
+index 517c6e3..db370fa 100644
+--- a/plugins/correction.py
++++ b/plugins/correction.py
+@@ -17,10 +17,10 @@ def correction(inp, message=None, input=None, notice=None, db=None):
+         replace = splitinput[2]
+         if find in last_message[1]:
+             if "\x01ACTION" in last_message[1]:
+-                message = last_message[1].replace("\x01ACTION ", "/me ").replace("\x01", "")
++                msg = last_message[1].replace("\x01ACTION ", "/me ").replace("\x01", "")
+             else:
+-                message = last_message[1]
+-            message(u"{} meant to say: {}".format(message.replace(find, "\x02" + replace + "\x02"), nick))
++                msg = last_message[1]
++            message(u"Correction, <{}> {}".format(nick, msg.replace(find, "\x02" + replace + "\x02")))
+         else:
+             notice(u"{} can't be found in your last message".format(find))
+     else:
+-- 
+1.8.3.2
+

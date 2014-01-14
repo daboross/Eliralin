@@ -1,0 +1,35 @@
+From eccd53dc24f37990d43e2e4a9c034c2a7cf0c0bd Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Mon, 13 Jan 2014 23:25:28 -0800
+Subject: [PATCH] Replace ? with ^ for factoids
+
+
+diff --git a/plugins/factoids.py b/plugins/factoids.py
+index 74590a1..bc41046 100644
+--- a/plugins/factoids.py
++++ b/plugins/factoids.py
+@@ -64,10 +64,10 @@ def remember(inp, nick='', idb=None, notice=None):
+         if append:
+             notice("Appending \x02{}\x02 to \x02{}\x02".format(new_data, old_data))
+         else:
+-            notice('Remembering \x02{}\x02 for \x02{}\x02. Type ?{} to see it.'.format(data, word, word))
++            notice('Remembering \x02{}\x02 for \x02{}\x02. Type ^{} to see it.'.format(data, word, word))
+             notice('Previous data was \x02{}\x02'.format(old_data))
+     else:
+-        notice('Remembering \x02{}\x02 for \x02{}\x02. Type ?{} to see it.'.format(data, word, word))
++        notice('Remembering \x02{}\x02 for \x02{}\x02. Type ^{} to see it.'.format(data, word, word))
+ 
+ 
+ @hook.command("f", permissions=["delfactoid"])
+@@ -102,7 +102,7 @@ def info(inp, notice=None, idb=None):
+         notice("Unknown Factoid.")
+ 
+ 
+-@hook.regex(r'^\? ?(.+)')
++@hook.regex(r'^\^ ?(.+)')
+ def factoid(inp, message=None, idb=None, bot=None, action=None, conn=None, input=None):
+     "?<word> -- Shows what data is associated with <word>."
+     try:
+-- 
+1.8.3.2
+

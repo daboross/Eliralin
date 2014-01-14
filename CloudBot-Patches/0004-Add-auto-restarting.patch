@@ -1,7 +1,7 @@
-From 9db70e1cc576c8e0f62f63b37f9f9392dd152b75 Mon Sep 17 00:00:00 2001
+From d146cceece1e63897e281a120ab32059ba737ccc Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
-Date: Tue, 14 Jan 2014 03:26:49 +0100
-Subject: [PATCH] Add auto-restarting
+Date: Mon, 13 Jan 2014 19:08:56 -0800
+Subject: [PATCH] Add auto restarting
 
 
 diff --git a/cloudbot.py b/cloudbot.py

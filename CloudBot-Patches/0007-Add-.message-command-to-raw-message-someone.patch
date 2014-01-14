@@ -1,22 +1,21 @@
-From 4485c5ffce409c02ec52fc1e63ba766be00d8616 Mon Sep 17 00:00:00 2001
+From fbd226b4f13b6344caed2ee727d462ffa874f7ea Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
-Date: Wed, 27 Nov 2013 03:11:37 -0800
-Subject: [PATCH] Add sayto command to say to user/channel
+Date: Mon, 13 Jan 2014 19:15:02 -0800
+Subject: [PATCH] Add .message command to raw message someone
 
 
 diff --git a/plugins/admin.py b/plugins/admin.py
-index 987e1b4..0aec0a2 100644
+index ede2e3f..0b21107 100644
 --- a/plugins/admin.py
 +++ b/plugins/admin.py
-@@ -207,6 +207,17 @@ def say(inp, conn=None, chan=None):
+@@ -208,6 +208,16 @@ def say(inp, conn=None, chan=None):
      conn.send(out)
  
  
 +@hook.command(permissions=["botcontrol"])
-+def sayto(inp, conn=None, chan=None):
-+    """sayto channel <message> -- Makes the bot say <message> in [channel].
-+    If [channel] is blank the bot will say the <message> in the channel
-+    the command was used in."""
++def message(inp, conn=None, chan=None):
++    """message <name> <message> -- Makes the bot say <message> to <name>.
++    If <name> is a channel, the bot will say the message in that channel."""
 +    inp = inp.split(" ")
 +    message = " ".join(inp[1:])
 +    out = "PRIVMSG {} :{}".format(inp[0], message)

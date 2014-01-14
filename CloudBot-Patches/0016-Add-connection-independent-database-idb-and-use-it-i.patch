@@ -1,12 +1,25 @@
-From 5ace55523cf885f1dcbd5ee0038d99e369fb268d Mon Sep 17 00:00:00 2001
+From 578e4a4c8df7f53a1068d125bed1f1f8ab55f4d5 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
-Date: Mon, 16 Dec 2013 22:39:11 +0100
-Subject: [PATCH] Make factoids use the 'idb' instead of 'db'. Also change
- character from ? to ^
+Date: Mon, 13 Jan 2014 23:17:29 -0800
+Subject: [PATCH] Add connection-independent database 'idb' and use it in
+ factoids.
 
 
+diff --git a/core/main.py b/core/main.py
+index 22c6958..bb4938e 100644
+--- a/core/main.py
++++ b/core/main.py
+@@ -61,6 +61,8 @@ def run(func, input):
+     if args:
+         if 'db' in args and 'db' not in input:
+             input.db = get_db_connection(input.conn)
++        if 'idb' in args and 'idb' not in input:
++            input.idb = get_db_connection(None, name='idb.db')
+         if 'input' in args:
+             input.input = input
+         if 0 in args:
 diff --git a/plugins/factoids.py b/plugins/factoids.py
-index 1d90e66..9530b4c 100644
+index 1d90e66..9fb41fe 100644
 --- a/plugins/factoids.py
 +++ b/plugins/factoids.py
 @@ -32,10 +32,10 @@ def get_memory(db, word):
@@ -31,17 +44,19 @@ index 1d90e66..9530b4c 100644
  
      if data.startswith('+') and old_data:
          append = True
-@@ -64,19 +64,18 @@ def remember(inp, nick='', db=None, notice=None):
-         if append:
-             notice("Appending \x02{}\x02 to \x02{}\x02".format(new_data, old_data))
+@@ -56,9 +56,9 @@ def remember(inp, nick='', db=None, notice=None):
          else:
--            notice('Remembering \x02{}\x02 for \x02{}\x02. Type ?{} to see it.'.format(data, word, word))
-+            notice('Remembering \x02{}\x02 for \x02{}\x02. Type ^{} to see it.'.format(data, word, word))
-             notice('Previous data was \x02{}\x02'.format(old_data))
-     else:
--        notice('Remembering \x02{}\x02 for \x02{}\x02. Type ?{} to see it.'.format(data, word, word))
-+        notice('Remembering \x02{}\x02 for \x02{}\x02. Type ^{} to see it.'.format(data, word, word))
+             data = old_data + ' ' + new_data
  
+-    db.execute("replace into mem(word, data, nick) values"
++    idb.execute("replace into mem(word, data, nick) values"
+                " (lower(?),?,?)", (word, data, nick))
+-    db.commit()
++    idb.commit()
+ 
+     if old_data:
+         if append:
+@@ -72,16 +72,15 @@ def remember(inp, nick='', db=None, notice=None):
  
  @hook.command("f", permissions=["delfactoid"])
  @hook.command(permissions=["delfactoid"])
@@ -55,7 +70,14 @@ index 1d90e66..9530b4c 100644
 +    data = get_memory(idb, inp)
  
      if data:
-         db.execute("delete from mem where word=lower(?)",
+-        db.execute("delete from mem where word=lower(?)",
++        idb.execute("delete from mem where word=lower(?)",
+                    [inp])
+-        db.commit()
++        idb.commit()
+         notice('"%s" has been forgotten.' % data.replace('`', "'"))
+         return
+     else:
 @@ -90,13 +89,12 @@ def forget(inp, db=None, notice=None):
  
  
@@ -73,13 +95,11 @@ index 1d90e66..9530b4c 100644
  
      if data:
          notice(data)
-@@ -104,15 +102,15 @@ def info(inp, notice=None, db=None):
-         notice("Unknown Factoid.")
+@@ -105,14 +103,14 @@ def info(inp, notice=None, db=None):
  
  
--@hook.regex(r'^\? ?(.+)')
+ @hook.regex(r'^\? ?(.+)')
 -def factoid(inp, message=None, db=None, bot=None, action=None, conn=None, input=None):
-+@hook.regex(r'^\^ ?(.+)')
 +def factoid(inp, message=None, idb=None, bot=None, action=None, conn=None, input=None):
      "?<word> -- Shows what data is associated with <word>."
      try:
