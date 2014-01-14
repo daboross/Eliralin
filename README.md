@@ -4,10 +4,10 @@ Eliralin [![Build Status](https://travis-ci.org/daboross/Eliralin.png)](https://
 Eliralin patches for CloudBot.
 
 
-How To
------------
+How To Initialize
+-----------------
 
-Init a CloudBot module : `git submodule update --init`
+Initialize the CloudBot module : `git submodule update --init`
 
 Apply Patches : `./applyPatches.sh`
 
@@ -15,10 +15,8 @@ Apply Patches : `./applyPatches.sh`
 
 `cd Eliralin`
 
-Add your file for commit : `git add <file>`
+Add and commit your file, as per usual with git.
 
-Commit : `git commit -m <msg>`
+Move out of the directory with `cd ../`
 
-`cd ..`
-
-Create Patch `./rebuildPatches.sh`
+Then create a patch `./rebuildPatches.sh`
