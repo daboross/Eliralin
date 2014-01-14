@@ -1,4 +1,4 @@
-From 7254ce25fb9c3368ccd900b4a1058e238498c050 Mon Sep 17 00:00:00 2001
+From 1b62a37e22a7fe99c23b4b5e51a6755d5695e78f Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:16:35 -0800
 Subject: [PATCH] Don't assume that data has any elements

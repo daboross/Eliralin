@@ -1,4 +1,4 @@
-From 46745b82e3516d97bfa9f5fdd7cf173b28094b21 Mon Sep 17 00:00:00 2001
+From b181c2df4fbbb6d734ca75eaa9edefba39b57aa6 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:10:17 -0800
 Subject: [PATCH] Fix correction to actually work, and change format

@@ -1,4 +1,4 @@
-From fb125d4174cd3660adc1007c78a3c1b413f1e9f0 Mon Sep 17 00:00:00 2001
+From 2bade20de6cb1e79edf423fdc621bb0c4232800c Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:19:10 -0800
 Subject: [PATCH] Add eliralin_utility.py, containing a few generic commands

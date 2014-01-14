@@ -1,4 +1,4 @@
-From d2302c943fbc62decbc7513edbf39dda84e6a2bf Mon Sep 17 00:00:00 2001
+From 96dd59af18dab5efbff093964bfa2918351957a6 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 19:10:43 -0800
 Subject: [PATCH] Add support for multiple channels to .join and .leave

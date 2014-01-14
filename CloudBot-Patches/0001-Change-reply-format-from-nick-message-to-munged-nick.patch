@@ -1,4 +1,4 @@
-From cf6e92faaa060b8a23b770dc311942554438778d Mon Sep 17 00:00:00 2001
+From ad41ea64ff1498408ccb78a5bbc135b8b576cd44 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 18:58:30 -0800
 Subject: [PATCH] Change reply format from `(<nick>) <message>` to `<munged
