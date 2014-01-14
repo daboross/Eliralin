@@ -1,0 +1,48 @@
+From 9db70e1cc576c8e0f62f63b37f9f9392dd152b75 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Tue, 14 Jan 2014 03:26:49 +0100
+Subject: [PATCH] Add auto-restarting
+
+
+diff --git a/cloudbot.py b/cloudbot.py
+index 8e17d78..05b28ea 100755
+--- a/cloudbot.py
++++ b/cloudbot.py
+@@ -5,6 +5,7 @@ import Queue
+ import sys
+ import time
+ import re
++from threading import Thread
+ 
+ sys.path += ['plugins', 'lib']  # add stuff to the sys.path for easy imports
+ os.chdir(sys.path[0] or '.')  # do stuff relative to the install directory
+@@ -61,7 +62,26 @@ if not os.path.exists(bot.persist_dir):
+ 
+ print 'Connection(s) made, starting main loop.'
+ 
++def restart_the_bot():
++    try:
++        with open("bot.log", 'a+') as f:
++            f.write("Restarting at {}.".format(time.time()))
++        for botcon in bot.conns:
++            bot.conns[botcon].cmd("QUIT", ["Restarting"])
++        time.sleep(5)
++        args = sys.argv[:]
++        args.insert(0, sys.executable)
++        os.execv(sys.executable, args)
++    except Exception as e:
++        print "Unexpected error", e
++
++start_time = time.time()
++
+ while not bot.stop:
++    if time.time() > 43200 + start_time:
++        print "I want to restart ?!"
++        Thread(target=restart_the_bot).start()
++        start_time = time.time() # don't start multiple threads
+     reload()  # these functions only do things
+     config()  # if changes have occured
+ 
+-- 
+1.8.3.2
+
