@@ -1,18 +1,18 @@
-From 7b4e6462689c6c91f0e505b0fcd3c112e5a78149 Mon Sep 17 00:00:00 2001
+From 942cca30ff2dd8eacffffcb8727c6e4e482b6c91 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:19:10 -0800
-Subject: [PATCH] Add eliralin_utility.py, containing a few generic commands
- added for Eliralin
+Subject: [PATCH] Create eliralin_utility.py for extras
 
 
 diff --git a/plugins/eliralin_utility.py b/plugins/eliralin_utility.py
 new file mode 100644
-index 0000000..9eabd96
+index 0000000..42be497
 --- /dev/null
 +++ b/plugins/eliralin_utility.py
-@@ -0,0 +1,105 @@
+@@ -0,0 +1,134 @@
 +from util import hook
 +from random import random
++import socket
 +import time
 +import re
 +
@@ -116,6 +116,34 @@ index 0000000..9eabd96
 +            if line:
 +                code.append("  %s" % (line.strip()))
 +    return "Thread dump located at {}".format(web.haste("\n".join(code), ext='txt'))
++
++
++@hook.command
++def dns(inp):
++    """dns [domain] - Resolves the IP of a domain"""
++    try:
++        socket.setdefaulttimeout(5)
++        ip = None
++        for info in socket.getaddrinfo(inp, 80, 0, 0, socket.SOL_TCP):
++            print info
++            if ip is None:
++                ip = info[-1][0]
++            else:
++                ip = "{}, {}".format(ip, info[-1][0])
++        return "{} resolves to {}".format(inp, ip)
++    except socket.gaierror:
++        return "Resolve Failed!"
++
++
++@hook.command
++def rdns(inp):
++    """rdns [ip] - Resolves the hostname of an IP"""
++    try:
++        socket.setdefaulttimeout(5)
++        domain = socket.gethostbyaddr(inp)[0]
++        return "{} resolves to {}".format(inp, domain)
++    except socket.gaierror:
++        return "Resolve Failed!"
 -- 
-1.8.3.2
+1.7.10.4
 

@@ -1,4 +1,4 @@
-From e9eaed7ef41d732355e85b1b00946c5ae1ec8c23 Mon Sep 17 00:00:00 2001
+From 1550b2d88d9579d3b3a1a3b0f9bd88afb8402f72 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:18:39 -0800
 Subject: [PATCH] Add per-channel regex filtering.
@@ -142,5 +142,5 @@ index 0000000..a6cf1f7
 +    clean_status_db(db)
 +    return "After: {}".format(list_status(db))
 -- 
-1.8.3.2
+1.7.10.4
 

@@ -1,4 +1,4 @@
-From 52cb8471374443e30ef977c664e95aa732cc99eb Mon Sep 17 00:00:00 2001
+From f6ee1a89b5ccb23f05eb6c185a7b5242b71675a5 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 18:58:30 -0800
 Subject: [PATCH] Change reply format from `(<nick>) <message>` to `<munged
@@ -34,5 +34,5 @@ index 0054b0a..55f3231 100644
          def action(message, target=chan):
              """sends an action to the current channel/user or a specific channel/user"""
 -- 
-1.8.3.2
+1.7.10.4
 
