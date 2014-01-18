@@ -1,0 +1,27 @@
+#!/bin/bash
+
+create() {
+    mkdir temp-patches
+    rsync -a Eliralin/ Eliralin-temp/
+    cd Eliralin
+    git format-patch -o ../temp-patches/ "$1"
+    git reset --hard "$1"
+    cd ../
+}
+
+restore() {
+    cd Eliralin
+    git am ../temp-patches/*
+    cd ../
+}
+
+cd "$(dirname '$0')"
+
+case "$1" in
+    create)
+        create "${@:2}" ;;
+    restore)
+        restore "${@:2}" ;;
+    *)
+        create "$@" ;;
+esac
