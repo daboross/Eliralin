@@ -1,0 +1,119 @@
+From df9e730ff6db1033a98db3a34f31cc0b61aa8539 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Sat, 18 Jan 2014 03:22:17 -0800
+Subject: [PATCH] Add teamcity plugin
+
+
+diff --git a/plugins/eliralin_teamcity.py b/plugins/eliralin_teamcity.py
+new file mode 100644
+index 0000000..796353a
+--- /dev/null
++++ b/plugins/eliralin_teamcity.py
+@@ -0,0 +1,103 @@
++from xml.etree import ElementTree
++import requests
++from requests.auth import HTTPBasicAuth
++
++import time
++
++from util import hook
++
++teamcity_url = "http://ci.nlmc.pw"
++
++
++class ProjectDatabase:
++    def __init__(self):
++        self.reload_timestamp = 0
++        self.projects = []
++        self.username = "default"
++        self.password = "default"
++        self.teamcity_url = "{}/guestAuth".format(teamcity_url)
++        self.projects_url = "{}/app/rest/projects".format(self.teamcity_url)
++        self.loaded_key = False
++
++    def load_key(self, bot):
++        if not self.loaded_key:
++            api_keys = bot.config.get("api_keys", None)
++            if api_keys:
++                self.username = api_keys.get("teamcity_username")
++                self.password = api_keys.get("teamcity_password")
++                self.loaded_key = True
++                self.teamcity_url = "{}/httpAuth".format(teamcity_url)
++                self.projects_url = "{}/app/rest/projects".format(self.teamcity_url)
++            else:
++                print "Warning, couldn't find teamcity api key"
++
++    def reload_database(self):
++        self.reload_timestamp = time.time()
++        self.projects = []
++        if self.loaded_key:
++            data = requests.get(self.projects_url, auth=HTTPBasicAuth(self.username, self.password)).text
++        else:
++            data = requests.get(self.projects_url).text
++        root = ElementTree.fromstring(data)
++        for project in root:
++            p = project.attrib
++            self.projects.append(Project(p["name"], p["id"], p["href"]))
++
++    def check_reload(self, bot=None):
++        if bot and not self.loaded_key:
++            self.load_key(bot)
++        if time.time() > self.reload_timestamp + 300:
++            self.reload_database()
++
++
++class Project:
++    def __init__(self, name, project_id, project_url):
++        self.name = name
++        self.search_name = name.lower()
++        self.project_id = project_id
++        self.search_id = project_id.lower()
++        self.project_url = project_url
++
++    def search(self, search):
++        if search == self.search_name or search == self.search_id:
++            return 2
++        elif search in self.search_name or search in self.search_id:
++            return 1
++        return 0
++
++
++database = ProjectDatabase()
++
++
++@hook.command()
++@hook.command("ci")
++def teamcity(inp, bot=None):
++    database.check_reload(bot=bot)
++    search = inp.lower()
++    level_found = 0
++    project_found = None
++    for project in database.projects:
++        level = project.search(search)
++        if level > level_found:
++            project_found = project
++            level_found = level
++
++    if project_found is not None:
++        return "{} - http://d.nlmc.pw/{}".format(project_found.name, project_found.project_id)
++    else:
++        return "No projects found matching '{}'".format(inp)
++
++
++@hook.command(permissions=["botcontrol"])
++@hook.command("reloadci", permissions=["botcontrol"])
++def reload_teamcity(inp, bot=None):
++    database.load_key(bot)
++    database.reload_database()
++    return "Reloaded teamcity, found {} projects.".format(len(database.projects))
++
++
++@hook.command(permissions=["botcontrol"])
++@hook.command("listci", permissions=["botcontrol"])
++def list_teamcity(inp, bot=None):
++    database.check_reload(bot=bot)
++    return "Projects: {}".format(", ".join([project.name for project in database.projects]))
+\ No newline at end of file
+-- 
+1.8.3.2
+

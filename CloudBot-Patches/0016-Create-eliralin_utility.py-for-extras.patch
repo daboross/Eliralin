@@ -1,4 +1,4 @@
-From 942cca30ff2dd8eacffffcb8727c6e4e482b6c91 Mon Sep 17 00:00:00 2001
+From 26bb2b19578d6fc9c398271998003a55b2ab1b70 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:19:10 -0800
 Subject: [PATCH] Create eliralin_utility.py for extras
@@ -6,15 +6,17 @@ Subject: [PATCH] Create eliralin_utility.py for extras
 
 diff --git a/plugins/eliralin_utility.py b/plugins/eliralin_utility.py
 new file mode 100644
-index 0000000..42be497
+index 0000000..c75863c
 --- /dev/null
 +++ b/plugins/eliralin_utility.py
-@@ -0,0 +1,134 @@
-+from util import hook
+@@ -0,0 +1,137 @@
 +from random import random
 +import socket
 +import time
-+import re
++import sys
++import traceback
++
++from util import hook, web
 +
 +
 +@hook.command
@@ -39,7 +41,7 @@ index 0000000..42be497
 +
 +
 +@hook.regex("(?i)(^ )*pets Eliralin *$")
-+def pet(inp, action=None, nick=None, chan=None):
++def pet(match, action=None, nick=None, chan=None):
 +    r = random()
 +    if r > 0.7:
 +        action("huggles {}".format(nick))
@@ -76,7 +78,7 @@ index 0000000..42be497
 +
 +
 +@hook.regex("(?i)(Hello|Hi) Eliralin(!| |\\.|\\?)*")
-+def hello_regex(match, nick=None, chan=None):
++def hello_regex(match, nick=None):
 +    return ("Hi {}. What's your question?" if match.group(3) == "?" else "Hello {}!").format(nick)
 +
 +
@@ -87,16 +89,17 @@ index 0000000..42be497
 +    if len(type_input) < 2:
 +        notice("tree [type] [text] - Tree text")
 +        return
-+    type = type_input[0]
-+    if type == "1":
++    tree_type = type_input[0]
++    if tree_type == "1":
 +        func = lambda c: c[1:-1]
-+    elif type == "2":
++    elif tree_type == "2":
 +        func = lambda c: c[2:]
-+    elif type == "3":
++    elif tree_type == "3":
 +        func = lambda c: c[:-2]
 +    else:
-+        return "Invalid tree type '{}'.".format(type)
++        return "Invalid tree type '{}'.".format(tree_type)
 +    current = type_input[1]
++    spaces = 7
 +    while len(current) > 0:
 +        spaces += 1
 +        message(spaces * ' ' + current)
@@ -145,5 +148,5 @@ index 0000000..42be497
 +    except socket.gaierror:
 +        return "Resolve Failed!"
 -- 
-1.7.10.4
+1.8.3.2
 

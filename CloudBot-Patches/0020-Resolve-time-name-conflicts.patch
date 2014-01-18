@@ -1,0 +1,141 @@
+From d000ef6893141df23a235ffbd851081773fb464b Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Sat, 18 Jan 2014 02:45:34 -0800
+Subject: [PATCH] Resolve 'time' name conflicts
+
+
+diff --git a/plugins/time.py b/plugins/time.py
+deleted file mode 100644
+index b508522..0000000
+--- a/plugins/time.py
++++ /dev/null
+@@ -1,60 +0,0 @@
+-from util import hook, http
+-import time
+-from util.text import capitalize_first
+-
+-api_url = 'http://api.wolframalpha.com/v2/query?format=plaintext'
+-
+-
+-@hook.command("time")
+-def time_command(inp, bot=None):
+-    """time <area> -- Gets the time in <area>"""
+-
+-    query = "current time in {}".format(inp)
+-
+-    api_key = bot.config.get("api_keys", {}).get("wolframalpha", None)
+-    if not api_key:
+-        return "error: no wolfram alpha api key set"
+-
+-    request = http.get_xml(api_url, input=query, appid=api_key)
+-    time = " ".join(request.xpath("//pod[@title='Result']/subpod/plaintext/text()"))
+-    time = time.replace("  |  ", ", ")
+-
+-    if time:
+-        # nice place name for UNIX time
+-        if inp.lower() == "unix":
+-            place = "Unix Epoch"
+-        else:
+-            place = capitalize_first(" ".join(request.xpath("//pod[@"
+-                                                            "title='Input interpretation']/subpod/plaintext/text()"))[
+-                                     16:])
+-        return "{} - \x02{}\x02".format(time, place)
+-    else:
+-        return "Could not get the time for '{}'.".format(inp)
+-
+-
+-@hook.command(autohelp=False)
+-def beats(inp):
+-    """beats -- Gets the current time in .beats (Swatch Internet Time). """
+-
+-    if inp.lower() == "wut":
+-        return "Instead of hours and minutes, the mean solar day is divided " \
+-               "up into 1000 parts called \".beats\". Each .beat lasts 1 minute and" \
+-               " 26.4 seconds. Times are notated as a 3-digit number out of 1000 af" \
+-               "ter midnight. So, @248 would indicate a time 248 .beats after midni" \
+-               "ght representing 248/1000 of a day, just over 5 hours and 57 minute" \
+-               "s. There are no timezones."
+-    elif inp.lower() == "guide":
+-        return "1 day = 1000 .beats, 1 hour = 41.666 .beats, 1 min = 0.6944 .beats, 1 second = 0.01157 .beats"
+-
+-    t = time.gmtime()
+-    h, m, s = t.tm_hour, t.tm_min, t.tm_sec
+-
+-    utc = 3600 * h + 60 * m + s
+-    bmt = utc + 3600  # Biel Mean Time (BMT)
+-
+-    beat = bmt / 86.4
+-
+-    if beat > 1000:
+-        beat -= 1000
+-
+-    return "Swatch Internet Time: @%06.2f" % beat
+diff --git a/plugins/time_plugin.py b/plugins/time_plugin.py
+new file mode 100644
+index 0000000..93dd2f2
+--- /dev/null
++++ b/plugins/time_plugin.py
+@@ -0,0 +1,60 @@
++from util import hook, http
++import time
++from util.text import capitalize_first
++
++api_url = 'http://api.wolframalpha.com/v2/query?format=plaintext'
++
++
++@hook.command("time")
++def time_command(inp, bot=None):
++    """time <area> -- Gets the time in <area>"""
++
++    query = "current time in {}".format(inp)
++
++    api_key = bot.config.get("api_keys", {}).get("wolframalpha", None)
++    if not api_key:
++        return "error: no wolfram alpha api key set"
++
++    request = http.get_xml(api_url, input=query, appid=api_key)
++    current_time = " ".join(request.xpath("//pod[@title='Result']/subpod/plaintext/text()"))
++    current_time = current_time.replace("  |  ", ", ")
++
++    if current_time:
++        # nice place name for UNIX time
++        if inp.lower() == "unix":
++            place = "Unix Epoch"
++        else:
++            place = capitalize_first(" ".join(request.xpath("//pod[@"
++                                                            "title='Input interpretation']/subpod/plaintext/text()"))[
++                                     16:])
++        return "{} - \x02{}\x02".format(current_time, place)
++    else:
++        return "Could not get the time for '{}'.".format(inp)
++
++
++@hook.command(autohelp=False)
++def beats(inp):
++    """beats -- Gets the current time in .beats (Swatch Internet Time). """
++
++    if inp.lower() == "wut":
++        return "Instead of hours and minutes, the mean solar day is divided " \
++               "up into 1000 parts called \".beats\". Each .beat lasts 1 minute and" \
++               " 26.4 seconds. Times are notated as a 3-digit number out of 1000 af" \
++               "ter midnight. So, @248 would indicate a time 248 .beats after midni" \
++               "ght representing 248/1000 of a day, just over 5 hours and 57 minute" \
++               "s. There are no timezones."
++    elif inp.lower() == "guide":
++        return "1 day = 1000 .beats, 1 hour = 41.666 .beats, 1 min = 0.6944 .beats, 1 second = 0.01157 .beats"
++
++    t = time.gmtime()
++    h, m, s = t.tm_hour, t.tm_min, t.tm_sec
++
++    utc = 3600 * h + 60 * m + s
++    bmt = utc + 3600  # Biel Mean Time (BMT)
++
++    beat = bmt / 86.4
++
++    if beat > 1000:
++        beat -= 1000
++
++    return "Swatch Internet Time: @%06.2f" % beat
+-- 
+1.8.3.2
+

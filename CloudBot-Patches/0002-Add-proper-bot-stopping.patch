@@ -1,4 +1,4 @@
-From 95f9afaa6076b4fac4032262c41ed5f566f3da38 Mon Sep 17 00:00:00 2001
+From 35ba627a91c928b5c13c364d76dafa60ef47ade2 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 19:08:25 -0800
 Subject: [PATCH] Add proper bot stopping
@@ -55,5 +55,5 @@ index 7813b64..ede2e3f 100644
  
  @hook.command(autohelp=False, permissions=["botcontrol"])
 -- 
-1.7.10.4
+1.8.3.2
 

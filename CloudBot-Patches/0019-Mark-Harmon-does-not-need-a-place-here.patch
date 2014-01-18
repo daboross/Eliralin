@@ -1,4 +1,4 @@
-From ff47a9a8ff1c36d9b2ee376fff4959a8943139ad Mon Sep 17 00:00:00 2001
+From c85603c87ca223755b0e64bebe9e57b1b1c29bec Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:39:21 -0800
 Subject: [PATCH] Mark Harmon does not need a place here!
@@ -36,5 +36,5 @@ index 742493e..0000000
 -
 -    return random.choice(responses)
 -- 
-1.7.10.4
+1.8.3.2
 

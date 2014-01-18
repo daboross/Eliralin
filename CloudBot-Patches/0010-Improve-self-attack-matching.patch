@@ -1,4 +1,4 @@
-From f023ceb5d5a4dccda2a920ae81d6626a95a12c60 Mon Sep 17 00:00:00 2001
+From 1b74184bd400a19a0acb53426f84e3269b662a37 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:11:02 -0800
 Subject: [PATCH] Improve self-attack matching.
@@ -57,5 +57,5 @@ index 643a184..6746f11 100644
 -    action(out)
 +    message('{}, {}'.format(target, random.choice(flirts)))
 -- 
-1.7.10.4
+1.8.3.2
 
