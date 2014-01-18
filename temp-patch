@@ -2,7 +2,10 @@
 
 create() {
     mkdir temp-patches
-    rsync -a Eliralin/ Eliralin-temp/
+    if [[ -a temp-patches/* ]]; then
+        rm temp-patches/*
+    fi
+    rsync -a ./Eliralin/ ./Eliralin-temp/
     cd Eliralin
     git format-patch -o ../temp-patches/ "$1"
     git reset --hard "$1"
@@ -15,7 +18,7 @@ restore() {
     cd ../
 }
 
-cd "$(dirname '$0')"
+cd "$(dirname "$([[ $0 = /* ]] && echo "$0" || echo "$PWD/${0#./}")")"
 
 case "$1" in
     create)
