@@ -1,0 +1,23 @@
+From 3f39a8222d8ef9f6ac16745233a42bcc0c5c54cc Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Mon, 13 Jan 2014 18:58:30 -0800
+Subject: [PATCH] Change reply format from `(<nick>) <message>` to `<nick>,
+ <message>`
+
+
+diff --git a/core/main.py b/core/main.py
+index 0054b0a..a856b35 100644
+--- a/core/main.py
++++ b/core/main.py
+@@ -22,7 +22,7 @@ class Input(dict):
+             if target == nick:
+                 conn.msg(target, message)
+             else:
+-                conn.msg(target, u"({}) {}".format(nick, message))
++                conn.msg(target, u"{}, {}".format(nick, message))
+ 
+         def action(message, target=chan):
+             """sends an action to the current channel/user or a specific channel/user"""
+-- 
+1.8.3.2
+

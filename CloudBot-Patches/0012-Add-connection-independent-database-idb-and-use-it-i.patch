@@ -1,4 +1,4 @@
-From 42afb2cc930f021ad4fba58d5cd93dab43caa054 Mon Sep 17 00:00:00 2001
+From bacb8e33fe1fc03e3b778d3ebebdf29b1cf19be9 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:17:29 -0800
 Subject: [PATCH] Add connection-independent database 'idb' and use it in
@@ -6,10 +6,10 @@ Subject: [PATCH] Add connection-independent database 'idb' and use it in
 
 
 diff --git a/core/main.py b/core/main.py
-index 22c6958..bb4938e 100644
+index eed61a3..3c065e4 100644
 --- a/core/main.py
 +++ b/core/main.py
-@@ -61,6 +61,8 @@ def run(func, input):
+@@ -59,6 +59,8 @@ def run(func, input):
      if args:
          if 'db' in args and 'db' not in input:
              input.db = get_db_connection(input.conn)

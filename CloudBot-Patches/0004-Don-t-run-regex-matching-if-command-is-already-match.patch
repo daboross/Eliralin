@@ -1,14 +1,14 @@
-From e2df6819310ddbe1c21157c11790fa05a5a9bc54 Mon Sep 17 00:00:00 2001
+From 70259029f1c3fea9763b5515e8831dbd18ddda32 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 19:09:15 -0800
 Subject: [PATCH] Don't run regex matching if command is already matched
 
 
 diff --git a/core/main.py b/core/main.py
-index 55f3231..22c6958 100644
+index a856b35..eed61a3 100644
 --- a/core/main.py
 +++ b/core/main.py
-@@ -186,6 +186,7 @@ def main(conn, out):
+@@ -184,6 +184,7 @@ def main(conn, out):
  
                  func, args = bot.commands[command]
                  dispatch(input, "command", func, args, autohelp=True)
