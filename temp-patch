@@ -1,10 +1,10 @@
 #!/bin/bash
 
 create() {
-    mkdir temp-patches
-    if [[ -a temp-patches/* ]]; then
-        rm temp-patches/*
+    if [[ -a temp-patches/ ]]; then
+        rm -r temp-patches/
     fi
+    mkdir temp-patches
     rsync -a ./Eliralin/ ./Eliralin-temp/
     cd Eliralin
     git format-patch -o ../temp-patches/ "$1"
