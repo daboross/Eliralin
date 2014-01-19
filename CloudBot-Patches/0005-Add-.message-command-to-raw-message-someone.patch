@@ -1,4 +1,4 @@
-From 9755ee93901da51ba083fb3b96df17b3c0cc1140 Mon Sep 17 00:00:00 2001
+From c52a5201224dd8240fc5762e4c3009ae90729131 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 19:15:02 -0800
 Subject: [PATCH] Add .message command to raw message someone

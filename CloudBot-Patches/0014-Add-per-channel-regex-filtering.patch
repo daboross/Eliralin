@@ -1,4 +1,4 @@
-From 852a5f04203b8adb3d09ea70d06881a7baa12e7d Mon Sep 17 00:00:00 2001
+From bc70b632b63418b1e8c3d2d35a4d85170111f9fc Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:18:39 -0800
 Subject: [PATCH] Add per-channel regex filtering.

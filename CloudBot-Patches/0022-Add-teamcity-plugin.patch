@@ -1,4 +1,4 @@
-From df9e730ff6db1033a98db3a34f31cc0b61aa8539 Mon Sep 17 00:00:00 2001
+From 5397d551455209e626841bf017723f4a9e16dd78 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 18 Jan 2014 03:22:17 -0800
 Subject: [PATCH] Add teamcity plugin
@@ -6,10 +6,11 @@ Subject: [PATCH] Add teamcity plugin
 
 diff --git a/plugins/eliralin_teamcity.py b/plugins/eliralin_teamcity.py
 new file mode 100644
-index 0000000..796353a
+index 0000000..9e8dc4c
 --- /dev/null
 +++ b/plugins/eliralin_teamcity.py
-@@ -0,0 +1,103 @@
+@@ -0,0 +1,153 @@
++import traceback
 +from xml.etree import ElementTree
 +import requests
 +from requests.auth import HTTPBasicAuth
@@ -27,9 +28,20 @@ index 0000000..796353a
 +        self.projects = []
 +        self.username = "default"
 +        self.password = "default"
-+        self.teamcity_url = "{}/guestAuth".format(teamcity_url)
-+        self.projects_url = "{}/app/rest/projects".format(self.teamcity_url)
++        self.teamcity_url = teamcity_url
 +        self.loaded_key = False
++
++    def download(self, url):
++        if url.startswith("/httpAuth"):
++            data = requests.get(self.teamcity_url + url, auth=HTTPBasicAuth(self.username, self.password)).text
++        elif url.startswith("/guestAuth"):
++            data = requests.get(self.teamcity_url + url).text
++        elif self.loaded_key:
++            data = requests.get("{}/httpAuth{}".format(self.teamcity_url, url),
++                                auth=HTTPBasicAuth(self.username, self.password)).text
++        else:
++            data = requests.get("{}/guestAuth{}".format(self.teamcity_url, url)).text
++        return ElementTree.fromstring(data)
 +
 +    def load_key(self, bot):
 +        if not self.loaded_key:
@@ -38,37 +50,44 @@ index 0000000..796353a
 +                self.username = api_keys.get("teamcity_username")
 +                self.password = api_keys.get("teamcity_password")
 +                self.loaded_key = True
-+                self.teamcity_url = "{}/httpAuth".format(teamcity_url)
-+                self.projects_url = "{}/app/rest/projects".format(self.teamcity_url)
 +            else:
 +                print "Warning, couldn't find teamcity api key"
 +
 +    def reload_database(self):
 +        self.reload_timestamp = time.time()
 +        self.projects = []
-+        if self.loaded_key:
-+            data = requests.get(self.projects_url, auth=HTTPBasicAuth(self.username, self.password)).text
-+        else:
-+            data = requests.get(self.projects_url).text
-+        root = ElementTree.fromstring(data)
++        root = self.download("/app/rest/projects")
 +        for project in root:
-+            p = project.attrib
-+            self.projects.append(Project(p["name"], p["id"], p["href"]))
++            if project.get("id") != "_Root":
++                self.projects.append(Project(project))
 +
-+    def check_reload(self, bot=None):
++    def ensure_loaded(self, bot=None):
 +        if bot and not self.loaded_key:
 +            self.load_key(bot)
++        if self.reload_timestamp == 0:
++            self.reload_database()
++
++    def after_check(self):
 +        if time.time() > self.reload_timestamp + 300:
 +            self.reload_database()
 +
 +
 +class Project:
-+    def __init__(self, name, project_id, project_url):
-+        self.name = name
-+        self.search_name = name.lower()
-+        self.project_id = project_id
-+        self.search_id = project_id.lower()
-+        self.project_url = project_url
++    def __init__(self, project):
++        self.name = project.get("name")
++        self.project_id = project.get("id")
++        self.project_url = project.get("href")
++        self.downloads = []
++        project_element = database.download(self.project_url)
++        build_types = project_element.find("buildTypes")
++        if build_types and len(build_types) > 0:
++            for build_type in build_types.findall("buildType"):
++                download = find_download_url(build_type)
++                if download:
++                    self.downloads.append(download)
++
++        self.search_name = self.name.lower()
++        self.search_id = self.project_id.lower()
 +
 +    def search(self, search):
 +        if search == self.search_name or search == self.search_id:
@@ -78,42 +97,72 @@ index 0000000..796353a
 +        return 0
 +
 +
++def find_download_url(build_type_element):
++    try:
++        build_type_id = build_type_element.get("id")
++        href = build_type_element.get("href")
++        builds_url = database.download(href).find("builds").get("href")
++        build_url = database.download(builds_url).find("build").get("href")
++        artifacts_url = database.download(build_url).find("artifacts").get("href")
++        files = database.download(artifacts_url).findall("file")
++        filenames = [download_file.get("name") for download_file in files]
++        return {"id": build_type_id, "files": filenames}
++    except AttributeError:
++        traceback.print_exc()
++        return None
++
++
 +database = ProjectDatabase()
 +
 +
 +@hook.command()
 +@hook.command("ci")
-+def teamcity(inp, bot=None):
-+    database.check_reload(bot=bot)
++def teamcity(inp, bot=None, reply=None, message=None):
++    """teamcity [project] - Searches for project on teamcity, and displays project URL and download"""
++    database.ensure_loaded(bot=bot)
 +    search = inp.lower()
 +    level_found = 0
 +    project_found = None
++    other_matches = []
 +    for project in database.projects:
 +        level = project.search(search)
 +        if level > level_found:
++            if project_found:
++                other_matches.append(project_found.name)
 +            project_found = project
 +            level_found = level
++        elif level > 0:
++            other_matches.append(project.name)
 +
 +    if project_found is not None:
-+        return "{} - http://d.nlmc.pw/{}".format(project_found.name, project_found.project_id)
++        reply("{} - Project: http://d.nlmc.pw/{}".format(project_found.name, project_found.project_id))
++        for download in project_found.downloads:
++            for download_file in download["files"]:
++                message("Download: http://d.nlmc.pw/{}/{}".format(download["id"], download_file))
++        if len(other_matches) > 0:
++            message("(Other matches: {})".format(", ".join(other_matches)))
 +    else:
-+        return "No projects found matching '{}'".format(inp)
++        reply("No projects found matching '{}'".format(inp))
++    database.after_check()
 +
 +
-+@hook.command(permissions=["botcontrol"])
-+@hook.command("reloadci", permissions=["botcontrol"])
-+def reload_teamcity(inp, bot=None):
++@hook.command(permissions=["botcontrol"], autohelp=False)
++@hook.command("reloadci", permissions=["botcontrol"], autohelp=False)
++def reload_teamcity(inp, bot=None, reply=None):
++    """reloadci - Reloads teamcity database manually"""
 +    database.load_key(bot)
 +    database.reload_database()
-+    return "Reloaded teamcity, found {} projects.".format(len(database.projects))
++    reply("Reloaded teamcity, found {} projects.".format(len(database.projects)))
++    database.after_check()
 +
 +
-+@hook.command(permissions=["botcontrol"])
-+@hook.command("listci", permissions=["botcontrol"])
-+def list_teamcity(inp, bot=None):
-+    database.check_reload(bot=bot)
-+    return "Projects: {}".format(", ".join([project.name for project in database.projects]))
-\ No newline at end of file
++@hook.command(permissions=["botcontrol"], autohelp=False)
++@hook.command("listci", permissions=["botcontrol"], autohelp=False)
++def list_teamcity(inp, bot=None, reply=None):
++    """listci - Lists all projects loaded into database from teamcity"""
++    database.ensure_loaded(bot=bot)
++    reply("Projects: {}".format(", ".join([project.name for project in database.projects])))
++    database.after_check()
 -- 
 1.8.3.2
 
