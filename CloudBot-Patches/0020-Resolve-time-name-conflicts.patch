@@ -1,4 +1,4 @@
-From 5eb4352bd2af06bf90cfd4948f0440d5b95767a1 Mon Sep 17 00:00:00 2001
+From d644a0bdcec75552db78d236aa84cd16a4953bff Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 18 Jan 2014 02:45:34 -0800
 Subject: [PATCH] Resolve 'time' name conflicts
@@ -137,5 +137,5 @@ index 0000000..93dd2f2
 +
 +    return "Swatch Internet Time: @%06.2f" % beat
 -- 
-1.8.3.2
+1.7.10.4
 

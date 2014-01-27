@@ -1,4 +1,4 @@
-From 8394c9c8c02023200a928638b8f0cebd9d66c831 Mon Sep 17 00:00:00 2001
+From a06b853196a62804ceceb542b34aa1e4e4e69156 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 22:54:10 -0800
 Subject: [PATCH] Remove all extraneous whitespace in minecraft ping response
@@ -18,5 +18,5 @@ index 423c714..15fefed 100644
  
  def mcping_legacy(host, port):
 -- 
-1.8.3.2
+1.7.10.4
 

@@ -1,4 +1,4 @@
-From 4834350059d3d196711f138137f42578e4410feb Mon Sep 17 00:00:00 2001
+From 067bdbf9b8b6191bced5d0ccf89e8ed40cc98c26 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 22:55:24 -0800
 Subject: [PATCH] Use permissions instead of adminonly
@@ -18,5 +18,5 @@ index 238037d..bf039fc 100644
      if "/" in inp and inp.split("/")[0] != "util":
          return "Invalid input"
 -- 
-1.8.3.2
+1.7.10.4
 

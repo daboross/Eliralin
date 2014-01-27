@@ -1,4 +1,4 @@
-From c9d54de310d1981676b783b9249cb3d8dd96f09c Mon Sep 17 00:00:00 2001
+From 276d266dfbf63709c0c9b8a9a2d2b705e2906196 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:19:10 -0800
 Subject: [PATCH] Create eliralin_utility.py for extras
@@ -148,5 +148,5 @@ index 0000000..c75863c
 +    except socket.gaierror:
 +        return "Resolve Failed!"
 -- 
-1.8.3.2
+1.7.10.4
 

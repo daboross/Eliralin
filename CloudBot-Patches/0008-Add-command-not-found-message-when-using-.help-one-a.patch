@@ -1,4 +1,4 @@
-From 7c4984eeeae22feac4346a398a0c48adefd50ef8 Mon Sep 17 00:00:00 2001
+From e768164308e7dc4d9f75dab0d203a38e2ce9b533 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 22:56:40 -0800
 Subject: [PATCH] Add command not found message when using .help one a
@@ -16,5 +16,5 @@ index f6b5143..4a4fd47 100644
 +        else:
 +            notice("Command {}{} not found".format(conn.conf["command_prefix"], inp))
 -- 
-1.8.3.2
+1.7.10.4
 

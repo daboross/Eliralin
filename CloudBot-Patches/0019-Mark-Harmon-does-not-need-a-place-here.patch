@@ -1,4 +1,4 @@
-From 2b48a18c57fd12fea5e1b0abc58b4ac96ab7eae3 Mon Sep 17 00:00:00 2001
+From 0891f4346263a785e1108a1de93951e05fc1a609 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:39:21 -0800
 Subject: [PATCH] Mark Harmon does not need a place here!
@@ -6,16 +6,16 @@ Subject: [PATCH] Mark Harmon does not need a place here!
 
 diff --git a/plugins/mark.py b/plugins/mark.py
 deleted file mode 100644
-index 742493e..0000000
+index 9012dcc..0000000
 --- a/plugins/mark.py
 +++ /dev/null
 @@ -1,25 +0,0 @@
 -import random
 -from util import hook, text
 -
--@hook.command('harmon')
--@hook.command
--def mark(input):
+-@hook.command('harmon', autohelp=False)
+-@hook.command(autohelp=False)
+-def mark(inp):
 -    """mark -- Spreads the glory of Mark Harmon"""
 -    responses = [
 -    "Praise our lord Mark Harmon",
@@ -36,5 +36,5 @@ index 742493e..0000000
 -
 -    return random.choice(responses)
 -- 
-1.8.3.2
+1.7.10.4
 

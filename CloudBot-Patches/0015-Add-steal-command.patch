@@ -1,4 +1,4 @@
-From 42c4fc1524e0d3aa6be116c7e5ea15de27ed78d5 Mon Sep 17 00:00:00 2001
+From aff46120cfccd710493909db0fb313678f3d1e04 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:18:52 -0800
 Subject: [PATCH] Add 'steal' command.
@@ -73,5 +73,5 @@ index 0000000..78ccddb
 +            text = word[0]
 +    return text
 -- 
-1.8.3.2
+1.7.10.4
 
