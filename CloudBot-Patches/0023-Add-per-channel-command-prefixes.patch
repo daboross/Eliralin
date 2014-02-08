@@ -1,4 +1,4 @@
-From 15e4df065e533ca8d5ceb5cbc1cf3d2f15294ac5 Mon Sep 17 00:00:00 2001
+From 38f2efb2107463fa49b7c1f48ed16cb2c411f321 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 27 Jan 2014 03:59:51 +0100
 Subject: [PATCH] Add per-channel command prefixes
@@ -53,10 +53,10 @@ index 3c065e4..6d373ad 100644
  
          m = re.match(command_re, inp.lastparam)
 diff --git a/plugins/eliralin_utility.py b/plugins/eliralin_utility.py
-index c75863c..d409cf4 100644
+index 9120e3a..9893e67 100644
 --- a/plugins/eliralin_utility.py
 +++ b/plugins/eliralin_utility.py
-@@ -135,3 +135,11 @@ def rdns(inp):
+@@ -138,3 +138,11 @@ def rdns(inp):
          return "{} resolves to {}".format(inp, domain)
      except socket.gaierror:
          return "Resolve Failed!"
@@ -69,5 +69,5 @@ index c75863c..d409cf4 100644
 +    db.execute("INSERT INTO prefixes(channel, prefix) VALUES(?, ?)", [chan, inp])
 +    db.commit()
 -- 
-1.7.10.4
+1.8.3.2
 

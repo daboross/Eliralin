@@ -1,8 +1,8 @@
-From 21adaa4df7bddca4b7f2d03018b974afdf811b7f Mon Sep 17 00:00:00 2001
+From 92d1ac4cf0f7a5c69839bc4c8716556d4ac7607b Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:05:12 -0800
-Subject: [PATCH] Update minecraft_status to use unicode checks, and with a
- new format.
+Subject: [PATCH] Update minecraft_status to use unicode checks, and with a new
+ format.
 
 
 diff --git a/plugins/minecraft_status.py b/plugins/minecraft_status.py
@@ -63,5 +63,5 @@ index 98fce4a..a1aeca8 100644
  
  @hook.command("haspaid")
 -- 
-1.7.10.4
+1.8.3.2
 

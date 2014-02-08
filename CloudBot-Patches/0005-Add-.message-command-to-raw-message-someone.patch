@@ -1,4 +1,4 @@
-From fa4271af99993988c7f0cf2ce97d2b6115d1a871 Mon Sep 17 00:00:00 2001
+From 0f55c54790d89c00de32fff6ac258136c59f20ad Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 19:15:02 -0800
 Subject: [PATCH] Add .message command to raw message someone
@@ -26,5 +26,5 @@ index ede2e3f..0b21107 100644
  @hook.command(permissions=["botcontrol"])
  def me(inp, conn=None, chan=None):
 -- 
-1.7.10.4
+1.8.3.2
 
