@@ -1,4 +1,4 @@
-From ae418e5dce869e8b0e132db7b3b4fb78abdd535c Mon Sep 17 00:00:00 2001
+From 9ac780f1dfdda592d4760671698223bc3976e1d2 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 22:56:40 -0800
 Subject: [PATCH] Add command not found message when using .help one a

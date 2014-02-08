@@ -1,4 +1,4 @@
-From 419ee95982718d8644f88ae2c87c2df6d769503e Mon Sep 17 00:00:00 2001
+From d6b22d56708c38e39611ab71e501db6ae0874475 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 22:54:10 -0800
 Subject: [PATCH] Remove all extraneous whitespace in minecraft ping response

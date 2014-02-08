@@ -1,4 +1,4 @@
-From 6497e6849585172ba988922b45de05786fcc62d3 Mon Sep 17 00:00:00 2001
+From e17f78f832f0795ef26a0842601ae1ddaeafff16 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 18 Jan 2014 03:22:17 -0800
 Subject: [PATCH] Add teamcity plugin
@@ -6,10 +6,11 @@ Subject: [PATCH] Add teamcity plugin
 
 diff --git a/plugins/eliralin_teamcity.py b/plugins/eliralin_teamcity.py
 new file mode 100644
-index 0000000..9e8dc4c
+index 0000000..6a1f83c
 --- /dev/null
 +++ b/plugins/eliralin_teamcity.py
-@@ -0,0 +1,153 @@
+@@ -0,0 +1,161 @@
++from xml.etree.ElementTree import ParseError
 +import traceback
 +from xml.etree import ElementTree
 +import requests
@@ -19,7 +20,7 @@ index 0000000..9e8dc4c
 +
 +from util import hook
 +
-+teamcity_url = "http://ci.nlmc.pw"
++teamcity_url = "http://ci.daboross.net/ci"
 +
 +
 +class ProjectDatabase:
@@ -41,7 +42,11 @@ index 0000000..9e8dc4c
 +                                auth=HTTPBasicAuth(self.username, self.password)).text
 +        else:
 +            data = requests.get("{}/guestAuth{}".format(self.teamcity_url, url)).text
-+        return ElementTree.fromstring(data)
++        try:
++            return ElementTree.fromstring(data)
++        except ParseError:
++            print "Error loading {} ({})".format(url, data)
++            raise
 +
 +    def load_key(self, bot):
 +        if not self.loaded_key:
@@ -110,6 +115,9 @@ index 0000000..9e8dc4c
 +    except AttributeError:
 +        traceback.print_exc()
 +        return None
++    except ParseError:
++        traceback.print_exc()
++        return None
 +
 +
 +database = ProjectDatabase()
@@ -135,10 +143,10 @@ index 0000000..9e8dc4c
 +            other_matches.append(project.name)
 +
 +    if project_found is not None:
-+        reply("{} - Project: http://d.nlmc.pw/{}".format(project_found.name, project_found.project_id))
++        reply("{} - Project: http://ci.daboross.net/p/{}".format(project_found.name, project_found.project_id))
 +        for download in project_found.downloads:
 +            for download_file in download["files"]:
-+                message("Download: http://d.nlmc.pw/{}/{}".format(download["id"], download_file))
++                message("Download: http://ci.daboross.net/d/{}/{}".format(download["id"], download_file))
 +        if len(other_matches) > 0:
 +            message("(Other matches: {})".format(", ".join(other_matches)))
 +    else:
