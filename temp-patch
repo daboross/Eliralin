@@ -25,6 +25,8 @@ case "$1" in
         create "${@:2}" ;;
     restore)
         restore "${@:2}" ;;
+    help)
+        echo "$0 <create|restore> <specifier>" ;;
     *)
         create "$@" ;;
 esac
