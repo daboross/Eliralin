@@ -1,4 +1,4 @@
-From e17f78f832f0795ef26a0842601ae1ddaeafff16 Mon Sep 17 00:00:00 2001
+From 982a7ad55ac6c800577d4158a9703278436817a5 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 18 Jan 2014 03:22:17 -0800
 Subject: [PATCH] Add teamcity plugin
@@ -172,5 +172,5 @@ index 0000000..6a1f83c
 +    reply("Projects: {}".format(", ".join([project.name for project in database.projects])))
 +    database.after_check()
 -- 
-1.8.3.2
+1.8.5.3
 
