@@ -1,4 +1,4 @@
-From 58974b34736c828af4a8152eac60b1970758c0f9 Mon Sep 17 00:00:00 2001
+From 202039b539582c59dc865ccfe77fb9a06a59ae56 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 27 Jan 2014 03:59:51 +0100
 Subject: [PATCH] Add per-channel command prefixes
