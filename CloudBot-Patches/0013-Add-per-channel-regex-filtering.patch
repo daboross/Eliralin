@@ -1,4 +1,4 @@
-From cd5261c87790ec4ca217790a6567da52615ff43e Mon Sep 17 00:00:00 2001
+From 4b2bf081a09f6eb7585593c523d37cf5c0587743 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:18:39 -0800
 Subject: [PATCH] Add per-channel regex filtering.
@@ -6,7 +6,7 @@ Subject: [PATCH] Add per-channel regex filtering.
 
 diff --git a/plugins/regex_chans.py b/plugins/regex_chans.py
 new file mode 100644
-index 0000000..f2f9fe4
+index 0000000..79de528
 --- /dev/null
 +++ b/plugins/regex_chans.py
 @@ -0,0 +1,131 @@
@@ -67,8 +67,8 @@ index 0000000..f2f9fe4
 +        if not chanstatus == "ENABLED" and (chanstatus == "DISABLED" or not default_enabled):
 +            print "Denying input.raw={}, kind={}, args={} from {}".format(input.raw, kind, args, input.chan)
 +            return None
++        print "Allowing input.raw={}, kind={}, args={} from {}".format(input.raw, kind, args, input.chan)
 +
-+    print "Allowing input.raw={}, kind={}, args={} from {}".format(input.raw, kind, args, input.chan)
 +    return input
 +
 +
