@@ -1,4 +1,4 @@
-From d2292d76c66692204c685a01f77f49e209d3c95f Mon Sep 17 00:00:00 2001
+From ded9b1da192d4249248e59be41098464a60fa716 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 18:58:30 -0800
 Subject: [PATCH] Change reply format from `(<nick>) <message>` to `<nick>,
@@ -19,5 +19,5 @@ index 0054b0a..a856b35 100644
          def action(message, target=chan):
              """sends an action to the current channel/user or a specific channel/user"""
 -- 
-1.8.5.3
+1.8.3.2
 
