@@ -1,11 +1,11 @@
-From ecdcd99b496c806a8209ac7b7c7317636d906d24 Mon Sep 17 00:00:00 2001
+From 14514fb459c8e0a9625ceb1b8bd4f074175491f6 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 22:54:10 -0800
 Subject: [PATCH] Remove all extraneous whitespace in minecraft ping response
 
 
 diff --git a/plugins/minecraft_ping.py b/plugins/minecraft_ping.py
-index 423c714..15fefed 100644
+index 0042278..8377f06 100644
 --- a/plugins/minecraft_ping.py
 +++ b/plugins/minecraft_ping.py
 @@ -78,7 +78,7 @@ def mcping_modern(host, port):

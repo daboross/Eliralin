@@ -1,4 +1,4 @@
-From df3b5fbcffcfd57eb475af3beb81f27270369674 Mon Sep 17 00:00:00 2001
+From 4ef50b1eb06c8d33a699582190bde0f139b4df6d Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 18 Jan 2014 02:45:55 -0800
 Subject: [PATCH] Add requests to requirements.txt
