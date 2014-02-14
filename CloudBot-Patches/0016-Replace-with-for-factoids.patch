@@ -1,14 +1,14 @@
-From 6faa2b28eee77064c133a8121af71f79cc1e3bb3 Mon Sep 17 00:00:00 2001
+From 4a7ba2699839410ecef77df53c7bbb2eb53ce70b Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:25:28 -0800
 Subject: [PATCH] Replace ? with ^ for factoids
 
 
 diff --git a/plugins/factoids.py b/plugins/factoids.py
-index 74590a1..bc41046 100644
+index 9864f87..aac0e6a 100644
 --- a/plugins/factoids.py
 +++ b/plugins/factoids.py
-@@ -64,10 +64,10 @@ def remember(inp, nick='', idb=None, notice=None):
+@@ -71,10 +71,10 @@ def remember(inp, nick='', idb=None, notice=None):
          if append:
              notice("Appending \x02{}\x02 to \x02{}\x02".format(new_data, old_data))
          else:
@@ -21,14 +21,14 @@ index 74590a1..bc41046 100644
  
  
  @hook.command("f", permissions=["delfactoid"])
-@@ -102,7 +102,7 @@ def info(inp, notice=None, idb=None):
+@@ -109,7 +109,7 @@ def info(inp, notice=None, idb=None):
          notice("Unknown Factoid.")
  
  
 -@hook.regex(r'^\? ?(.+)')
 +@hook.regex(r'^\^ ?(.+)')
  def factoid(inp, message=None, idb=None, bot=None, action=None, conn=None, input=None):
-     "?<word> -- Shows what data is associated with <word>."
+     """?<word> -- Shows what data is associated with <word>."""
      try:
 -- 
 1.8.3.2

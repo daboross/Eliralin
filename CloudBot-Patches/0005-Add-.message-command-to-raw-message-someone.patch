@@ -1,14 +1,14 @@
-From 89acf824795e4eaf36c1ee135ebe357101c43e2a Mon Sep 17 00:00:00 2001
+From 6ed480440367018045aac994ef98815693f5e57e Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 19:15:02 -0800
 Subject: [PATCH] Add .message command to raw message someone
 
 
 diff --git a/plugins/admin.py b/plugins/admin.py
-index ede2e3f..0b21107 100644
+index b7e332b..82fa348 100644
 --- a/plugins/admin.py
 +++ b/plugins/admin.py
-@@ -208,6 +208,16 @@ def say(inp, conn=None, chan=None):
+@@ -209,6 +209,16 @@ def say(inp, conn=None, chan=None):
      conn.send(out)
  
  

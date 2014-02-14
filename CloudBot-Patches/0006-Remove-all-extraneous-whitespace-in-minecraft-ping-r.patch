@@ -1,19 +1,21 @@
-From b0f1961d2d7ef73b57e263a8602a33b1c82e65b8 Mon Sep 17 00:00:00 2001
+From 5f1df36c42e526cf864edee90a920e359464aca6 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 22:54:10 -0800
 Subject: [PATCH] Remove all extraneous whitespace in minecraft ping response
 
 
 diff --git a/plugins/minecraft_ping.py b/plugins/minecraft_ping.py
-index 0042278..8377f06 100644
+index d746f44..e9571b4 100644
 --- a/plugins/minecraft_ping.py
 +++ b/plugins/minecraft_ping.py
-@@ -78,7 +78,7 @@ def mcping_modern(host, port):
+@@ -81,8 +81,8 @@ def mcping_modern(host, port):
          online = data["players"]["online"]
      except Exception as e:
          return "Invalid data: {}; error: {}".format(data, e)
--    return mc_color_format(u"{}\x0f - {}\x0f - {}/{} players *".format(desc, version, online, max)).replace("\n", u"\x0f - ")
-+    return mc_color_format(u" ".join(u"{}\x0f - {}\x0f - {}/{} players *".format(desc.replace("\n", u"\x0f - "), version, online, max).split()))
+-    return mc_color_format(u"{}\x0f - {}\x0f - {}/{} players *".format(desc, version, online,
+-                                                                       max_players)).replace("\n", u"\x0f - ")
++    return mc_color_format(u" ".join(u"{}\x0f - {}\x0f - {}/{} players *".format(desc.replace("\n", u"\x0f - "),
++                                                                                 version, online, max_players).split()))
  
  
  def mcping_legacy(host, port):

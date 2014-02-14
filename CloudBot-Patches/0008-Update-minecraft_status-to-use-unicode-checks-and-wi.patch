@@ -1,4 +1,4 @@
-From 184f984e23f82c15e8b6241ccff8a8164496d3a4 Mon Sep 17 00:00:00 2001
+From 1b2455bd071ffcdb941044b258569414be6f9d0a Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:05:12 -0800
 Subject: [PATCH] Update minecraft_status to use unicode checks, and with a new
@@ -6,10 +6,10 @@ Subject: [PATCH] Update minecraft_status to use unicode checks, and with a new
 
 
 diff --git a/plugins/minecraft_status.py b/plugins/minecraft_status.py
-index 98fce4a..a1aeca8 100644
+index 8bb7e07..b405978 100644
 --- a/plugins/minecraft_status.py
 +++ b/plugins/minecraft_status.py
-@@ -3,9 +3,15 @@ import json
+@@ -4,9 +4,15 @@ from util import hook, http
  
  
  @hook.command(autohelp=False)
@@ -25,7 +25,7 @@ index 98fce4a..a1aeca8 100644
      try:
          request = http.get("http://status.mojang.com/check")
      except (http.URLError, http.HTTPError) as e:
-@@ -14,25 +20,21 @@ def mcstatus(inp):
+@@ -15,25 +21,21 @@ def mcstatus(inp):
      # lets just reformat this data to get in a nice format
      data = json.loads(request.replace("}", "").replace("{", "").replace("]", "}").replace("[", "{"))
  

@@ -1,21 +1,20 @@
-From 1a16c86143588cc99f2361e503e8244500169f9e Mon Sep 17 00:00:00 2001
+From 53874a93131e02da9f21a37f8c56d14c8d8f4625 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:11:02 -0800
 Subject: [PATCH] Improve self-attack matching.
 
 
 diff --git a/plugins/attacks.py b/plugins/attacks.py
-index 643a184..6746f11 100644
+index feb00b8..1fe7fc2 100644
 --- a/plugins/attacks.py
 +++ b/plugins/attacks.py
-@@ -1,5 +1,6 @@
- from util import hook
+@@ -1,4 +1,5 @@
  import random
 +import re
  
- with open("plugins/data/larts.txt") as f:
-     larts = [line.strip() for line in f.readlines()
-@@ -24,7 +25,7 @@ def lart(inp, action=None, nick=None, conn=None, notice=None):
+ from util import hook
+ 
+@@ -26,7 +27,7 @@ def lart(inp, action=None, nick=None, conn=None, notice=None):
          return
  
      # if the user is trying to make the bot slap itself, slap them
@@ -24,7 +23,7 @@ index 643a184..6746f11 100644
          target = nick
  
      values = {"user": target}
-@@ -43,7 +44,7 @@ def insult(inp, nick=None, action=None, conn=None, notice=None):
+@@ -45,7 +46,7 @@ def insult(inp, nick=None, action=None, conn=None, notice=None):
          notice("Invalid username!")
          return
  
@@ -33,7 +32,7 @@ index 643a184..6746f11 100644
          target = nick
      else:
          target = inp
-@@ -53,7 +54,7 @@ def insult(inp, nick=None, action=None, conn=None, notice=None):
+@@ -55,7 +56,7 @@ def insult(inp, nick=None, action=None, conn=None, notice=None):
  
  
  @hook.command
@@ -42,7 +41,7 @@ index 643a184..6746f11 100644
      """flirt <user> -- Make the bot flirt with <user>."""
      target = inp.strip()
  
-@@ -61,10 +62,9 @@ def flirt(inp, action=None, conn=None, notice=None):
+@@ -63,10 +64,9 @@ def flirt(inp, action=None, conn=None, notice=None):
          notice("Invalid username!")
          return
  

@@ -1,4 +1,4 @@
-From ce9c2ca7ec2736239c0cde49cbf007867245c7ba Mon Sep 17 00:00:00 2001
+From 4d29e9467f2a195635ec24a3db7213e54f09d62f Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:17:29 -0800
 Subject: [PATCH] Add connection-independent database 'idb' and use it in
@@ -19,10 +19,10 @@ index eed61a3..3c065e4 100644
              input.input = input
          if 0 in args:
 diff --git a/plugins/factoids.py b/plugins/factoids.py
-index 1d90e66..9fb41fe 100644
+index 403e6f5..457a4b7 100644
 --- a/plugins/factoids.py
 +++ b/plugins/factoids.py
-@@ -32,10 +32,10 @@ def get_memory(db, word):
+@@ -39,10 +39,10 @@ def get_memory(db, word):
  
  @hook.command("r", permissions=["addfactoid"])
  @hook.command(permissions=["addfactoid"])
@@ -35,7 +35,7 @@ index 1d90e66..9fb41fe 100644
  
      append = False
  
-@@ -44,7 +44,7 @@ def remember(inp, nick='', db=None, notice=None):
+@@ -51,7 +51,7 @@ def remember(inp, nick='', db=None, notice=None):
      except ValueError:
          return remember.__doc__
  
@@ -44,7 +44,7 @@ index 1d90e66..9fb41fe 100644
  
      if data.startswith('+') and old_data:
          append = True
-@@ -56,9 +56,9 @@ def remember(inp, nick='', db=None, notice=None):
+@@ -63,9 +63,9 @@ def remember(inp, nick='', db=None, notice=None):
          else:
              data = old_data + ' ' + new_data
  
@@ -56,7 +56,7 @@ index 1d90e66..9fb41fe 100644
  
      if old_data:
          if append:
-@@ -72,16 +72,15 @@ def remember(inp, nick='', db=None, notice=None):
+@@ -79,16 +79,15 @@ def remember(inp, nick='', db=None, notice=None):
  
  @hook.command("f", permissions=["delfactoid"])
  @hook.command(permissions=["delfactoid"])
@@ -78,7 +78,7 @@ index 1d90e66..9fb41fe 100644
          notice('"%s" has been forgotten.' % data.replace('`', "'"))
          return
      else:
-@@ -90,13 +89,12 @@ def forget(inp, db=None, notice=None):
+@@ -97,13 +96,12 @@ def forget(inp, db=None, notice=None):
  
  
  @hook.command
@@ -95,13 +95,13 @@ index 1d90e66..9fb41fe 100644
  
      if data:
          notice(data)
-@@ -105,14 +103,14 @@ def info(inp, notice=None, db=None):
+@@ -112,14 +110,14 @@ def info(inp, notice=None, db=None):
  
  
  @hook.regex(r'^\? ?(.+)')
 -def factoid(inp, message=None, db=None, bot=None, action=None, conn=None, input=None):
 +def factoid(inp, message=None, idb=None, bot=None, action=None, conn=None, input=None):
-     "?<word> -- Shows what data is associated with <word>."
+     """?<word> -- Shows what data is associated with <word>."""
      try:
          prefix_on = bot.config["plugins"]["factoids"].get("prefix", False)
      except KeyError:
@@ -112,7 +112,7 @@ index 1d90e66..9fb41fe 100644
  
      # split up the input
      split = inp.group(1).strip().split(" ")
-@@ -123,7 +121,7 @@ def factoid(inp, message=None, db=None, bot=None, action=None, conn=None, input=
+@@ -130,7 +128,7 @@ def factoid(inp, message=None, db=None, bot=None, action=None, conn=None, input=
      else:
          arguments = ""
  

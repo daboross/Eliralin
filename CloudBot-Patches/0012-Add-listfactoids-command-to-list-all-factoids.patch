@@ -1,14 +1,14 @@
-From 56c0766db2d1af6f2ea4e29aebc1b8334f7d0173 Mon Sep 17 00:00:00 2001
+From bc8b06ce38ac123ddf2c630fa83c38d08ae82781 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:24:30 -0800
 Subject: [PATCH] Add 'listfactoids' command to list all factoids
 
 
 diff --git a/plugins/factoids.py b/plugins/factoids.py
-index 9fb41fe..74590a1 100644
+index 457a4b7..9864f87 100644
 --- a/plugins/factoids.py
 +++ b/plugins/factoids.py
-@@ -151,3 +151,17 @@ def factoid(inp, message=None, idb=None, bot=None, action=None, conn=None, input
+@@ -158,3 +158,17 @@ def factoid(inp, message=None, idb=None, bot=None, action=None, conn=None, input
                  message("\x02[{}]:\x02 {}".format(factoid_id, result))
              else:
                  message(result)
