@@ -1,4 +1,4 @@
-From 55008d3695fb7cfa8a9db0cf039f1239e1ae0505 Mon Sep 17 00:00:00 2001
+From 2238c63d80f4b997eea9d42950864e82856677c7 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:25:28 -0800
 Subject: [PATCH] Replace ? with ^ for factoids
@@ -31,5 +31,5 @@ index 9864f87..aac0e6a 100644
      """?<word> -- Shows what data is associated with <word>."""
      try:
 -- 
-1.8.3.2
+1.8.5.3
 

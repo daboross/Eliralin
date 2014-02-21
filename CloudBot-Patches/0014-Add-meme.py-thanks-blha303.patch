@@ -1,4 +1,4 @@
-From d52b58cc3cdcaac71008c6e326a9b9c81ca00455 Mon Sep 17 00:00:00 2001
+From 8de1b02c835a1e23cc3a4b9adb9ba5375b37f0c3 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:20:15 -0800
 Subject: [PATCH] Add meme.py - thanks blha303!
@@ -131,5 +131,5 @@ index 0000000..71ca4c1
 +    else:
 +        return message
 -- 
-1.8.3.2
+1.8.5.3
 

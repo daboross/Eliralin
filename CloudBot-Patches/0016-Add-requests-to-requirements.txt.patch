@@ -1,4 +1,4 @@
-From 41dd6154dd21eba23f5bff2a97a7c380d63d9540 Mon Sep 17 00:00:00 2001
+From 6253d6a0ea0b4f77d468bf0cc5fb93eb1703c467 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 18 Jan 2014 02:45:55 -0800
 Subject: [PATCH] Add requests to requirements.txt
@@ -15,5 +15,5 @@ index d260437..ce5d19c 100644
 +requests
 \ No newline at end of file
 -- 
-1.8.3.2
+1.8.5.3
 

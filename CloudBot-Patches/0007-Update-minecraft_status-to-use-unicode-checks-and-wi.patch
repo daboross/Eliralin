@@ -1,4 +1,4 @@
-From 5852c9d32918e89bf4de2995f83fa595aed76055 Mon Sep 17 00:00:00 2001
+From b658307f6e05f7e42d8a3e8a712414c6002177c6 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:05:12 -0800
 Subject: [PATCH] Update minecraft_status to use unicode checks, and with a new
@@ -63,5 +63,5 @@ index 8bb7e07..b405978 100644
  
  @hook.command("haspaid")
 -- 
-1.8.3.2
+1.8.5.3
 

@@ -1,4 +1,4 @@
-From f924f908c6cdd13fda0cbc713a2480800740eaed Mon Sep 17 00:00:00 2001
+From 8bd7a1a269c20170c973c255171b794900008cca Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 19:09:15 -0800
 Subject: [PATCH] Don't run regex matching if command is already matched
@@ -17,5 +17,5 @@ index a856b35..eed61a3 100644
          # REGEXES
          for func, args in bot.plugs['regex']:
 -- 
-1.8.3.2
+1.8.5.3
 

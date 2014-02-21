@@ -1,4 +1,4 @@
-From 8aecba1fd42f1402e29ab61dcb9cd6ecc7ff028f Mon Sep 17 00:00:00 2001
+From 51efbad28f96bc931e4ba6de071172f8bd629d20 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 18 Feb 2014 17:23:21 -0800
 Subject: [PATCH] Fix minecraft_ping for non-dict descriptions
@@ -67,5 +67,5 @@ index ba806c8..a2c2944 100644
      try:
          return mcping_modern(host, port)
 -- 
-1.8.3.2
+1.8.5.3
 
