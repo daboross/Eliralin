@@ -1,4 +1,4 @@
-From 3ec357371ce8452eb627b522859dce25d3b20801 Mon Sep 17 00:00:00 2001
+From 2c42a2db93c35346c26927829e9b090e3e4514e1 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 19:08:25 -0800
 Subject: [PATCH] Add proper bot stopping
@@ -33,7 +33,7 @@ index 91515db..8e17d78 100755
 +    while all(conn.out.empty() for conn in bot.conns.itervalues()) and not bot.stop:
          time.sleep(.1)
 diff --git a/plugins/admin.py b/plugins/admin.py
-index b90d4aa..b7e332b 100644
+index dde067e..f434a1a 100644
 --- a/plugins/admin.py
 +++ b/plugins/admin.py
 @@ -105,14 +105,15 @@ def adduser(inp, bot=None, notice=None):
@@ -55,5 +55,5 @@ index b90d4aa..b7e332b 100644
  
  @hook.command(autohelp=False, permissions=["botcontrol"])
 -- 
-1.8.3.2
+1.9.0
 

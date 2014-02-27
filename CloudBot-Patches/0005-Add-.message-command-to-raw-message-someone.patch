@@ -1,11 +1,11 @@
-From 3cbd581f710b3b71c8b46c12604e7da1273fb8bd Mon Sep 17 00:00:00 2001
+From 739a3db90de80be6f315cf73855cde1d5e100d74 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 19:15:02 -0800
 Subject: [PATCH] Add .message command to raw message someone
 
 
 diff --git a/plugins/admin.py b/plugins/admin.py
-index b7e332b..82fa348 100644
+index f434a1a..c5d1334 100644
 --- a/plugins/admin.py
 +++ b/plugins/admin.py
 @@ -209,6 +209,16 @@ def say(inp, conn=None, chan=None):
@@ -26,5 +26,5 @@ index b7e332b..82fa348 100644
  @hook.command(permissions=["botcontrol"])
  def me(inp, conn=None, chan=None):
 -- 
-1.8.3.2
+1.9.0
 

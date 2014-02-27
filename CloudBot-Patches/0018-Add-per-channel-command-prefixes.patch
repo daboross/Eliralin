@@ -1,4 +1,4 @@
-From 7b6bfd88ee770074f44b99934dea9df430ffcd06 Mon Sep 17 00:00:00 2001
+From 7aaa3c6a47c9c5ce0a1b0ba35f4471d5fb5cdaa3 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 27 Jan 2014 03:59:51 +0100
 Subject: [PATCH] Add per-channel command prefixes
@@ -69,5 +69,5 @@ index 9120e3a..9893e67 100644
 +    db.execute("INSERT INTO prefixes(channel, prefix) VALUES(?, ?)", [chan, inp])
 +    db.commit()
 -- 
-1.8.3.2
+1.9.0
 

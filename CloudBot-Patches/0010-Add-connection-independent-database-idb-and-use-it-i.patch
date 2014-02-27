@@ -1,4 +1,4 @@
-From 926aa2cf7a2fe362b2ac1384fc6f2f74b9f07740 Mon Sep 17 00:00:00 2001
+From c386867a047133bb58ab9be40d8b2f4a0df8ad9b Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:17:29 -0800
 Subject: [PATCH] Add connection-independent database 'idb' and use it in
@@ -122,5 +122,5 @@ index 403e6f5..457a4b7 100644
      if data:
          # factoid preprocessors
 -- 
-1.8.3.2
+1.9.0
 

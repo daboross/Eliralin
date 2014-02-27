@@ -1,4 +1,4 @@
-From d114f6fe58906e7a4ca35b9a1cec80d3a5f2f0e7 Mon Sep 17 00:00:00 2001
+From 2b13b62409b3df4edd1a82a8a80c4b8f617b1718 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 19:08:56 -0800
 Subject: [PATCH] Add auto restarting
@@ -44,5 +44,5 @@ index 8e17d78..05b28ea 100755
      config()  # if changes have occured
  
 -- 
-1.8.3.2
+1.9.0
 

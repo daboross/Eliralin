@@ -1,19 +1,19 @@
-From 3ecc5a9bd1a58bc1ec4d33ffa71c3958a9204041 Mon Sep 17 00:00:00 2001
+From 00c41fda03f7ab56279c5eef06ff92da78987b0a Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 18 Jan 2014 02:45:55 -0800
 Subject: [PATCH] Add requests to requirements.txt
 
 
 diff --git a/requirements.txt b/requirements.txt
-index d260437..ce5d19c 100644
+index ada6c3c..c684530 100644
 --- a/requirements.txt
 +++ b/requirements.txt
-@@ -7,3 +7,4 @@ pyenchant==1.6.5
+@@ -8,3 +8,4 @@ pyenchant==1.6.5
  pydns>=2.3.6
  BeautifulSoup4
  pycrypto
 +requests
 \ No newline at end of file
 -- 
-1.8.3.2
+1.9.0
 

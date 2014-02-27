@@ -1,0 +1,22 @@
+From 116bb91627f5203119cf5f41d98bdc2846b8c1d8 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Thu, 27 Feb 2014 15:27:51 -0800
+Subject: [PATCH] Change default for regex_chans to disabled
+
+
+diff --git a/plugins/regex_chans.py b/plugins/regex_chans.py
+index c16c250..dec2f2c 100644
+--- a/plugins/regex_chans.py
++++ b/plugins/regex_chans.py
+@@ -4,7 +4,7 @@ from util import hook
+ # Default value.
+ # If True, all channels without a setting will have regex enabled
+ # If False, all channels without a setting will have regex disabled
+-default_enabled = True
++default_enabled = False
+ 
+ db_ready = False
+ 
+-- 
+1.9.0
+
