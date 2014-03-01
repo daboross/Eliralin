@@ -1,4 +1,4 @@
-From 0767cacebbc4afd7e2dae641f3376a5970647a86 Mon Sep 17 00:00:00 2001
+From 6daf639439ae718c19ea76240218e792542fac39 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:05:12 -0800
 Subject: [PATCH] Update minecraft_status to use unicode checks, and with a new
@@ -6,34 +6,36 @@ Subject: [PATCH] Update minecraft_status to use unicode checks, and with a new
 
 
 diff --git a/plugins/minecraft_status.py b/plugins/minecraft_status.py
-index 8bb7e07..b405978 100644
+index 4ca67d3..d9e416d 100644
 --- a/plugins/minecraft_status.py
 +++ b/plugins/minecraft_status.py
-@@ -4,9 +4,15 @@ from util import hook, http
+@@ -2,8 +2,16 @@ import json
  
+ from util import hook, http
+ 
++green_prefix = u"\x02\x0f"
++green_suffix = u": \x033\x02\u2714"
++yellow_prefix = u"\x02\x0f"
++yellow_suffix = u": \x037\x02\u26A0"
++red_prefix = u"\x02\x0f"
++red_suffix = u": \x034\x02\u2716"
++
  
  @hook.command(autohelp=False)
 +@hook.command("mcs", autohelp=False)
  def mcstatus(inp):
      """mcstatus -- Checks the status of various Mojang (the creators of Minecraft) servers."""
  
-+    yes_prefix = u"\x02\x0f"
-+    yes_suffix = u": \x033\x02\u2714"
-+    no_prefix = u"\x02\x0f"
-+    no_suffix = u": \x034\x02\u2716"
-+
-     try:
-         request = http.get("http://status.mojang.com/check")
-     except (http.URLError, http.HTTPError) as e:
-@@ -15,25 +21,21 @@ def mcstatus(inp):
+@@ -15,30 +23,20 @@ def mcstatus(inp):
      # lets just reformat this data to get in a nice format
      data = json.loads(request.replace("}", "").replace("{", "").replace("]", "}").replace("[", "{"))
  
 -    out = []
 -
      # use a loop so we don't have to update it if they add more servers
--    yes = []
--    no = []
+-    green = []
+-    yellow = []
+-    red = []
 +    servers = []
      for server, status in data.items():
 +        if server == "minecraft.net":
@@ -44,24 +46,29 @@ index 8bb7e07..b405978 100644
 +            server = "MC|{}".format(server[:-14].capitalize())
 +
          if status == "green":
--            yes.append(server)
-+            servers.append(u"{}{}{}".format(yes_prefix, server, yes_suffix))
+-            green.append(server)
++            servers.append(u"{}{}{}".format(green_prefix, server, green_suffix))
+         elif status == "yellow":
+-            yellow.append(server)
++            servers.append(u"{}{}{}".format(yellow_prefix, server, yellow_suffix))
          else:
--            no.append(server)
--    if yes:
--        out = "\x033\x02Online\x02\x0f: " + ", ".join(yes)
--        if no:
+-            red.append(server)
+-
+-    if green:
+-        out = "\x033\x02Online\x02\x0f: " + ", ".join(green)
+-        if yellow:
 -            out += " "
--    if no:
--        out += "\x034\x02Offline\x02\x0f: " + ", ".join(no)
+-    if yellow:
+-        out += "\x02Issues\x02: " + ", ".join(yellow)
+-        if red:
+-            out += " "
+-    if red:
+-        out += "\x034\x02Offline\x02\x0f: " + ", ".join(red)
 -
 -    return "\x0f" + out.replace(".mojang.com", ".mj") \
 -                       .replace(".minecraft.net", ".mc")
-+            servers.append(u"{}{}{}".format(no_prefix, server, no_suffix))
++            servers.append(u"{}{}{}".format(red_prefix, server, red_suffix))
 +    return "  ".join(servers)
- 
- 
- @hook.command("haspaid")
 -- 
 1.9.0
 
