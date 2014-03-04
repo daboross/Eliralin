@@ -1,4 +1,4 @@
-From f699775492ad884fd725bd455e76f3411ca7015b Mon Sep 17 00:00:00 2001
+From 6a915ae767dc5f1d94e1de146e9286949b86776e Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:11:02 -0800
 Subject: [PATCH] Improve self-attack matching.
