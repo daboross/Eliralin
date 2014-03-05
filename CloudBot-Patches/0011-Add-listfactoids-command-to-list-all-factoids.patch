@@ -1,4 +1,4 @@
-From dbe817eb620d9b926f227a3c739b915949293f7a Mon Sep 17 00:00:00 2001
+From a35d68fab975cca436f59cc9f22abca7040f6e24 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:24:30 -0800
 Subject: [PATCH] Add 'listfactoids' command to list all factoids
