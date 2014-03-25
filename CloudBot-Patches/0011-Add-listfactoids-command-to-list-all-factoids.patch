@@ -1,4 +1,4 @@
-From a35d68fab975cca436f59cc9f22abca7040f6e24 Mon Sep 17 00:00:00 2001
+From 460c6c8e89ac127b07eaf9d9cee412f3f04cfa1d Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:24:30 -0800
 Subject: [PATCH] Add 'listfactoids' command to list all factoids
@@ -27,5 +27,5 @@ index 457a4b7..9864f87 100644
 +            text = word[0]
 +    return text
 -- 
-1.9.0
+1.9.1
 
