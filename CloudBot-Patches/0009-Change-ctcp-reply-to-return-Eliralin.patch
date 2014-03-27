@@ -1,4 +1,4 @@
-From 72f131d52fe8d769e329a048281638076441d2e2 Mon Sep 17 00:00:00 2001
+From c384188cdfc33a47efa4ea4f6f48c9bd3c4b28c7 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:13:03 -0800
 Subject: [PATCH] Change ctcp reply to return 'Eliralin'

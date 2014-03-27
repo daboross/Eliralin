@@ -14,7 +14,7 @@ create() {
 
 restore() {
     cd Eliralin
-    git am ../temp-patches/*
+    git am --3way ../temp-patches/*
     cd ../
 }
 

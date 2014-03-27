@@ -1,4 +1,4 @@
-From 59caec90f3d69bd72ecab75c76d0e631f3cbfeb0 Mon Sep 17 00:00:00 2001
+From fc559fc877b42c323097339da011597355f79b32 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 27 Jan 2014 03:59:51 +0100
 Subject: [PATCH] Add per-channel command prefixes
@@ -53,13 +53,16 @@ index 3c065e4..6d373ad 100644
  
          m = re.match(command_re, inp.lastparam)
 diff --git a/plugins/eliralin_utility.py b/plugins/eliralin_utility.py
-index 9120e3a..9893e67 100644
+index 92c5c56..c37a455 100644
 --- a/plugins/eliralin_utility.py
 +++ b/plugins/eliralin_utility.py
-@@ -138,3 +138,11 @@ def rdns(inp):
-         return "{} resolves to {}".format(inp, domain)
-     except socket.gaierror:
-         return "Resolve Failed!"
+@@ -146,4 +146,12 @@ def unicodecommand(inp, reply=None):
+         return u"'{}'".format(unichr(int(inp)))
+     except Exception:
+         reply("Failed")
+-        raise
+\ No newline at end of file
++        raise
 +
 +
 +@hook.command(permissions=["botcontrol"])

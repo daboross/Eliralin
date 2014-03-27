@@ -1,4 +1,4 @@
-From b8d4e1e2555cee608aa0c4cdb2daccf92474383b Mon Sep 17 00:00:00 2001
+From c5ad7086b4e55aa5c971708f8ae2bdfc0b190218 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:19:10 -0800
 Subject: [PATCH] Create eliralin_utility.py for extras
@@ -6,16 +6,16 @@ Subject: [PATCH] Create eliralin_utility.py for extras
 
 diff --git a/plugins/eliralin_utility.py b/plugins/eliralin_utility.py
 new file mode 100644
-index 0000000..9120e3a
+index 0000000..92c5c56
 --- /dev/null
 +++ b/plugins/eliralin_utility.py
-@@ -0,0 +1,140 @@
+@@ -0,0 +1,149 @@
 +from random import random
 +import socket
 +import sys
 +import traceback
-+
 +import time
++
 +from util import hook, web
 +
 +
@@ -150,6 +150,16 @@ index 0000000..9120e3a
 +        return "{} resolves to {}".format(inp, domain)
 +    except socket.gaierror:
 +        return "Resolve Failed!"
++
++
++@hook.command("unicode")
++def unicodecommand(inp, reply=None):
++    try:
++        return u"'{}'".format(unichr(int(inp)))
++    except Exception:
++        reply("Failed")
++        raise
+\ No newline at end of file
 -- 
 1.9.1
 
