@@ -1,4 +1,4 @@
-From d8aa5f8e293b332811eaf3f82dbfc7eaaa4f88d1 Mon Sep 17 00:00:00 2001
+From 16400e0dd0764d2b9d9df6da3ab1d2d7fc0bcc4d Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 24 Mar 2014 20:46:47 -0700
 Subject: [PATCH] Fix unicode support for wikipedia
