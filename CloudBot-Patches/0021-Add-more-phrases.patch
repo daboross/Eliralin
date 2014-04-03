@@ -1,19 +1,23 @@
-From 3aee60b651e288f336e8042fe4843301ca464937 Mon Sep 17 00:00:00 2001
+From ac2b1dd79176f4587e9bd04fba2c87599b385034 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 1 Apr 2014 21:03:51 -0700
 Subject: [PATCH] Add more phrases
 
 
 diff --git a/plugins/recipe.py b/plugins/recipe.py
-index 7f9d172..c5c827a 100644
+index 53ec1de..6fa4aea 100644
 --- a/plugins/recipe.py
 +++ b/plugins/recipe.py
-@@ -17,6 +17,10 @@ phrases = [
-     u"WHY DON'T YOU EAT SOME FUCKING \x02{}\x02",
-     u"MAKE SOME FUCKING \x02{}\x02",
+@@ -15,8 +15,13 @@ phrases = [
+     u"YOU WON'T NOT MAKE SOME FUCKING \x02{}\x02",
+     u"HOW ABOUT SOME FUCKING \x02{}?\x02",
+     u"WHY DON'T YOU EAT SOME FUCKING \x02{}?\x02",
+-    u"MAKE SOME FUCKING \x02{}\x02",  v
++    u"MAKE SOME FUCKING \x02{}\x02",
      u"INDUCE FOOD COMA WITH SOME FUCKING \x02{}\x02"
 +    u"CLASSILY PARTAKE IN SOME FUCKING \x02{}\x02",
-+    u"COOK UP SOME FUCKING; CURE YOUR MOUTH'S POST TRAUMATIC STRESS DISORDER WITH SOME FUCKING \x02{}\x02",
++    u"COOK UP SOME FUCKING \x02{}\x02",
++    u"CURE YOUR MOUTH'S POST TRAUMATIC STRESS DISORDER WITH SOME FUCKING \x02{}\x02",
 +    u"PROCURE SOME CHILD LABOR TO COOK UP SOME FUCKING \x02{}\x02",
 +    u"YOUR INDECISION IS FAR LESS APPETIZING THAN SOME FUCKING \x02{}\x02"
  ]
