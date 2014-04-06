@@ -1,4 +1,4 @@
-From 503d6f206484f87744fc22637b464c484b967891 Mon Sep 17 00:00:00 2001
+From 686edded4a4cb2ba689f6471e4ee49d78d44afa8 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 22:55:24 -0800
 Subject: [PATCH] Use permissions instead of adminonly
