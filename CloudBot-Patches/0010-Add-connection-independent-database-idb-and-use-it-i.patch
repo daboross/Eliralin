@@ -1,4 +1,4 @@
-From 296e2bc41c2a8e806b6bea2705b62d33d5c36381 Mon Sep 17 00:00:00 2001
+From 7b31b57e01a6392640ab65e050b9728b1f4a8301 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:17:29 -0800
 Subject: [PATCH] Add connection-independent database 'idb' and use it in
@@ -19,23 +19,49 @@ index eed61a3..3c065e4 100644
              input.input = input
          if 0 in args:
 diff --git a/plugins/factoids.py b/plugins/factoids.py
-index 403e6f5..457a4b7 100644
+index 3de072b..0859d80 100644
 --- a/plugins/factoids.py
 +++ b/plugins/factoids.py
+@@ -7,7 +7,7 @@ from util import hook, http, text, pyexec
+ 
+ re_lineends = re.compile(r'[\r\n]*')
+ 
+-db_ready = []
++db_ready = False
+ 
+ # some simple "shortcodes" for formatting purposes
+ shortcodes = {
+@@ -19,13 +19,13 @@ shortcodes = {
+     '[/i]': '\x16'}
+ 
+ 
+-def db_init(db, conn):
++def db_init(db):
+     global db_ready
+-    if not conn.name in db_ready:
++    if not db_ready:
+         db.execute("create table if not exists mem(word, data, nick,"
+                    " primary key(word))")
+         db.commit()
+-        db_ready.append(conn.name)
++        db_ready = True
+ 
+ 
+ def get_memory(db, word):
 @@ -39,10 +39,10 @@ def get_memory(db, word):
  
  @hook.command("r", permissions=["addfactoid"])
  @hook.command(permissions=["addfactoid"])
--def remember(inp, nick='', db=None, notice=None):
+-def remember(inp, nick='', db=None, notice=None, conn=None):
 +def remember(inp, nick='', idb=None, notice=None):
      """remember <word> [+]<data> -- Remembers <data> with <word>. Add +
      to <data> to append."""
--    db_init(db)
+-    db_init(db, conn)
 +    db_init(idb)
  
      append = False
  
-@@ -51,7 +51,7 @@ def remember(inp, nick='', db=None, notice=None):
+@@ -53,7 +53,7 @@ def remember(inp, nick='', db=None, notice=None, conn=None):
      except ValueError:
          return remember.__doc__
  
@@ -44,7 +70,7 @@ index 403e6f5..457a4b7 100644
  
      if data.startswith('+') and old_data:
          append = True
-@@ -63,9 +63,9 @@ def remember(inp, nick='', db=None, notice=None):
+@@ -65,9 +65,9 @@ def remember(inp, nick='', db=None, notice=None, conn=None):
          else:
              data = old_data + ' ' + new_data
  
@@ -56,15 +82,15 @@ index 403e6f5..457a4b7 100644
  
      if old_data:
          if append:
-@@ -79,16 +79,15 @@ def remember(inp, nick='', db=None, notice=None):
+@@ -81,16 +81,15 @@ def remember(inp, nick='', db=None, notice=None, conn=None):
  
  @hook.command("f", permissions=["delfactoid"])
  @hook.command(permissions=["delfactoid"])
--def forget(inp, db=None, notice=None):
+-def forget(inp, db=None, notice=None, conn=None):
 +def forget(inp, idb=None, notice=None):
      """forget <word> -- Forgets a remembered <word>."""
 -
--    db_init(db)
+-    db_init(db, conn)
 -    data = get_memory(db, inp)
 +    db_init(idb)
 +    data = get_memory(idb, inp)
@@ -75,18 +101,18 @@ index 403e6f5..457a4b7 100644
                     [inp])
 -        db.commit()
 +        idb.commit()
-         notice('"%s" has been forgotten.' % data.replace('`', "'"))
+         notice(u'"%s" has been forgotten.' % data.replace('`', "'"))
          return
      else:
-@@ -97,13 +96,12 @@ def forget(inp, db=None, notice=None):
+@@ -99,13 +98,12 @@ def forget(inp, db=None, notice=None, conn=None):
  
  
  @hook.command
--def info(inp, notice=None, db=None):
+-def info(inp, notice=None, db=None, conn=None):
 +def info(inp, notice=None, idb=None):
      """info <factoid> -- Shows the source of a factoid."""
 -
--    db_init(db)
+-    db_init(db, conn)
 +    db_init(idb)
  
      # attempt to get the factoid from the database
@@ -95,7 +121,7 @@ index 403e6f5..457a4b7 100644
  
      if data:
          notice(data)
-@@ -112,14 +110,14 @@ def info(inp, notice=None, db=None):
+@@ -114,14 +112,14 @@ def info(inp, notice=None, db=None, conn=None):
  
  
  @hook.regex(r'^\? ?(.+)')
@@ -107,12 +133,12 @@ index 403e6f5..457a4b7 100644
      except KeyError:
          prefix_on = False
  
--    db_init(db)
+-    db_init(db, conn)
 +    db_init(idb)
  
      # split up the input
      split = inp.group(1).strip().split(" ")
-@@ -130,7 +128,7 @@ def factoid(inp, message=None, db=None, bot=None, action=None, conn=None, input=
+@@ -132,7 +130,7 @@ def factoid(inp, message=None, db=None, bot=None, action=None, conn=None, input=
      else:
          arguments = ""
  
