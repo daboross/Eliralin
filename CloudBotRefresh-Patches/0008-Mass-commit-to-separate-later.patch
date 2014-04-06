@@ -1,0 +1,348 @@
+From 16a356b58a10c21547fa66d0b5d16c0a0a43969c Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Sun, 6 Apr 2014 13:03:29 -0700
+Subject: [PATCH] Mass commit - to separate later
+
+
+diff --git a/cloudbot.py b/cloudbot.py
+index 9ec59d9..af50540 100755
+--- a/cloudbot.py
++++ b/cloudbot.py
+@@ -3,10 +3,12 @@ import os
+ import sys
+ import time
+ import signal
++import traceback
+ 
+ from core import bot
+ 
+ 
++
+ # check python version 
+ if sys.version_info < (3, 2, 0):
+     print("CloudBot3 requires Python 3.2 or newer.")
+@@ -53,6 +55,16 @@ class CloudBotWrapper():
+                 if self.cloudbot.do_restart:
+                     # create a new bot thread and start it
+                     del self.cloudbot
++                    print("Restarting in 5 seconds")
++                    time.sleep(5)
++                    print("Thread dump:")
++                    for threadId, stack in sys._current_frames().items():
++                        print("\n# ThreadID: %s" % threadId)
++                        for filename, lineno, name, line in traceback.extract_stack(stack):
++                            print('File: "%s", line %d, in %s' % (filename, lineno, name))
++                            if line:
++                                print("  %s" % (line.strip()))
++
+                     self.cloudbot = bot.CloudBot()
+                     self.cloudbot.start()
+                     continue
+diff --git a/core/bot.py b/core/bot.py
+index 426b307..a601dda 100644
+--- a/core/bot.py
++++ b/core/bot.py
+@@ -89,8 +89,8 @@ class CloudBot(threading.Thread):
+         # start bot instances
+         self.create_connections()
+ 
+-        for instance in self.connections:
+-            instance.permissions = PermissionManager(self, instance)
++        for connection in self.connections:
++            connection.permissions = PermissionManager(self, connection)
+ 
+         # run plugin loader
+         self.plugins = collections.defaultdict(list)
+@@ -141,9 +141,9 @@ class CloudBot(threading.Thread):
+ 
+             self.logger.debug("Creating BotInstance for {}.".format(name))
+ 
+-            self.connections.append(irc.BotConnection(name, server, nick, config=conf,
+-                                                             port=port, logger=self.logger, channels=conf['channels'],
+-                                                             ssl=conf['connection'].get('ssl', False)))
++            self.connections.append(irc.BotConnection(self, name, server, nick, config=conf,
++                                                      port=port, logger=self.logger, channels=conf['channels'],
++                                                      ssl=conf['connection'].get('ssl', False)))
+             self.logger.debug("({}) Created connection.".format(name))
+ 
+     def stop(self, reason=None):
+@@ -166,9 +166,11 @@ class CloudBot(threading.Thread):
+ 
+             connection.stop()
+ 
+-        self.logger.debug("Logging engine stopped")
+-        logging.shutdown()
+-
++        self.logger.debug("Stopping logging engine")
++        for handler in self.logger.handlers:
++            self.logger.removeHandler(handler)
++        if not self.do_restart:
++            logging.shutdown()
+         self.running = False
+ 
+     def restart(self, reason=None):
+diff --git a/core/config.py b/core/config.py
+index b395459..e8b8ae1 100644
+--- a/core/config.py
++++ b/core/config.py
+@@ -58,17 +58,23 @@ class Config(dict):
+ 
+         pattern = "*{}".format(self.filename)
+ 
+-        self.event_handler = ConfigEventHandler(self, patterns=[pattern])
++        self.event_handler = ConfigEventHandler(self.bot, self, patterns=[pattern])
+         self.observer.schedule(self.event_handler, path='.', recursive=False)
+         self.observer.start()
+ 
+ 
+ class ConfigEventHandler(Trick):
+-    def __init__(self, config, *args, **kwargs):
++    def __init__(self, bot, config, *args, **kwargs):
++        """
++        :type bot: core.bot.CloudBot
++        :type config: Config
++        """
++        self.bot = bot
+         self.config = config
+         self.logger = config.logger
+         Trick.__init__(self, *args, **kwargs)
+ 
+     def on_any_event(self, event):
+-        self.logger.info("Config changed, triggering reload.")
+-        self.config.load_config()
++        if self.bot.running:
++            self.logger.info("Config changed, triggering reload.")
++            self.config.load_config()
+diff --git a/core/irc.py b/core/irc.py
+index 10bc578..44e7283 100644
+--- a/core/irc.py
++++ b/core/irc.py
+@@ -3,9 +3,10 @@ import socket
+ import time
+ import threading
+ import queue
+-
+ from ssl import wrap_socket, CERT_NONE, CERT_REQUIRED, SSLError
+ 
++from core.permissions import PermissionManager
++
+ irc_prefix_rem = re.compile(r'(.*?) (.*?) (.*)').match
+ irc_noprefix_rem = re.compile(r'()(.*?) (.*)').match
+ irc_netmask_rem = re.compile(r':?([^!@]*)!?([^@]*)@?(.*)').match
+@@ -207,8 +208,10 @@ class SSLIRCConnection(IRCConnection):
+ class BotConnection(object):
+     """ A BotConnection represents each connection the bot makes to an IRC server """
+ 
+-    def __init__(self, name, server, nick, port=6667, ssl=False, logger=None, channels=None, config=None):
++    def __init__(self, bot, name, server, nick, port=6667, ssl=False, logger=None, channels=None, config=None):
+         """
++
++        :type bot: core.bot.CloudBot
+         :type name: str
+         :type server: str
+         :type nick: str
+@@ -218,6 +221,7 @@ class BotConnection(object):
+         :type channels: list
+         :type config: map
+         """
++        self.bot = bot
+         self.name = name
+ 
+         if channels is None:
+@@ -261,6 +265,9 @@ class BotConnection(object):
+         self.parse_thread.daemon = True
+         self.parse_thread.start()
+ 
++        # create permissions manager
++        self.permissions = PermissionManager(bot, self)
++
+     def create_connection(self):
+         if self.ssl:
+             return SSLIRCConnection(self.name, self.server, self.port, self.input_queue,
+diff --git a/core/main.py b/core/main.py
+index e4d3e7e..de5c5de 100644
+--- a/core/main.py
++++ b/core/main.py
+@@ -1,6 +1,7 @@
+ import _thread
+ import inspect
+ import queue
++from queue import Empty
+ import re
+ 
+ _thread.stack_size(1024 * 512)  # reduce vm size
+@@ -95,14 +96,13 @@ def run(bot, func, input):
+     """
+     uses_db = True
+     # TODO: change to bot.get_db_session()
+-    bot.logger.debug("Input: {}".format(input))
++    # bot.logger.debug("Input: {}".format(input))
+ 
+     if uses_db:
+         # create SQLAlchemy session
+-        bot.logger.debug("Opened DB session for: {}".format(func._filename))
++        # bot.logger.debug("Opened DB session for: {}".format(func._filename))
+         input.db = input.bot.db_session()
+ 
+-    # parameters is an array of
+     parameters = []
+     named_parameters = {}
+     specifications = inspect.getargspec(func)
+@@ -116,7 +116,7 @@ def run(bot, func, input):
+     if len(required_args) - len(default_args) == 1:
+         # The function is using the old format, with all arguments with defaults except for 'text'
+         # Assume that the funct want the first non-default arg to be 'input'
+-        parameters = [input.text]
++        parameters.append(input.text)
+         required_args = required_args[1:]  # Trim the first argument, as it's been assigned as a non-named parameter
+ 
+         for required_arg in required_args:
+@@ -140,7 +140,7 @@ def run(bot, func, input):
+         return
+     finally:
+         if uses_db:
+-            bot.logger.debug("Closed DB session for: {}".format(func._filename))
++            # bot.logger.debug("Closed DB session for: {}".format(func._filename))
+             input.db.close()
+ 
+     if out is not None:
+@@ -167,6 +167,10 @@ class Handler:
+     """Runs plugins in their own threads (ensures order)"""
+ 
+     def __init__(self, bot, func):
++        """
++
++        :type bot: core.bot.CloudBot
++        """
+         self.func = func
+         self.bot = bot
+         self.input_queue = queue.Queue()
+@@ -174,10 +178,15 @@ class Handler:
+ 
+     def start(self):
+         uses_db = True
+-        while True:
+-            input = self.input_queue.get()
+-
+-            if input == StopIteration:
++        while self.bot.running:
++            input = None
++            while input is None and self.bot.running:
++                try:
++                    input = self.input_queue.get(block=True, timeout=1)
++                except Empty:
++                    pass
++
++            if input == StopIteration or not self.bot.running:
+                 break
+ 
+             run(self.bot, self.func, input)
+@@ -204,7 +213,7 @@ def dispatch(bot, input, kind, func, args, autohelp=False):
+             return
+ 
+     if autohelp and args.get('autohelp', True) and not input.text and func.__doc__ is not None:
+-        input.notice(input.conn.config["command_prefix"] + func.__doc__)
++        input.notice(input.conn.config["command_prefix"] + func.__doc__.split('\n', 1)[0])
+         return
+ 
+     if func._thread:
+diff --git a/core/permissions.py b/core/permissions.py
+index 103542a..a368a9d 100644
+--- a/core/permissions.py
++++ b/core/permissions.py
+@@ -44,5 +44,19 @@ class PermissionManager(object):
+ 
+         for pattern in allowed_users:
+             if fnmatch(mask.lower(), pattern.lower()):
++                self.logger.info("Allowed user {} access to {}".format(mask, perm))
+                 return input
+ 
++    def get_group_permissions(self, group):
++        return self.group_perms.get(group)
++
++    def get_group_users(self, group):
++        return self.group_users.get(group)
++
++    def get_user_permissions(self, user):
++        permissions = []
++        for permission, users in self.perm_users.items():
++            for mask in users:
++                if fnmatch(user.lower(), mask.lower()):
++                    permissions.append(permission)
++        return permissions
+\ No newline at end of file
+diff --git a/plugins/admin.py b/plugins/admin.py
+index beab945..c4a838b 100644
+--- a/plugins/admin.py
++++ b/plugins/admin.py
+@@ -3,31 +3,26 @@ import re
+ from util import hook
+ 
+ 
+-@hook.command(autohelp=False, permissions=["permissions_users"])
+-def permissions(inp, bot=None, notice=None):
+-    """permissions [group] -- lists the users and their permission level who have permissions."""
+-    permissions = bot.config.get("permissions", [])
+-    groups = []
+-    if inp:
+-        for k in permissions:
+-            if inp == k:
+-                groups.append(k)
+-    else:
+-        for k in permissions:
+-            groups.append(k)
+-    if not groups:
+-        notice("{} is not a group with permissions".format(inp))
+-        return None
+-
+-    for v in groups:
+-        members = ""
+-        for value in permissions[v]["users"]:
+-            members = members + value + ", "
+-        if members:
+-            notice("the members in the {} group are..".format(v))
+-            notice(members[:-2])
++@hook.command(permissions=["permissions_users"])
++def grouppermissions(inp, input=None, notice=None, conn=None):
++    """permissions [group] -- lists the users and their permission level who have permissions.
++    :type inp: str
++    :type input: core.main.Input
++    :type notice: function
++    :type conn: core.irc.BotConnection
++    """
++    permission_manager = conn.permissions
++    group_users = permission_manager.get_group_users(inp)
++    group_permissions = permission_manager.get_group_permissions(inp)
++    if group_permissions:
++        if group_users:
++            return "Group {} has members: {}, permissions {}".format(inp, group_users, group_permissions)
+         else:
+-            notice("there are no members in the {} group".format(v))
++            return "Group {} has no members, but has permissions {}".format(inp, group_permissions)
++    elif group_users:
++        return "Group {} has members: {}, but no permissions".format(inp, group_users)
++    else:
++        return "Group {} has no users nor permissions".format(inp)
+ 
+ 
+ @hook.command(permissions=["permissions_users"])
+diff --git a/plugins/steam.py b/plugins/steam.py
+index afa86f8..c3531b3 100644
+--- a/plugins/steam.py
++++ b/plugins/steam.py
+@@ -13,10 +13,8 @@ def get_steam_info(url):
+     page = http.get(url)
+     soup = BeautifulSoup(page, 'lxml', from_encoding="utf-8")
+ 
+-    data = {}
+-
+-    data["name"] = soup.find('div', {'class': 'apphub_AppName'}).text
+-    data["desc"] = truncate_str(soup.find('meta', {'name': 'description'})['content'].strip(), 80)
++    data = {"name": soup.find('div', {'class': 'apphub_AppName'}).text,
++            "desc": truncate_str(soup.find('meta', {'name': 'description'})['content'].strip(), 80)}
+ 
+     # get the element details_block
+     details = soup.find('div', {'class': 'details_block'})
+-- 
+1.9.1
+

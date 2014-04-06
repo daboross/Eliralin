@@ -1,4 +1,4 @@
-From c4ca4322abcad9d125ba70889df4372af07d8a23 Mon Sep 17 00:00:00 2001
+From 2d45827e4896e6f7328dcb34c155fd6d4412a000 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 5 Apr 2014 23:43:02 -0700
 Subject: [PATCH] Format loader.py, and add type specifications to docs
