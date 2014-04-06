@@ -1,0 +1,45 @@
+From 8419eefa478b6ecd5eb1c783dfe78116f80fd6f1 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Sat, 5 Apr 2014 23:16:06 -0700
+Subject: [PATCH] Possible fix KDF imports in encrypt.py
+
+
+diff --git a/plugins/encrypt.py b/plugins/encrypt.py
+index 119e37d..6a10a29 100644
+--- a/plugins/encrypt.py
++++ b/plugins/encrypt.py
+@@ -1,12 +1,10 @@
+ import os
+ import base64
+-import json
+ import hashlib
+ 
+ from Crypto import Random
+ from Crypto.Cipher import AES
+-from Crypto.Protocol.KDF import PBKDF2
+-
++import Crypto.Protocol.KDF as KDF
+ from util import hook
+ 
+ 
+@@ -56,7 +54,7 @@ def encrypt(inp, bot=None, db=None, notice=None):
+     # generate the key from the password and salt
+     password = split[0]
+     salt = get_salt(bot)
+-    key = PBKDF2(password, salt)
++    key = KDF.PBKDF2(password, salt)
+ 
+     # generate the IV and encode it to store in the database
+     iv = Random.new().read(AES.block_size)
+@@ -92,7 +90,7 @@ def decrypt(inp, bot=None, db=None, notice=None):
+     # generate the key from the password and salt
+     password = split[0]
+     salt = get_salt(bot)
+-    key = PBKDF2(password, salt)
++    key = KDF.PBKDF2(password, salt)
+ 
+     text = " ".join(split[1:])
+ 
+-- 
+1.9.1
+

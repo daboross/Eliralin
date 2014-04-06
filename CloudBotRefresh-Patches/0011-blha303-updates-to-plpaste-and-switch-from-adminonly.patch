@@ -1,12 +1,12 @@
-From 261cece10f45b5edbd5593c883ef27f3e620a557 Mon Sep 17 00:00:00 2001
-From: Steven Smith <stevensmith.ome@gmail.com>
-Date: Mon, 24 Mar 2014 11:01:46 +0800
-Subject: [PATCH] Add support for plugins without commands
+From 4f9a094e1a0d468a1545c1cc7fe5ed7ce86d6e66 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Sat, 5 Apr 2014 23:30:28 -0700
+Subject: [PATCH] blha303 updates to plpaste and switch from adminonly to
+ permissions
 
-regex plugins, etc
 
 diff --git a/plugins/plpaste.py b/plugins/plpaste.py
-index bf039fc..d46e672 100644
+index 238037d..d46e672 100644
 --- a/plugins/plpaste.py
 +++ b/plugins/plpaste.py
 @@ -1,12 +1,14 @@
@@ -14,12 +14,13 @@ index bf039fc..d46e672 100644
 +from os import listdir
  
  
- @hook.command(permissions=["adminonly"])
+-@hook.command(adminonly=True)
 -def plpaste(inp):
 -    if "/" in inp and inp.split("/")[0] != "util":
 -        return "Invalid input"
 -    try:
 -        with open("plugins/%s.py" % inp) as f:
++@hook.command(permissions=["adminonly"])
 +def plpaste(inp, bot=None):
 +    if inp in bot.commands:
 +        with open(bot.commands[inp][0].func_code.co_filename.strip()) as f:

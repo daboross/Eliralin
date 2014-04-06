@@ -1,0 +1,61 @@
+From 8378ffbea390a5d8614389705774e74c901c7007 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Sat, 5 Apr 2014 23:47:11 -0700
+Subject: [PATCH] config.py changes: - Specify type in docs - Declare
+ self.observer and self.event_handler in __init__, without assigning - Change
+ usage of self.bot.instances to self.bot.connections
+
+
+diff --git a/core/config.py b/core/config.py
+index 9d8d010..b395459 100644
+--- a/core/config.py
++++ b/core/config.py
+@@ -9,6 +9,9 @@ from watchdog.tricks import Trick
+ 
+ class Config(dict):
+     def __init__(self, bot, *args, **kwargs):
++        """
++        :type bot: core.bot.CloudBot
++        """
+         self.filename = "config.json"
+         self.path = os.path.abspath(self.filename)
+         self.bot = bot
+@@ -18,10 +21,12 @@ class Config(dict):
+         # populate self with config data
+         self.load_config()
+ 
++        # Declaring here, to be assigned later
++        self.observer = None
++        self.event_handler = None
+         # start watcher
+         self.watcher()
+ 
+-
+     def load_config(self):
+         """(re)loads the bot config from the config file"""
+         if not os.path.exists(self.path):
+@@ -38,9 +43,9 @@ class Config(dict):
+             self.logger.info("Config loaded from file.")
+ 
+         # reload permissions
+-        if self.bot.instances:
+-            for instance in self.bot.instances:
+-                instance.permissions.reload()
++        if self.bot.connections:
++            for connection in self.bot.connections:
++                connection.permissions.reload()
+ 
+     def save_config(self):
+         """saves the contents of the config dict to the config file"""
+@@ -57,7 +62,7 @@ class Config(dict):
+         self.observer.schedule(self.event_handler, path='.', recursive=False)
+         self.observer.start()
+ 
+- 
++
+ class ConfigEventHandler(Trick):
+     def __init__(self, config, *args, **kwargs):
+         self.config = config
+-- 
+1.9.1
+

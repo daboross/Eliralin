@@ -1,7 +1,7 @@
-From dddfe09dafbf421a7b4e347aee724fc8e5fddc0a Mon Sep 17 00:00:00 2001
+From 63880122f69b29c1b93f35cb61e850a78996eef8 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
-Date: Mon, 13 Jan 2014 23:13:03 -0800
-Subject: [PATCH] Change ctcp reply to return 'Eliralin'
+Date: Sat, 5 Apr 2014 23:11:52 -0700
+Subject: [PATCH] Change ctcp to Eliralin
 
 
 diff --git a/plugins/core_ctcp.py b/plugins/core_ctcp.py

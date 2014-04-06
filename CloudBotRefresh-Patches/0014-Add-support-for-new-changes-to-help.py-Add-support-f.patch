@@ -1,0 +1,37 @@
+From ce92aee7c8d19f5d1e4bb5d2b446ac9961fcc752 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Sat, 5 Apr 2014 23:41:10 -0700
+Subject: [PATCH] Add support for new changes to help.py: - Add support for
+ func._filename not being a full path - Change conn.conf to conn.config
+
+
+diff --git a/plugins/help.py b/plugins/help.py
+index 5aed73b..b3ba5b1 100644
+--- a/plugins/help.py
++++ b/plugins/help.py
+@@ -12,7 +12,7 @@ def help_command(inp, notice=None, conn=None, bot=None):
+     disabled_comm = bot.config.get('disabled_commands', [])
+     for command, (func, args) in bot.commands.items():
+         fn = re.match(r'^plugins.(.+).py$', func._filename)
+-        if fn.group(1).lower() not in disabled:
++        if fn is None and (func._filename not in disabled) or (fn.group(1).lower() not in disabled):
+             if command not in disabled_comm:
+                 if func.__doc__ is not None:
+                     if func in funcs:
+@@ -42,10 +42,10 @@ def help_command(inp, notice=None, conn=None, bot=None):
+             for x in out[1:]:
+                 notice(x)
+         notice("For detailed help, do '{}help <example>' where <example> "
+-               "is the name of the command you want help for.".format(conn.conf["command_prefix"]))
++               "is the name of the command you want help for.".format(conn.config["command_prefix"]))
+ 
+     else:
+         if inp in commands:
+-            notice(conn.conf["command_prefix"] + commands[inp].__doc__)
++            notice(conn.config["command_prefix"] + commands[inp].__doc__)
+         else:
+-            notice("Command {}{} not found".format(conn.conf["command_prefix"], inp))
++            notice("Command {}{} not found".format(conn.config["command_prefix"], inp))
+-- 
+1.9.1
+

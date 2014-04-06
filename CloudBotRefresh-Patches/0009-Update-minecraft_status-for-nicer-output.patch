@@ -1,24 +1,23 @@
-From 1ecda49f62d22c8dc2d0c15cd2969337f8ae2262 Mon Sep 17 00:00:00 2001
+From d951a6075e5578ab5992d62b950dbc3d9a366a06 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
-Date: Mon, 13 Jan 2014 23:05:12 -0800
-Subject: [PATCH] Update minecraft_status to use unicode checks, and with a new
- format.
+Date: Sat, 5 Apr 2014 23:27:20 -0700
+Subject: [PATCH] Update minecraft_status for nicer output
 
 
 diff --git a/plugins/minecraft_status.py b/plugins/minecraft_status.py
-index 4ca67d3..d9e416d 100644
+index 0a57ab0..7e884fe 100644
 --- a/plugins/minecraft_status.py
 +++ b/plugins/minecraft_status.py
 @@ -2,8 +2,16 @@ import json
  
  from util import hook, http
  
-+green_prefix = u"\x02\x0f"
-+green_suffix = u": \x033\x02\u2714"
-+yellow_prefix = u"\x02\x0f"
-+yellow_suffix = u": \x037\x02\u26A0"
-+red_prefix = u"\x02\x0f"
-+red_suffix = u": \x034\x02\u2716"
++green_prefix = "\x02\x0f"
++green_suffix = ": \x033\x02\u2714"
++yellow_prefix = "\x02\x0f"
++yellow_suffix = ": \x037\x02\u26A0"
++red_prefix = "\x02\x0f"
++red_suffix = ": \x034\x02\u2716"
 +
  
  @hook.command(autohelp=False)
@@ -36,8 +35,9 @@ index 4ca67d3..d9e416d 100644
 -    green = []
 -    yellow = []
 -    red = []
+-    for server, status in list(data.items()):
 +    servers = []
-     for server, status in data.items():
++    for server, status in data.items():
 +        if server == "minecraft.net":
 +            server = "MC|Website"
 +        elif server.endswith(".mojang.com"):
@@ -47,10 +47,10 @@ index 4ca67d3..d9e416d 100644
 +
          if status == "green":
 -            green.append(server)
-+            servers.append(u"{}{}{}".format(green_prefix, server, green_suffix))
++            servers.append("{}{}{}".format(green_prefix, server, green_suffix))
          elif status == "yellow":
 -            yellow.append(server)
-+            servers.append(u"{}{}{}".format(yellow_prefix, server, yellow_suffix))
++            servers.append("{}{}{}".format(yellow_prefix, server, yellow_suffix))
          else:
 -            red.append(server)
 -
@@ -67,7 +67,7 @@ index 4ca67d3..d9e416d 100644
 -
 -    return "\x0f" + out.replace(".mojang.com", ".mj") \
 -                       .replace(".minecraft.net", ".mc")
-+            servers.append(u"{}{}{}".format(red_prefix, server, red_suffix))
++            servers.append("{}{}{}".format(red_prefix, server, red_suffix))
 +    return "  ".join(servers)
 -- 
 1.9.1

@@ -1,0 +1,41 @@
+From c137b07aa89b7d060136f588bde02b245dcb1e09 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Sat, 5 Apr 2014 22:59:46 -0700
+Subject: [PATCH] Remove unused db.py
+
+
+diff --git a/core/db.py b/core/db.py
+deleted file mode 100644
+index d4226a2..0000000
+--- a/core/db.py
++++ /dev/null
+@@ -1,26 +0,0 @@
+-import os
+-import sqlite3
+-import _thread
+-
+-threaddbs = {}
+-
+-
+-def get_db_connection(conn, name=''):
+-    """returns an sqlite3 connection to a persistent database"""
+-
+-    if not name:
+-        name = '{}.db'.format(conn.name)
+-
+-    threadid = _thread.get_ident()
+-    if name in threaddbs and threadid in threaddbs[name]:
+-        return threaddbs[name][threadid]
+-    filename = os.path.join(bot.data_dir, name)
+-
+-    db = sqlite3.connect(filename, timeout=10)
+-    if name in threaddbs:
+-        threaddbs[name][threadid] = db
+-    else:
+-        threaddbs[name] = {threadid: db}
+-    return db
+-
+-bot.get_db_connection = get_db_connection
+-- 
+1.9.1
+
