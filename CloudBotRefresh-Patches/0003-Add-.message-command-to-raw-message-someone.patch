@@ -1,0 +1,30 @@
+From e28c4d2f4ccfa0a69dc11d3699de83c3da6e346e Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Mon, 13 Jan 2014 19:15:02 -0800
+Subject: [PATCH] Add .message command to raw message someone
+
+
+diff --git a/plugins/admin.py b/plugins/admin.py
+index 858d191..5b285c4 100644
+--- a/plugins/admin.py
++++ b/plugins/admin.py
+@@ -201,6 +201,16 @@ def say(inp, conn=None, chan=None):
+     conn.send(out)
+ 
+ 
++@hook.command(permissions=["botcontrol"])
++def message(inp, conn=None, chan=None):
++    """message <name> <message> -- Makes the bot say <message> to <name>.
++    If <name> is a channel, the bot will say the message in that channel."""
++    inp = inp.split(" ")
++    message = " ".join(inp[1:])
++    out = "PRIVMSG {} :{}".format(inp[0], message)
++    conn.send(out)
++
++
+ @hook.command("act", permissions=["botcontrol"])
+ @hook.command(permissions=["botcontrol"])
+ def me(inp, conn=None, chan=None):
+-- 
+1.9.1
+

@@ -1,0 +1,127 @@
+From e24420a64325026426f8453166b8e5d3954102a5 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Tue, 1 Apr 2014 21:03:51 -0700
+Subject: [PATCH] Add more phrases
+
+
+diff --git a/plugins/recipe.py b/plugins/recipe.py
+new file mode 100644
+index 0000000..6fa4aea
+--- /dev/null
++++ b/plugins/recipe.py
+@@ -0,0 +1,111 @@
++import random
++
++from util import hook, http, web
++
++METADATA_URL = "http://omnidator.appspot.com/microdata/json/?url={}"
++
++BASE_URL = "http://www.cookstr.com"
++SEARCH_URL = BASE_URL + "/searches"
++RANDOM_URL = SEARCH_URL + "/surprise"
++
++# set this to true to censor this plugin!
++censor = True
++phrases = [
++    u"EAT SOME FUCKING \x02{}\x02",
++    u"YOU WON'T NOT MAKE SOME FUCKING \x02{}\x02",
++    u"HOW ABOUT SOME FUCKING \x02{}?\x02",
++    u"WHY DON'T YOU EAT SOME FUCKING \x02{}?\x02",
++    u"MAKE SOME FUCKING \x02{}\x02",
++    u"INDUCE FOOD COMA WITH SOME FUCKING \x02{}\x02"
++    u"CLASSILY PARTAKE IN SOME FUCKING \x02{}\x02",
++    u"COOK UP SOME FUCKING \x02{}\x02",
++    u"CURE YOUR MOUTH'S POST TRAUMATIC STRESS DISORDER WITH SOME FUCKING \x02{}\x02",
++    u"PROCURE SOME CHILD LABOR TO COOK UP SOME FUCKING \x02{}\x02",
++    u"YOUR INDECISION IS FAR LESS APPETIZING THAN SOME FUCKING \x02{}\x02"
++]
++
++clean_key = lambda i: i.split("#")[1]
++
++
++class ParseError(Exception):
++    pass
++
++
++def get_data(url):
++    """ Uses the omnidator API to parse the metadata from the provided URL """
++    try:
++        omni = http.get_json(METADATA_URL.format(url))
++    except (http.HTTPError, http.URLError) as e:
++        raise ParseError(e)
++    schemas = omni["@"]
++    for d in schemas:
++        if d["a"] == "<http://schema.org/Recipe>":
++            data = {clean_key(key): value for (key, value) in d.iteritems()
++                    if key.startswith("http://schema.org/Recipe")}
++            return data
++    raise ParseError("No recipe data found")
++
++
++@hook.command(autohelp=False)
++def recipe(inp):
++    """recipe [term] - Gets a recipe for [term], or ets a random recipe if [term] is not provided"""
++    if inp:
++        # get the recipe URL by searching
++        try:
++            search = http.get_soup(SEARCH_URL, query=inp.strip())
++        except (http.HTTPError, http.URLError) as e:
++            return "Could not get recipe: {}".format(e)
++
++        # find the list of results
++        result_list = search.find('div', {'class': 'found_results'})
++
++        if result_list:
++            results = result_list.find_all('div', {'class': 'recipe_result'})
++        else:
++            return "No results"
++
++        # pick a random front page result
++        result = random.choice(results)
++
++        # extract the URL from the result
++        url = BASE_URL + result.find('div', {'class': 'image-wrapper'}).find('a')['href']
++
++    else:
++        # get a random recipe URL
++        try:
++            page = http.open(RANDOM_URL)
++        except (http.HTTPError, http.URLError) as e:
++            return "Could not get recipe: {}".format(e)
++        url = page.geturl()
++
++    # use get_data() to get the recipe info from the URL
++    try:
++        data = get_data(url)
++    except ParseError as e:
++        return "Could not parse recipe: {}".format(e)
++
++    name = data["name"].strip()
++    return u"Try eating \x02{}!\x02 - {}".format(name, web.try_isgd(url))
++
++
++@hook.command(autohelp=False)
++def dinner(inp):
++    """dinner - WTF IS FOR DINNER"""
++    try:
++        page = http.open(RANDOM_URL)
++    except (http.HTTPError, http.URLError) as e:
++        return "Could not get recipe: {}".format(e)
++    url = page.geturl()
++
++    try:
++        data = get_data(url)
++    except ParseError as e:
++        return "Could not parse recipe: {}".format(e)
++
++    name = data["name"].strip().upper()
++    text = random.choice(phrases).format(name)
++
++    if censor:
++        text = text.replace("FUCK", "F**K")
++
++    return u"{} - {}".format(text, web.try_isgd(url))
+\ No newline at end of file
+-- 
+1.9.1
+
