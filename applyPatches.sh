@@ -34,3 +34,4 @@ function applyPatch {
 }
 
 applyPatch CloudBot Eliralin
+applyPatch CloudBotRefresh EliralinRefresh

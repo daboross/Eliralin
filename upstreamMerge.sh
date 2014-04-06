@@ -2,8 +2,9 @@
 basedir=`pwd`
 function update {
     cd "$basedir/$1"
-    git fetch && git reset --hard origin/develop
+    git fetch && git reset --hard "origin/${2}"
     cd ../
-    git add $1
+    git add "$1"
 }
-update CloudBot
+update CloudBot develop
+update CloudBotRefresh refresh

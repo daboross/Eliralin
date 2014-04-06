@@ -7,3 +7,4 @@ function update {
     cd ../
 }
 update Eliralin eliralin
+update EliralinRefresh eliralin-refresh

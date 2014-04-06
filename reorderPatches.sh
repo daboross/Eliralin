@@ -16,3 +16,4 @@ cleanPatches() {
     done
 }
 cleanPatches CloudBot
+cleanPatches CloudBotRefresh

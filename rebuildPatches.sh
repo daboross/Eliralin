@@ -34,3 +34,4 @@ function savePatches {
 }
 
 savePatches CloudBot Eliralin
+savePatches CloudBotRefresh EliralinRefresh
