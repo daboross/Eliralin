@@ -1,4 +1,4 @@
-From 67e38c36e2a43e08896f569618554be0c92fb753 Mon Sep 17 00:00:00 2001
+From 9ba77acc3f7ce78a415256b755b1f1650261001f Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 5 Apr 2014 23:44:40 -0700
 Subject: [PATCH] Format and add type specifications to doc strings in irc.py

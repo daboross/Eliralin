@@ -1,4 +1,4 @@
-From d516b2a989588f380b09682cf0ee3f70a77e5a64 Mon Sep 17 00:00:00 2001
+From 9a8d8f3ee5c36b0b22150eb3b7abcdf3a2fe368b Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 5 Apr 2014 23:14:12 -0700
 Subject: [PATCH] Fix correction plugin / resolve conflicts

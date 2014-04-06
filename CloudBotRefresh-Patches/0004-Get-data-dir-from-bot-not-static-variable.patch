@@ -1,4 +1,4 @@
-From 6f76916b786ec66dbbc857e6c92b9158c7e392fb Mon Sep 17 00:00:00 2001
+From 2be435a5970d31ac16c14f25445da5d3fefcfd71 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 5 Apr 2014 23:28:15 -0700
 Subject: [PATCH] Get data dir from bot, not static variable

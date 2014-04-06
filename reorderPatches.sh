@@ -14,6 +14,7 @@ cleanPatches() {
         fi
         NUM="$((NUM + 1))"
     done
+    cd ../
 }
 cleanPatches CloudBot
 cleanPatches CloudBotRefresh

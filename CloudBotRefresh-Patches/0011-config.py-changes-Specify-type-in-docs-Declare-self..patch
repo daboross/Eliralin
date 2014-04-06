@@ -1,4 +1,4 @@
-From 8378ffbea390a5d8614389705774e74c901c7007 Mon Sep 17 00:00:00 2001
+From ee21726da1b3c90c9f85dcc49003b7d78b143df5 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 5 Apr 2014 23:47:11 -0700
 Subject: [PATCH] config.py changes: - Specify type in docs - Declare

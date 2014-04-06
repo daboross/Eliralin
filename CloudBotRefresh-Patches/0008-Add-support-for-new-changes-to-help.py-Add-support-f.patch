@@ -1,4 +1,4 @@
-From ce92aee7c8d19f5d1e4bb5d2b446ac9961fcc752 Mon Sep 17 00:00:00 2001
+From a10ca0b52ff91b0283049984f73d069b825a8541 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 5 Apr 2014 23:41:10 -0700
 Subject: [PATCH] Add support for new changes to help.py: - Add support for
