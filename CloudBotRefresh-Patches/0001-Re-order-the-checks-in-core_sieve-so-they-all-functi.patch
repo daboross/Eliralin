@@ -1,4 +1,4 @@
-From 98fbd389135a2aad741a3cbef50ba433ab87a6b3 Mon Sep 17 00:00:00 2001
+From c704d18cbf878b314347e2e43d56e3b118678c24 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 7 Apr 2014 00:06:03 -0700
 Subject: [PATCH] Re-order the checks in core_sieve so they all function
