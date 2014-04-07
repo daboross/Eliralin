@@ -1,11 +1,11 @@
-From bc70b5a62b3f5f3f364cc1998cd1e7b448f8efc6 Mon Sep 17 00:00:00 2001
+From 977558ba93d8f4e126f9f07ec1653d5e31dca6b9 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
-Date: Sun, 6 Apr 2014 21:56:14 -0700
+Date: Sun, 6 Apr 2014 23:51:25 -0700
 Subject: [PATCH] Fix logger re-initialization when restarting
 
 
 diff --git a/core/bot.py b/core/bot.py
-index a601dda..673821d 100644
+index 426b307..ac23533 100644
 --- a/core/bot.py
 +++ b/core/bot.py
 @@ -14,6 +14,9 @@ from core.permissions import PermissionManager
@@ -40,26 +40,28 @@ index a601dda..673821d 100644
      return logger
  
  
-@@ -141,7 +152,7 @@ class CloudBot(threading.Thread):
- 
+@@ -142,8 +153,8 @@ class CloudBot(threading.Thread):
              self.logger.debug("Creating BotInstance for {}.".format(name))
  
--            self.connections.append(irc.BotConnection(self, name, server, nick, config=conf,
-+            self.connections.append(irc.BotConnection(name, server, nick, config=conf,
-                                                       port=port, logger=self.logger, channels=conf['channels'],
-                                                       ssl=conf['connection'].get('ssl', False)))
+             self.connections.append(irc.BotConnection(name, server, nick, config=conf,
+-                                                             port=port, logger=self.logger, channels=conf['channels'],
+-                                                             ssl=conf['connection'].get('ssl', False)))
++                                                      port=port, logger=self.logger, channels=conf['channels'],
++                                                      ssl=conf['connection'].get('ssl', False)))
              self.logger.debug("({}) Created connection.".format(name))
-@@ -166,14 +177,13 @@ class CloudBot(threading.Thread):
+ 
+     def stop(self, reason=None):
+@@ -166,12 +177,13 @@ class CloudBot(threading.Thread):
  
              connection.stop()
  
--        self.logger.debug("Stopping logging engine")
--        for handler in self.logger.handlers:
--            self.logger.removeHandler(handler)
-         if not self.do_restart:
+-        self.logger.debug("Logging engine stopped")
+-        logging.shutdown()
+-
++        if not self.do_restart:
 +            # Don't shut down logging if restarting
 +            self.logger.debug("Stopping logging engine")
-             logging.shutdown()
++            logging.shutdown()
          self.running = False
  
      def restart(self, reason=None):

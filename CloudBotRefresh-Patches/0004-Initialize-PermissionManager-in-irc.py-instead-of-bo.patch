@@ -1,0 +1,93 @@
+From 00e20419af34684f0ea60c9300c7f45dd521ffde Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Sun, 6 Apr 2014 23:54:29 -0700
+Subject: [PATCH] Initialize PermissionManager in irc.py instead of bot.py
+
+
+diff --git a/core/bot.py b/core/bot.py
+index ac23533..fee633a 100644
+--- a/core/bot.py
++++ b/core/bot.py
+@@ -10,7 +10,6 @@ from sqlalchemy.orm import scoped_session, sessionmaker
+ from sqlalchemy import create_engine
+ 
+ from core import config, irc, main
+-from core.permissions import PermissionManager
+ from core.loader import PluginLoader
+ 
+ 
+@@ -100,9 +99,6 @@ class CloudBot(threading.Thread):
+         # start bot instances
+         self.create_connections()
+ 
+-        for instance in self.connections:
+-            instance.permissions = PermissionManager(self, instance)
+-
+         # run plugin loader
+         self.plugins = collections.defaultdict(list)
+ 
+@@ -152,7 +148,7 @@ class CloudBot(threading.Thread):
+ 
+             self.logger.debug("Creating BotInstance for {}.".format(name))
+ 
+-            self.connections.append(irc.BotConnection(name, server, nick, config=conf,
++            self.connections.append(irc.BotConnection(self, name, server, nick, config=conf,
+                                                       port=port, logger=self.logger, channels=conf['channels'],
+                                                       ssl=conf['connection'].get('ssl', False)))
+             self.logger.debug("({}) Created connection.".format(name))
+diff --git a/core/irc.py b/core/irc.py
+index 10bc578..18b7303 100644
+--- a/core/irc.py
++++ b/core/irc.py
+@@ -3,9 +3,11 @@ import socket
+ import time
+ import threading
+ import queue
+-
+ from ssl import wrap_socket, CERT_NONE, CERT_REQUIRED, SSLError
+ 
++from core.permissions import PermissionManager
++
++
+ irc_prefix_rem = re.compile(r'(.*?) (.*?) (.*)').match
+ irc_noprefix_rem = re.compile(r'()(.*?) (.*)').match
+ irc_netmask_rem = re.compile(r':?([^!@]*)!?([^@]*)@?(.*)').match
+@@ -207,8 +209,9 @@ class SSLIRCConnection(IRCConnection):
+ class BotConnection(object):
+     """ A BotConnection represents each connection the bot makes to an IRC server """
+ 
+-    def __init__(self, name, server, nick, port=6667, ssl=False, logger=None, channels=None, config=None):
++    def __init__(self, bot, name, server, nick, port=6667, ssl=False, logger=None, channels=None, config=None):
+         """
++        :type bot: core.bot.CloudBot
+         :type name: str
+         :type server: str
+         :type nick: str
+@@ -218,6 +221,7 @@ class BotConnection(object):
+         :type channels: list
+         :type config: map
+         """
++        self.bot = bot
+         self.name = name
+ 
+         if channels is None:
+@@ -261,6 +265,9 @@ class BotConnection(object):
+         self.parse_thread.daemon = True
+         self.parse_thread.start()
+ 
++        # create permissions manager
++        self.permissions = PermissionManager(bot, self)
++
+     def create_connection(self):
+         if self.ssl:
+             return SSLIRCConnection(self.name, self.server, self.port, self.input_queue,
+@@ -337,4 +344,4 @@ class BotConnection(object):
+         except:
+             # if this doesn't work, no big deal
+             pass
+-        self.output_queue.put(string)
+\ No newline at end of file
++        self.output_queue.put(string)
+-- 
+1.9.1
+

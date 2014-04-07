@@ -1,0 +1,79 @@
+From c720e1127aa5f67ff0151d5f1d3dada11afa611f Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Mon, 7 Apr 2014 00:02:13 -0700
+Subject: [PATCH] Three fixes in main.py
+
+- Fix printing the Input to console
+- Make Handlers stop waiting for a new thing to handle if the bot has stopped
+- Only show first line of plugin documentation for autohelp, instead of attempting to show all of them
+
+diff --git a/core/main.py b/core/main.py
+index a904c6e..406628a 100644
+--- a/core/main.py
++++ b/core/main.py
+@@ -1,6 +1,7 @@
+ import _thread
+ import inspect
+ import queue
++from queue import Empty
+ import re
+ 
+ _thread.stack_size(1024 * 512)  # reduce vm size
+@@ -95,7 +96,7 @@ def run(bot, func, input):
+     """
+     uses_db = True
+     # TODO: change to bot.get_db_session()
+-    bot.logger.debug("Input: {}".format(input))
++    bot.logger.debug("Input: {}".format(input.__dict__))
+ 
+     if uses_db:
+         # create SQLAlchemy session
+@@ -115,7 +116,7 @@ def run(bot, func, input):
+     if len(required_args) - len(default_args) == 1:
+         # The function is using the old format, with all arguments with defaults except for 'text'
+         # Assume that the funct want the first non-default arg to be 'input'
+-        parameters = [input.text]
++        parameters.append(input.text)
+         required_args = required_args[1:]  # Trim the first argument, as it's been assigned as a non-named parameter
+ 
+         for required_arg in required_args:
+@@ -166,6 +167,9 @@ class Handler:
+     """Runs plugins in their own threads (ensures order)"""
+ 
+     def __init__(self, bot, func):
++        """
++        :type bot: core.bot.CloudBot
++        """
+         self.func = func
+         self.bot = bot
+         self.input_queue = queue.Queue()
+@@ -174,9 +178,14 @@ class Handler:
+     def start(self):
+         uses_db = True
+         while True:
+-            input = self.input_queue.get()
+-
+-            if input == StopIteration:
++            while self.bot.running:  # This loop will break when successful
++                try:
++                    input = self.input_queue.get(block=True, timeout=1)
++                    break
++                except Empty:
++                    pass
++
++            if not self.bot.running or input == StopIteration:
+                 break
+ 
+             run(self.bot, self.func, input)
+@@ -203,7 +212,7 @@ def dispatch(bot, input, kind, func, args, autohelp=False):
+             return
+ 
+     if autohelp and args.get('autohelp', True) and not input.text and func.__doc__ is not None:
+-        input.notice(input.conn.config["command_prefix"] + func.__doc__)
++        input.notice(input.conn.config["command_prefix"] + func.__doc__.split('\n', 1)[0])
+         return
+ 
+     if func._thread:
+-- 
+1.9.1
+

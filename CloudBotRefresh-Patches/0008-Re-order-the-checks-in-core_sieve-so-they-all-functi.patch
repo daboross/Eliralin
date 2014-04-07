@@ -1,11 +1,12 @@
-From ec76156f3180290e2c8ec27d3a55f4c6b501c3d6 Mon Sep 17 00:00:00 2001
+From c0dceef34aaf96d93212ca0667c1d8397febaadd Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
-Date: Sun, 6 Apr 2014 22:30:22 -0700
-Subject: [PATCH] More permissions modifications
+Date: Mon, 7 Apr 2014 00:06:03 -0700
+Subject: [PATCH] Re-order the checks in core_sieve so they all function
+ correctly (fixes permission checking for commands)
 
 
 diff --git a/plugins/core_sieve.py b/plugins/core_sieve.py
-index 09107db..81cfa3b 100644
+index 1f6836f..81cfa3b 100644
 --- a/plugins/core_sieve.py
 +++ b/plugins/core_sieve.py
 @@ -4,39 +4,18 @@ TOKENS = 10
@@ -51,7 +52,7 @@ index 09107db..81cfa3b 100644
      acl = conn.config.get('acls', {}).get(func.__name__)
      if acl:
          if 'deny-except' in acl:
-@@ -48,21 +27,43 @@ def sieve_suite(bot, input, func, kind, args):
+@@ -48,19 +27,43 @@ def sieve_suite(bot, input, func, kind, args):
              if input.chan.lower() in denied_channels:
                  return None
  
@@ -73,15 +74,11 @@ index 09107db..81cfa3b 100644
 +        allowed = False
          for perm in allowed_permissions:
              if conn.permissions.has_perm_mask(mask, perm):
--                print("Allowed mask {} access to {}".format(mask, perm))
 -                return input
--        print("Disallowed mask {} from access to {}".format(mask, args.get('permissions')))
++                allowed = True
+ 
 -        input.notice("Sorry, you are not allowed to use this command.")
 -        return None
--    else:
--        print("Allowed mask {} access to command {} without permissions".format(input.mask.lower(), func.__name__))
-+                allowed = True
-+
 +        if not allowed:
 +            input.notice("Sorry, you are not allowed to use this command.")
 +            return None
@@ -102,7 +99,7 @@ index 09107db..81cfa3b 100644
 +        else:
 +            print("pong!")
 +            return None
-+
+ 
      return input
 -- 
 1.9.1
