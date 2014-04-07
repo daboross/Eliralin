@@ -1,4 +1,4 @@
-From 999054c7f556a73054d4c5f28726c689220d3138 Mon Sep 17 00:00:00 2001
+From bc70b5a62b3f5f3f364cc1998cd1e7b448f8efc6 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 6 Apr 2014 21:56:14 -0700
 Subject: [PATCH] Fix logger re-initialization when restarting

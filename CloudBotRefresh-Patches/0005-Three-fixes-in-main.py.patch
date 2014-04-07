@@ -1,4 +1,4 @@
-From 254c805fd521fb7edb0c84d52b6bb759a91d5d73 Mon Sep 17 00:00:00 2001
+From af2adc8d4ddf6b0e4e25534a6975117b99c4356e Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 6 Apr 2014 21:29:10 -0700
 Subject: [PATCH] Three fixes in main.py

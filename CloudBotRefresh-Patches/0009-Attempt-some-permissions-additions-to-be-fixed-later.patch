@@ -1,4 +1,4 @@
-From 8fb8323e17c8da8c1cc6cbe07ded6e6fc0740ad6 Mon Sep 17 00:00:00 2001
+From e345a9921744c305d382d6ad0cc6282f4c8dbdde Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 6 Apr 2014 21:59:42 -0700
 Subject: [PATCH] Attempt some permissions additions - to be fixed later

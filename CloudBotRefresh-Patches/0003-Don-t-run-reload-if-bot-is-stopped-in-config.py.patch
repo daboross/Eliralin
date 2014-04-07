@@ -1,4 +1,4 @@
-From cbe0dd318032b05d7e920db9730a7af372fc590b Mon Sep 17 00:00:00 2001
+From 72c55e6e5c6d74bc2451ec6996bb3934ded85bdc Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 6 Apr 2014 21:24:50 -0700
 Subject: [PATCH] Don't run reload if bot is stopped in config.py

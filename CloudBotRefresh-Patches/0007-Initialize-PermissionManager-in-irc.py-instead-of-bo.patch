@@ -1,4 +1,4 @@
-From 6b3406429abe65481057d280068768a5156ed9b3 Mon Sep 17 00:00:00 2001
+From 746ecaeb112f3d117de10bc51983f7450317869b Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 6 Apr 2014 21:57:12 -0700
 Subject: [PATCH] Initialize PermissionManager in irc.py instead of bot.py
