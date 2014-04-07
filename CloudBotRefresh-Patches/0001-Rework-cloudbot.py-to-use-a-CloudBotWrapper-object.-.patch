@@ -1,4 +1,4 @@
-From acfcbf2e90284035d8d3a52d3641bbf1fd26f727 Mon Sep 17 00:00:00 2001
+From bc25152b0d61d4e030e6fea997f7f7b2f18edd9e Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 5 Apr 2014 23:01:45 -0700
 Subject: [PATCH] Rework cloudbot.py to use a 'CloudBotWrapper' object. Also

@@ -1,4 +1,4 @@
-From 16a356b58a10c21547fa66d0b5d16c0a0a43969c Mon Sep 17 00:00:00 2001
+From 500196ca3a2d2e377fc650232582ebf91becb8d2 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 6 Apr 2014 13:03:29 -0700
 Subject: [PATCH] Mass commit - to separate later
@@ -81,38 +81,6 @@ index 426b307..a601dda 100644
          self.running = False
  
      def restart(self, reason=None):
-diff --git a/core/config.py b/core/config.py
-index b395459..e8b8ae1 100644
---- a/core/config.py
-+++ b/core/config.py
-@@ -58,17 +58,23 @@ class Config(dict):
- 
-         pattern = "*{}".format(self.filename)
- 
--        self.event_handler = ConfigEventHandler(self, patterns=[pattern])
-+        self.event_handler = ConfigEventHandler(self.bot, self, patterns=[pattern])
-         self.observer.schedule(self.event_handler, path='.', recursive=False)
-         self.observer.start()
- 
- 
- class ConfigEventHandler(Trick):
--    def __init__(self, config, *args, **kwargs):
-+    def __init__(self, bot, config, *args, **kwargs):
-+        """
-+        :type bot: core.bot.CloudBot
-+        :type config: Config
-+        """
-+        self.bot = bot
-         self.config = config
-         self.logger = config.logger
-         Trick.__init__(self, *args, **kwargs)
- 
-     def on_any_event(self, event):
--        self.logger.info("Config changed, triggering reload.")
--        self.config.load_config()
-+        if self.bot.running:
-+            self.logger.info("Config changed, triggering reload.")
-+            self.config.load_config()
 diff --git a/core/irc.py b/core/irc.py
 index 10bc578..44e7283 100644
 --- a/core/irc.py
@@ -160,7 +128,7 @@ index 10bc578..44e7283 100644
          if self.ssl:
              return SSLIRCConnection(self.name, self.server, self.port, self.input_queue,
 diff --git a/core/main.py b/core/main.py
-index e4d3e7e..de5c5de 100644
+index a904c6e..aae257f 100644
 --- a/core/main.py
 +++ b/core/main.py
 @@ -1,6 +1,7 @@
@@ -171,7 +139,7 @@ index e4d3e7e..de5c5de 100644
  import re
  
  _thread.stack_size(1024 * 512)  # reduce vm size
-@@ -95,14 +96,13 @@ def run(bot, func, input):
+@@ -95,11 +96,11 @@ def run(bot, func, input):
      """
      uses_db = True
      # TODO: change to bot.get_db_session()
@@ -184,11 +152,8 @@ index e4d3e7e..de5c5de 100644
 +        # bot.logger.debug("Opened DB session for: {}".format(func._filename))
          input.db = input.bot.db_session()
  
--    # parameters is an array of
      parameters = []
-     named_parameters = {}
-     specifications = inspect.getargspec(func)
-@@ -116,7 +116,7 @@ def run(bot, func, input):
+@@ -115,7 +116,7 @@ def run(bot, func, input):
      if len(required_args) - len(default_args) == 1:
          # The function is using the old format, with all arguments with defaults except for 'text'
          # Assume that the funct want the first non-default arg to be 'input'
@@ -197,7 +162,7 @@ index e4d3e7e..de5c5de 100644
          required_args = required_args[1:]  # Trim the first argument, as it's been assigned as a non-named parameter
  
          for required_arg in required_args:
-@@ -140,7 +140,7 @@ def run(bot, func, input):
+@@ -139,7 +140,7 @@ def run(bot, func, input):
          return
      finally:
          if uses_db:
@@ -206,7 +171,7 @@ index e4d3e7e..de5c5de 100644
              input.db.close()
  
      if out is not None:
-@@ -167,6 +167,10 @@ class Handler:
+@@ -166,6 +167,10 @@ class Handler:
      """Runs plugins in their own threads (ensures order)"""
  
      def __init__(self, bot, func):
@@ -217,7 +182,7 @@ index e4d3e7e..de5c5de 100644
          self.func = func
          self.bot = bot
          self.input_queue = queue.Queue()
-@@ -174,10 +178,15 @@ class Handler:
+@@ -173,10 +178,15 @@ class Handler:
  
      def start(self):
          uses_db = True
@@ -237,7 +202,7 @@ index e4d3e7e..de5c5de 100644
                  break
  
              run(self.bot, self.func, input)
-@@ -204,7 +213,7 @@ def dispatch(bot, input, kind, func, args, autohelp=False):
+@@ -203,7 +213,7 @@ def dispatch(bot, input, kind, func, args, autohelp=False):
              return
  
      if autohelp and args.get('autohelp', True) and not input.text and func.__doc__ is not None:

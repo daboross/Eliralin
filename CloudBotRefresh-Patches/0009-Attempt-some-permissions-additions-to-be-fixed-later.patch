@@ -1,0 +1,31 @@
+From 8fb8323e17c8da8c1cc6cbe07ded6e6fc0740ad6 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Sun, 6 Apr 2014 21:59:42 -0700
+Subject: [PATCH] Attempt some permissions additions - to be fixed later
+
+
+diff --git a/core/permissions.py b/core/permissions.py
+index a368a9d..25103d1 100644
+--- a/core/permissions.py
++++ b/core/permissions.py
+@@ -45,7 +45,9 @@ class PermissionManager(object):
+         for pattern in allowed_users:
+             if fnmatch(mask.lower(), pattern.lower()):
+                 self.logger.info("Allowed user {} access to {}".format(mask, perm))
+-                return input
++                return True
++
++        return False
+ 
+     def get_group_permissions(self, group):
+         return self.group_perms.get(group)
+@@ -59,4 +61,4 @@ class PermissionManager(object):
+             for mask in users:
+                 if fnmatch(user.lower(), mask.lower()):
+                     permissions.append(permission)
+-        return permissions
+\ No newline at end of file
++        return permissions
+-- 
+1.9.1
+

@@ -1,0 +1,30 @@
+From 254c805fd521fb7edb0c84d52b6bb759a91d5d73 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Sun, 6 Apr 2014 21:29:10 -0700
+Subject: [PATCH] Three fixes in main.py
+
+- Fix Input logging
+- Make Handlers not continue waiting for queue to contain something till stopping
+- Only show first line of plugin documentation for autohelp
+
+diff --git a/core/main.py b/core/main.py
+index aae257f..370ff1f 100644
+--- a/core/main.py
++++ b/core/main.py
+@@ -96,11 +96,11 @@ def run(bot, func, input):
+     """
+     uses_db = True
+     # TODO: change to bot.get_db_session()
+-    # bot.logger.debug("Input: {}".format(input))
++    bot.logger.debug("Input: {}".format(input.__dict__))
+ 
+     if uses_db:
+         # create SQLAlchemy session
+-        # bot.logger.debug("Opened DB session for: {}".format(func._filename))
++        bot.logger.debug("Opened DB session for: {}".format(func._filename))
+         input.db = input.bot.db_session()
+ 
+     parameters = []
+-- 
+1.9.1
+

@@ -1,0 +1,73 @@
+From 999054c7f556a73054d4c5f28726c689220d3138 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Sun, 6 Apr 2014 21:56:14 -0700
+Subject: [PATCH] Fix logger re-initialization when restarting
+
+
+diff --git a/core/bot.py b/core/bot.py
+index a601dda..673821d 100644
+--- a/core/bot.py
++++ b/core/bot.py
+@@ -14,6 +14,9 @@ from core.permissions import PermissionManager
+ from core.loader import PluginLoader
+ 
+ 
++logger_initialized = False
++
++
+ def clean_name(n):
+     """strip all spaces and capitalization
+     :type n: str
+@@ -28,6 +31,11 @@ def get_logger():
+     """
+     # create logger
+     logger = logging.getLogger("cloudbot")
++    global logger_initialized
++    if logger_initialized:
++        # Only initialize once
++        return logger
++
+     logger.setLevel(logging.DEBUG)
+ 
+     # add a file handler
+@@ -48,6 +56,9 @@ def get_logger():
+     # add the Handlers to the logger
+     logger.addHandler(fh)
+     logger.addHandler(sh)
++
++    # be sure to set initialized = True
++    logger_initialized = True
+     return logger
+ 
+ 
+@@ -141,7 +152,7 @@ class CloudBot(threading.Thread):
+ 
+             self.logger.debug("Creating BotInstance for {}.".format(name))
+ 
+-            self.connections.append(irc.BotConnection(self, name, server, nick, config=conf,
++            self.connections.append(irc.BotConnection(name, server, nick, config=conf,
+                                                       port=port, logger=self.logger, channels=conf['channels'],
+                                                       ssl=conf['connection'].get('ssl', False)))
+             self.logger.debug("({}) Created connection.".format(name))
+@@ -166,14 +177,13 @@ class CloudBot(threading.Thread):
+ 
+             connection.stop()
+ 
+-        self.logger.debug("Stopping logging engine")
+-        for handler in self.logger.handlers:
+-            self.logger.removeHandler(handler)
+         if not self.do_restart:
++            # Don't shut down logging if restarting
++            self.logger.debug("Stopping logging engine")
+             logging.shutdown()
+         self.running = False
+ 
+     def restart(self, reason=None):
+         """shuts the bot down and restarts it"""
+         self.do_restart = True
+-        self.stop(reason)
+\ No newline at end of file
++        self.stop(reason)
+-- 
+1.9.1
+
