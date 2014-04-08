@@ -1,4 +1,4 @@
-From e54d5ca6f5bd257675629b831629e3e961b87932 Mon Sep 17 00:00:00 2001
+From eaa5d8d2826147f57d48b2f5f1a1d4fac25a2061 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:18:52 -0800
 Subject: [PATCH] Add 'steal' command.

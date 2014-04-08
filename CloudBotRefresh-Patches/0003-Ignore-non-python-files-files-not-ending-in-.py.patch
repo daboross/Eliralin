@@ -1,4 +1,4 @@
-From bb59c65a4d593ebeac6b081ba264c1dacf42a390 Mon Sep 17 00:00:00 2001
+From 362bd90895ff750a5c611286e02198d4ba947edd Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 7 Apr 2014 20:31:12 -0700
 Subject: [PATCH] Ignore non-python files (files not ending in .py).
