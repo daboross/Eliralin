@@ -1,4 +1,4 @@
-From b0c5600aa103ca316de1d8215f23bf5eedf75ef8 Mon Sep 17 00:00:00 2001
+From feecaafd7a70b6b26a6de4d1069edf680cc8d324 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 7 Apr 2014 20:55:17 -0700
 Subject: [PATCH] Rewrite log.py, changing to use .format instead of % as well
@@ -6,7 +6,7 @@ Subject: [PATCH] Rewrite log.py, changing to use .format instead of % as well
 
 
 diff --git a/plugins/log.py b/plugins/log.py
-index 553d766..5112f0b 100644
+index 553d766..b8aa4aa 100644
 --- a/plugins/log.py
 +++ b/plugins/log.py
 @@ -1,9 +1,10 @@
@@ -59,16 +59,16 @@ index 553d766..5112f0b 100644
 -    'TIME': '%(nick)s has requested CTCP %(ctcpcmd)s from %(chan)s: %(ctcpmsg)s',
 -    'FINGER': '%(nick)s has requested CTCP %(ctcpcmd)s from %(chan)s: %(ctcpmsg)s'
 -}
-+action_ctcp_format = "* {nick} {ctcpmsg}"
++action_ctcp_format = "[{server}:{chan}] * {nick} {ctcpmsg}"
 +known_ctcp_format = "[{server}:{chan}] {nick} has requested CTCP {ctcpcmd}: {ctcpmsg}"
 +unknown_ctcp_format = "[{server}:{chan}] {nick} ({user}@{host}) requested unknown CTCP {ctcpcmd}: {ctcpmsg}"
 +
  
 -irc_color_re = re.compile(r'(\x03(\d+,\d+|\d)|[\x0f\x02\x16\x1f])')
 +def get_ctcp_format(ctcpcmd):
-+    if ctcpcmd == "action":
++    if ctcpcmd.lower() == "action":
 +        return action_ctcp_format
-+    elif ctcpcmd in ("version", "ping", "time", "finger"):
++    elif ctcpcmd.lower() in ("version", "ping", "time", "finger"):
 +        return known_ctcp_format
 +    else:
 +        return unknown_ctcp_format
