@@ -1,0 +1,45 @@
+From 59dd83569bedc63d845f1732a3caae61adc9fadc Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Tue, 8 Apr 2014 00:02:02 -0700
+Subject: [PATCH] Add input.has_permission convenience method
+
+
+diff --git a/core/main.py b/core/main.py
+index 2284f1f..408aedd 100644
+--- a/core/main.py
++++ b/core/main.py
+@@ -116,6 +116,13 @@ class Input:
+ 
+         self.conn.cmd('NOTICE', [target, message])
+ 
++    def has_permission(self, permission):
++        """ returns whether or not the current user has a given permission
++        :type permission: str
++        :rtype: bool
++        """
++        return self.conn.permissions.has_perm_mask(self.mask, permission)
++
+ 
+ def run(bot, func, input):
+     """
+diff --git a/plugins/core_sieve.py b/plugins/core_sieve.py
+index 44cd505..0a19104 100644
+--- a/plugins/core_sieve.py
++++ b/plugins/core_sieve.py
+@@ -37,12 +37,10 @@ def sieve_suite(bot, input, func, kind, args):
+     if args.get('adminonly', False):
+         args["permissions"] = ["adminonly"]
+     if args.get('permissions', False):
+-        mask = input.mask.lower()
+-
+         allowed_permissions = args.get('permissions', [])
+         allowed = False
+         for perm in allowed_permissions:
+-            if conn.permissions.has_perm_mask(mask, perm):
++            if input.has_permission(perm):
+                 allowed = True
+ 
+         if not allowed:
+-- 
+1.9.1
+

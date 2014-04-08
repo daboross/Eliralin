@@ -1,4 +1,4 @@
-From b60c4ec1773385e576fed01fd9a6a63b762c5562 Mon Sep 17 00:00:00 2001
+From be5bbbcebf1eba62567a59b27a55d3f7e953c944 Mon Sep 17 00:00:00 2001
 From: Steven Smith <stevensmith.ome@gmail.com>
 Date: Mon, 24 Mar 2014 11:01:46 +0800
 Subject: [PATCH] Add support for plugins without commands
