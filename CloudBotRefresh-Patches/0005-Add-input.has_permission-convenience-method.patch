@@ -1,4 +1,4 @@
-From 27e4087e4eb6121d2156dde0f0ccb6118bf6807a Mon Sep 17 00:00:00 2001
+From 9a76920201cfff9bfadf5a01ae7f77195f2d6758 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 8 Apr 2014 00:02:02 -0700
 Subject: [PATCH] Add input.has_permission convenience method

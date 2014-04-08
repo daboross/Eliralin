@@ -1,4 +1,4 @@
-From ebad99d57f4be6b48877ec1ed5b0ef0a5a38515c Mon Sep 17 00:00:00 2001
+From cba5ee3a8ac933b21bd345ed94c759d9cd8933d7 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 7 Apr 2014 20:55:17 -0700
 Subject: [PATCH] Rewrite log.py, changing to use .format instead of % as well
