@@ -1,4 +1,4 @@
-From 994d7e276f0fe0a3efb89ddcb7e9aae186ac7aed Mon Sep 17 00:00:00 2001
+From c41609a78885d760a9dc39d7c4fab58a6d305f93 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 7 Apr 2014 17:43:51 -0700
 Subject: [PATCH] Use the bot's debug logger for printing input instead of

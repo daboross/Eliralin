@@ -1,4 +1,4 @@
-From 5de3705b5bd0a5543f06fd6d058d9e96b8802ab2 Mon Sep 17 00:00:00 2001
+From f491f5c8e48f26f7de71c5bbd51900e9ca3488b5 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 8 Apr 2014 00:02:30 -0700
 Subject: [PATCH] Add a bunch more PermissionManager methods, TODO: Implement

@@ -1,0 +1,31 @@
+From 8af1d51e7755fd66f4d677884de1ca62e2df2659 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Tue, 8 Apr 2014 01:19:13 -0700
+Subject: [PATCH] Set config indent to 4.
+
+
+diff --git a/core/config.py b/core/config.py
+index 7f7fa09..ebcf1c7 100644
+--- a/core/config.py
++++ b/core/config.py
+@@ -10,7 +10,7 @@ from watchdog.tricks import Trick
+ class Config(dict):
+     """
+     :type filename: str
+-    :type path: bytes
++    :type path: str
+     :type bot: core.bot.CloudBot
+     :type observer: Observer
+     :type event_handler: ConfigEventHandler
+@@ -59,7 +59,7 @@ class Config(dict):
+ 
+     def save_config(self):
+         """saves the contents of the config dict to the config file"""
+-        json.dump(self, open(self.path, 'w'), sort_keys=True, indent=2)
++        json.dump(self, open(self.path, 'w'), sort_keys=True, indent=4)
+         self.logger.info("Config saved to file.")
+ 
+     def watcher(self):
+-- 
+1.9.1
+
