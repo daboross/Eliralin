@@ -26,5 +26,5 @@ index f434a1a..c5d1334 100644
  @hook.command(permissions=["botcontrol"])
  def me(inp, conn=None, chan=None):
 -- 
-1.9.1
+1.9.2
 

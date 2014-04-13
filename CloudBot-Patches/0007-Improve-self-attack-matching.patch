@@ -56,5 +56,5 @@ index feb00b8..1fe7fc2 100644
 -    action(out)
 +    message('{}, {}'.format(target, random.choice(flirts)))
 -- 
-1.9.1
+1.9.2
 

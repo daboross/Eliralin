@@ -17,5 +17,5 @@ index a856b35..eed61a3 100644
          # REGEXES
          for func, args in bot.plugs['regex']:
 -- 
-1.9.1
+1.9.2
 

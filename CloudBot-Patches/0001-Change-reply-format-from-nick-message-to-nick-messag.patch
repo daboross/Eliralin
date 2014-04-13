@@ -19,5 +19,5 @@ index 0054b0a..a856b35 100644
          def action(message, target=chan):
              """sends an action to the current channel/user or a specific channel/user"""
 -- 
-1.9.1
+1.9.2
 

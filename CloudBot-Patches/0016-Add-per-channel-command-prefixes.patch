@@ -72,5 +72,5 @@ index 92c5c56..c37a455 100644
 +    db.execute("INSERT INTO prefixes(channel, prefix) VALUES(?, ?)", [chan, inp])
 +    db.commit()
 -- 
-1.9.1
+1.9.2
 

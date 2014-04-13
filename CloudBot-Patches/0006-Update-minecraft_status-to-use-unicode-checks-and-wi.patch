@@ -70,5 +70,5 @@ index 4ca67d3..d9e416d 100644
 +            servers.append(u"{}{}{}".format(red_prefix, server, red_suffix))
 +    return "  ".join(servers)
 -- 
-1.9.1
+1.9.2
 

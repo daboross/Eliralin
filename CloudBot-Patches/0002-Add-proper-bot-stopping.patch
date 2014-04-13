@@ -55,5 +55,5 @@ index dde067e..f434a1a 100644
  
  @hook.command(autohelp=False, permissions=["botcontrol"])
 -- 
-1.9.1
+1.9.2
 

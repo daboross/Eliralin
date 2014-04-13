@@ -18,5 +18,5 @@ index 0859d80..4385b8f 100644
      """?<word> -- Shows what data is associated with <word>."""
      try:
 -- 
-1.9.1
+1.9.2
 
