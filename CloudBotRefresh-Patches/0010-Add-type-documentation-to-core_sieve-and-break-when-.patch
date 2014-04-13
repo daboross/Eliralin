@@ -1,0 +1,35 @@
+From 791fc8b551d42ba61701736095b7ba24fadf0122 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Sun, 13 Apr 2014 14:59:16 -0700
+Subject: [PATCH] Add type documentation to core_sieve (and break when we don't
+ have to continue)
+
+
+diff --git a/plugins/core_sieve.py b/plugins/core_sieve.py
+index 0a19104..5b4ec91 100644
+--- a/plugins/core_sieve.py
++++ b/plugins/core_sieve.py
+@@ -9,6 +9,12 @@ buckets = {}
+ 
+ @hook.sieve
+ def sieve_suite(bot, input, func, kind, args):
++    """
++    :type bot: core.bot.CloudBot
++    :type input: core.main.Input
++    :type kind: str
++    :type args: dict[str, unknown]
++    """
+     conn = input.conn
+     # check ignorebots
+     if input.command == 'PRIVMSG' and \
+@@ -42,6 +48,7 @@ def sieve_suite(bot, input, func, kind, args):
+         for perm in allowed_permissions:
+             if input.has_permission(perm):
+                 allowed = True
++                break
+ 
+         if not allowed:
+             input.notice("Sorry, you are not allowed to use this command.")
+-- 
+1.9.2
+
