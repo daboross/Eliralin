@@ -1,4 +1,4 @@
-From e83cb66efc97c7d9ea9db7adf8d4522961062efe Mon Sep 17 00:00:00 2001
+From c2a62dbcdd7292af5bbbed8bd7f3e427b647dfbb Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 12 Apr 2014 22:26:05 -0700
 Subject: [PATCH] Update encrypt plugin to work with python 3 and cloudbot

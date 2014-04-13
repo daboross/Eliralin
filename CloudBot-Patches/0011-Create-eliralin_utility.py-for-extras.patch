@@ -1,4 +1,4 @@
-From 361d1dc859c3cce4cb240c7972f0c1eea82a448d Mon Sep 17 00:00:00 2001
+From e18414f67d9330700848d292d61e156b35334847 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:19:10 -0800
 Subject: [PATCH] Create eliralin_utility.py for extras
