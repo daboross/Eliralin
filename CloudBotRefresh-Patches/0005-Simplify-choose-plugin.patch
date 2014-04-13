@@ -1,4 +1,4 @@
-From 01ea8ebdf32e21120aa1de752c98e1882b89fff5 Mon Sep 17 00:00:00 2001
+From 886448ff6957771f36fae6330a570ef92de993c3 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 13 Apr 2014 13:01:01 -0700
 Subject: [PATCH] Simplify choose plugin

@@ -1,11 +1,11 @@
-From 67b9f3ca96c6eab7f34076371865713df28f7ce9 Mon Sep 17 00:00:00 2001
+From 9aa18ad1a97aca08986c9c346bac253857c6ca0d Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 13 Apr 2014 15:00:15 -0700
 Subject: [PATCH] Make correction plugin case-insensitive
 
 
 diff --git a/plugins/correction.py b/plugins/correction.py
-index ef99979..7f60d03 100644
+index ef99979..9cb7c20 100644
 --- a/plugins/correction.py
 +++ b/plugins/correction.py
 @@ -1,10 +1,18 @@
@@ -32,7 +32,7 @@ index ef99979..7f60d03 100644
          nick = None
  
      find = split[1]
-+    find_re = re.compile("(?i){}".format(find))
++    find_re = re.compile("(?i){}".format(re.escape(find)))
      replace = split[2]
  
      for item in conn.history[input.chan].__reversed__():
