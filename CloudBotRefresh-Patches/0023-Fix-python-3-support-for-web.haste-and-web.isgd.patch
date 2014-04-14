@@ -1,0 +1,56 @@
+From 4e7835978aee2c6a846a3d512fa553947a9085c5 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Sun, 13 Apr 2014 18:02:34 -0700
+Subject: [PATCH] Fix python 3 support for web.haste and web.isgd
+
+
+diff --git a/util/web.py b/util/web.py
+index 92e005d..28e3330 100644
+--- a/util/web.py
++++ b/util/web.py
+@@ -23,8 +23,12 @@ class ShortenError(Exception):
+ 
+ 
+ def isgd(url):
+-    """ shortens a URL with the is.gd API """
+-    url = urlnorm.normalize(url.encode('utf-8'), assume_scheme='http')
++    """
++    Shortens a URL with the is.gd API.
++    :type url: str
++    :rtype: str
++    """
++    url = urlnorm.normalize(url, assume_scheme='http')
+     params = urllib.parse.urlencode({'format': 'json', 'url': url})
+     request = http.get_json("http://is.gd/create.php?{}".format(params))
+ 
+@@ -35,6 +39,11 @@ def isgd(url):
+ 
+ 
+ def try_isgd(url):
++    """
++    Attempts to shorten a URL with the is.gd API, or returns the original URL if shortening failed.
++    :type url: str
++    :rtype: str
++    """
+     try:
+         out = isgd(url)
+     except (ShortenError, http.HTTPError):
+@@ -43,7 +52,14 @@ def try_isgd(url):
+ 
+ 
+ def haste(text, ext='txt'):
+-    """ pastes text to a hastebin server """
++    """
++    Pastes text to a hastebin server.
++    :type text: str
++    :type ext: str
++    :rtype: str
++    """
++    if isinstance(text, str):
++        text = text.encode('utf-8')
+     page = http.get(paste_url + "/documents", post_data=text)
+     data = json.loads(page)
+     return "{}/{}.{}".format(paste_url, data['key'], ext)
+-- 
+1.9.2
+

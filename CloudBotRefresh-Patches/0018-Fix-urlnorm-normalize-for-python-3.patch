@@ -1,0 +1,24 @@
+From 7ed55612e003a3dda61f260f4274a0505afc111f Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Sun, 13 Apr 2014 16:40:22 -0700
+Subject: [PATCH] Fix urlnorm normalize for python 3
+
+
+diff --git a/util/urlnorm.py b/util/urlnorm.py
+index 5626cd7..5c17c51 100644
+--- a/util/urlnorm.py
++++ b/util/urlnorm.py
+@@ -80,7 +80,9 @@ def normalize(url, assume_scheme=False):
+     # Always use uppercase A-through-F characters when percent-encoding.
+     # All portions of the URI must be utf-8 encoded NFC from Unicode strings
+     def clean(string):
+-        string = str(unquote(string), 'utf-8', 'replace')
++        string = unquote(string)
++        if isinstance(string, bytes):
++            string = string.decode('utf-8', 'replace')
+         return unicodedata.normalize('NFC', string).encode('utf-8')
+ 
+     path = quote(clean(path), "~:/?#[]@!$&'()*+,;=")
+-- 
+1.9.2
+
