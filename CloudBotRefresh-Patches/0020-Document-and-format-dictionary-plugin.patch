@@ -1,4 +1,4 @@
-From 867148f506dae2ee9aa3ca0ca9823a97a7cff7f9 Mon Sep 17 00:00:00 2001
+From 4d7c4b88472657abe379d4c21a53a63b2b486562 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 13 Apr 2014 17:04:36 -0700
 Subject: [PATCH] Document and format dictionary plugin

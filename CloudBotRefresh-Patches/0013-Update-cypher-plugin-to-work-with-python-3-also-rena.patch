@@ -1,4 +1,4 @@
-From a8d2761d3121c37fa845c4cb698aa3b8f376064a Mon Sep 17 00:00:00 2001
+From 02c33759b77a984de0fdce1d861553457cbd7b3e Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 13 Apr 2014 15:01:15 -0700
 Subject: [PATCH] Update cypher plugin to work with python 3, also rename some

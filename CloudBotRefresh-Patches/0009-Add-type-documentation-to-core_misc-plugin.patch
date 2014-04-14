@@ -1,4 +1,4 @@
-From 2f8c5609f3958d8d40ce1dc73660e41a012d09c0 Mon Sep 17 00:00:00 2001
+From a0eb349fb77d4aa64d170184c7990f72611ac442 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 13 Apr 2014 14:58:54 -0700
 Subject: [PATCH] Add type documentation to core_misc plugin

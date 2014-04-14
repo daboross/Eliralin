@@ -1,4 +1,4 @@
-From d0ba628c3e58be4aa2f8b3d494f4ed47b504ef54 Mon Sep 17 00:00:00 2001
+From 19b24db83d2931f108921375f090599699c95bff Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 13 Apr 2014 14:58:24 -0700
 Subject: [PATCH] Use notice for error messages in coin.py, and change coins =

@@ -1,4 +1,4 @@
-From b816ba8a35b6ecd7d0b1f65b64b062f7f2fbce1b Mon Sep 17 00:00:00 2001
+From ab0e1c45f94c4f5a5e4c122b75c6d9ef24089142 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 13 Apr 2014 17:39:33 -0700
 Subject: [PATCH] Make eightball use the old format - as it wasn't using either
