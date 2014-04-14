@@ -1,4 +1,4 @@
-From 9aa18ad1a97aca08986c9c346bac253857c6ca0d Mon Sep 17 00:00:00 2001
+From 68b6f9166ec535390be772d498da6bd7824c13a5 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 13 Apr 2014 15:00:15 -0700
 Subject: [PATCH] Make correction plugin case-insensitive

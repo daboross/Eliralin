@@ -1,4 +1,4 @@
-From 7308c298d1c7590770a14a172780a5f4009ef629 Mon Sep 17 00:00:00 2001
+From bb7bd42367347852d930cfcbdd67e2351b1efddc Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 13 Apr 2014 14:59:46 -0700
 Subject: [PATCH] Add type specifications to core_tracker plugin

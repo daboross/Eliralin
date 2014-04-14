@@ -1,4 +1,4 @@
-From 7ed55612e003a3dda61f260f4274a0505afc111f Mon Sep 17 00:00:00 2001
+From ccc249dac793abb3b9fa8a35ae86ec23c4e0f78a Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 13 Apr 2014 16:40:22 -0700
 Subject: [PATCH] Fix urlnorm normalize for python 3

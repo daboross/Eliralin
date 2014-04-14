@@ -1,4 +1,4 @@
-From 4e7835978aee2c6a846a3d512fa553947a9085c5 Mon Sep 17 00:00:00 2001
+From c2e78d5eba175d32565106403d584b1ccf66e2ad Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 13 Apr 2014 18:02:34 -0700
 Subject: [PATCH] Fix python 3 support for web.haste and web.isgd

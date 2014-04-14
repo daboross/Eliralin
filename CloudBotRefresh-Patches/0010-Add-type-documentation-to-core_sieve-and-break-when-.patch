@@ -1,4 +1,4 @@
-From 05dd4bd250a2e3e50e81ba7c88fde2197cdfdc40 Mon Sep 17 00:00:00 2001
+From 85015631df212a5ee880413a30211bbb1cfbac3e Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 13 Apr 2014 14:59:16 -0700
 Subject: [PATCH] Add type documentation to core_sieve (and break when we don't

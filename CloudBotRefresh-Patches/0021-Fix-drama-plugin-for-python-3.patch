@@ -1,4 +1,4 @@
-From b310ff78543071312deeb6c6a6bfd538d6412e2a Mon Sep 17 00:00:00 2001
+From c30582f181f13dfe60e47abe63d0d9bd45b1d48f Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 13 Apr 2014 17:04:52 -0700
 Subject: [PATCH] Fix drama plugin for python 3

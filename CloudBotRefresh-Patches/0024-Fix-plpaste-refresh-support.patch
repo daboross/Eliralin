@@ -1,4 +1,4 @@
-From 28b4e3c89fa4353fe17908b7f540e19f5de6ad54 Mon Sep 17 00:00:00 2001
+From 34eae1f2b7ccd037e8a60ab59044a179a1d72dcb Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 13 Apr 2014 18:03:20 -0700
 Subject: [PATCH] Fix plpaste refresh support
