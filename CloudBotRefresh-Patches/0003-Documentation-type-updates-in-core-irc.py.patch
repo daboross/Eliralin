@@ -1,4 +1,4 @@
-From 89b7e3855ac766194e07c240b8dd51382b3a3cb9 Mon Sep 17 00:00:00 2001
+From b529fd9cd6d0fd4bf099bfeff63762e83af525b9 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 13 Apr 2014 14:57:15 -0700
 Subject: [PATCH] Documentation type updates in core/irc.py

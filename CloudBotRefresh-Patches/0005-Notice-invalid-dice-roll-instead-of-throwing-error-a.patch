@@ -1,4 +1,4 @@
-From 580cc4452cfc7524610187cf9f0b3d84a4d1a203 Mon Sep 17 00:00:00 2001
+From 3e375b34ae9330dd947e3e89e0eef1837d934c2d Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 13 Apr 2014 15:48:53 -0700
 Subject: [PATCH] Notice invalid dice roll instead of throwing error, and use

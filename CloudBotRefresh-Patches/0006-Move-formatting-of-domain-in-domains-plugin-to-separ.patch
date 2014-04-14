@@ -1,4 +1,4 @@
-From 96a6a727651fd63943ecda4affe5fc022a979a9f Mon Sep 17 00:00:00 2001
+From db466e232e916de29e54e9ff479de2cbcd278d2f Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 13 Apr 2014 16:14:00 -0700
 Subject: [PATCH] Move formatting of domain in domains plugin to separate

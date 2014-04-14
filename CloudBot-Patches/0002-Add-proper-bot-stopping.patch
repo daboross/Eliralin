@@ -1,4 +1,4 @@
-From f76a032680eed5e9323290eab4ccb62f1d11333c Mon Sep 17 00:00:00 2001
+From 168924ee1ab12cf377c41c2939bd81c86efd2096 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 19:08:25 -0800
 Subject: [PATCH] Add proper bot stopping
