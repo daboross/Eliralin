@@ -1,0 +1,26 @@
+From fefb6be5720205eed6d0d97d04ac74cbddc242af Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Wed, 16 Apr 2014 17:38:46 -0700
+Subject: [PATCH] I don't think there's any reason to put a try/except clause
+ here, python 3 logging docs say that it will never throw exceptions.
+
+Also, what would this new format be like?
+
+diff --git a/core/irc.py b/core/irc.py
+index d5fb8a8..7611473 100644
+--- a/core/irc.py
++++ b/core/irc.py
+@@ -358,9 +358,5 @@ class BotConnection(object):
+         """
+         :type string: str
+         """
+-        try:
+-            self.logger.info("{} >> {}".format(self.name.upper(), string))
+-        except:
+-            # if this doesn't work, no big deal
+-            pass
++        self.logger.info("[{}] {} >> {}".format(self.server, self.name.upper(), string))
+         self.output_queue.put(string)
+-- 
+1.9.2
+

@@ -1,0 +1,22 @@
+From a906602ab9e44ab5a0f25b0c79917fc0d47abd75 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Wed, 16 Apr 2014 17:39:31 -0700
+Subject: [PATCH] Fix connection re-connecting. We need to re-create the socket
+ after closing it.
+
+
+diff --git a/core/irc.py b/core/irc.py
+index 7611473..d6f4284 100644
+--- a/core/irc.py
++++ b/core/irc.py
+@@ -192,6 +192,7 @@ class IRCConnection(object):
+ 
+     def reconnect(self):
+         self.stop()
++        self.socket = self.create_socket()
+         self.connect()
+ 
+ 
+-- 
+1.9.2
+
