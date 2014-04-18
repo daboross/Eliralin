@@ -1,4 +1,4 @@
-From ec6559b94122d2e6539e898fe43a5e82aaad3203 Mon Sep 17 00:00:00 2001
+From 98798317d1d323c2e8c9b7162b412dd1d46d823d Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 16 Apr 2014 17:44:01 -0700
 Subject: [PATCH] Move format_output outside of another method - only create it

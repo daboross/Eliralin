@@ -1,0 +1,44 @@
+From 12167af8376feb35a6c6b25e6899e4ff0478fc4c Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Thu, 17 Apr 2014 19:48:26 -0700
+Subject: [PATCH] Change permission logging messages to have [server]
+
+
+diff --git a/core/permissions.py b/core/permissions.py
+index 3c92843..d05aa06 100644
+--- a/core/permissions.py
++++ b/core/permissions.py
+@@ -249,10 +249,11 @@ class PermissionManager(object):
+         """
+         self.logger = conn.logger
+ 
+-        self.logger.info("Created permission manager for {}.".format(conn.name))
++        self.logger.info("[{}] Created permission manager for {}.".format(conn.server, conn.name))
+ 
+         # stuff
+         self.name = conn.name
++        self.server_address = conn.server
+         self.config = conn.config
+ 
+         self.group_perms = {}
+@@ -265,7 +266,7 @@ class PermissionManager(object):
+         self.group_perms = {}
+         self.group_users = {}
+         self.perm_users = {}
+-        self.logger.info("Reloading permissions for {}.".format(self.name))
++        self.logger.info("[{}] Reloading permissions for {}.".format(self.server_address, self.name))
+         groups = self.config.get("permissions", {})
+         # work out the permissions and users each group has
+         for key, value in groups.items():
+@@ -301,7 +302,7 @@ class PermissionManager(object):
+ 
+         for allowed_mask in allowed_users:
+             if fnmatch(user_mask.lower(), allowed_mask):
+-                self.logger.info("Allowed user {} access to {}".format(user_mask, perm))
++                self.logger.info("[{}] Allowed user {} access to {}".format(self.server_address, user_mask, perm))
+                 return True
+ 
+         return False
+-- 
+1.9.2
+

@@ -1,0 +1,60 @@
+From 02c401dd09fa53c099f5ebe0884cf099708302d1 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Thu, 17 Apr 2014 19:48:59 -0700
+Subject: [PATCH] Add "decode" arg to http.get, and fix geoip fetching.
+
+
+diff --git a/plugins/geoip.py b/plugins/geoip.py
+index 86e1829..86d589a 100644
+--- a/plugins/geoip.py
++++ b/plugins/geoip.py
+@@ -1,7 +1,7 @@
+ import os.path
+ import json
+ import gzip
+-from io import StringIO
++from io import BytesIO
+ 
+ import pygeoip
+ 
+@@ -10,15 +10,17 @@ from util import hook, http
+ 
+ # load region database
+ with open("./data/geoip_regions.json", "rb") as f:
+-    regions = json.loads(f.read())
++    regions = json.loads(f.read().decode())
+ 
+ if os.path.isfile(os.path.abspath("./data/GeoLiteCity.dat")):
+     # initialise geolocation database
+     geo = pygeoip.GeoIP(os.path.abspath("./data/GeoLiteCity.dat"))
+ else:
+-    download = http.get("http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz")
+-    string_io = StringIO(download)
+-    geoip_file = gzip.GzipFile(fileobj=string_io, mode='rb')
++    print("Downloading GeoIP database")
++    download = http.get("http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz", decode=False)
++    print("Download complete")
++    bytes_io = BytesIO(download)
++    geoip_file = gzip.GzipFile(fileobj=bytes_io, mode='rb')
+ 
+     output = open(os.path.abspath("./data/GeoLiteCity.dat"), 'wb')
+     output.write(geoip_file.read())
+diff --git a/util/http.py b/util/http.py
+index 746571c..9d1871f 100644
+--- a/util/http.py
++++ b/util/http.py
+@@ -31,7 +31,10 @@ jar = http.cookiejar.CookieJar()
+ 
+ 
+ def get(*args, **kwargs):
+-    return open(*args, **kwargs).read().decode()
++    if "decode" in kwargs and not kwargs["decode"]:
++        return open(*args, **kwargs).read()
++    else:
++        return open(*args, **kwargs).read().decode()
+ 
+ 
+ def get_url(*args, **kwargs):
+-- 
+1.9.2
+

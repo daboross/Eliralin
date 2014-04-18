@@ -1,0 +1,55 @@
+From 96149deba037ff97298ba79baf5d1462bad68f18 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Thu, 17 Apr 2014 19:48:46 -0700
+Subject: [PATCH] Experimentation - TODO
+
+
+diff --git a/core/bot.py b/core/bot.py
+index f5c18e6..9492608 100644
+--- a/core/bot.py
++++ b/core/bot.py
+@@ -13,7 +13,6 @@ from sqlalchemy import create_engine
+ from core import config, irc, main
+ from core.loader import PluginLoader
+ 
+-
+ logger_initialized = False
+ 
+ 
+@@ -78,7 +77,7 @@ class CloudBot(threading.Thread):
+     :type data_dir: bytes
+     :type config: core.config.Config
+     :type db_session: scoped_session
+-    :type plugins: dict
++    :type plugins: dict[str, list]
+     :type loader: core.loader.PluginLoader
+     """
+ 
+@@ -203,3 +202,23 @@ class CloudBot(threading.Thread):
+         """shuts the bot down and restarts it"""
+         self.do_restart = True
+         self.stop(reason)
++
++
++class PluginManager:
++    """
++    :type plugins: list[Plugin]
++    :type command_to_function: dict[str, V]
++    """
++    def __init__(self, bot):
++        """
++        :type bot: core.bot.CloudBot
++        """
++        self.bot = bot
++
++        self.plugins = []
++        self.command_to_function = {}
++        self.regex = []
++
++    class Plugin:
++        def __init__(self):
++            pass
+\ No newline at end of file
+-- 
+1.9.2
+
