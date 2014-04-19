@@ -1,0 +1,375 @@
+From 8604cd561329c932564e7e999490c893b31e5d28 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Sat, 19 Apr 2014 14:22:55 -0700
+Subject: [PATCH] Try adding more plugin manager stuff - this is totally
+ experimental
+
+
+diff --git a/core/bot.py b/core/bot.py
+index 9492608..ec1a839 100644
+--- a/core/bot.py
++++ b/core/bot.py
+@@ -202,23 +202,3 @@ class CloudBot(threading.Thread):
+         """shuts the bot down and restarts it"""
+         self.do_restart = True
+         self.stop(reason)
+-
+-
+-class PluginManager:
+-    """
+-    :type plugins: list[Plugin]
+-    :type command_to_function: dict[str, V]
+-    """
+-    def __init__(self, bot):
+-        """
+-        :type bot: core.bot.CloudBot
+-        """
+-        self.bot = bot
+-
+-        self.plugins = []
+-        self.command_to_function = {}
+-        self.regex = []
+-
+-    class Plugin:
+-        def __init__(self):
+-            pass
+\ No newline at end of file
+diff --git a/core/pluginmanager.py b/core/pluginmanager.py
+new file mode 100644
+index 0000000..3750214
+--- /dev/null
++++ b/core/pluginmanager.py
+@@ -0,0 +1,155 @@
++import inspect
++import re
++
++from util import hook
++
++
++def find_hooks(code):
++    """
++    :type code: object
++    :rtype: (list[CommandPlugin], list[RegexPlugin], list[EventPlugin])
++    """
++    commands = []
++    regexes = []
++    events = []
++    sieves = []
++    for name, func in code.__dict__.items():
++        if inspect.isfunction(func) and inspect.getmodule(func) == inspect.getmodule(code):
++            # if it's a function, and is in the right module
++            if hasattr(func, "_cloudbot_hook") and isinstance(func._cloudbot_hook, hook._Hook):
++                # if it has cloudbot magic hook
++
++                func_hook = func._cloudbot_hook
++
++                assert func_hook.function == func  # Just to be sure
++
++                if isinstance(func_hook, hook._CommandHook):
++                    commands.append(CommandPlugin(func_hook))
++                elif isinstance(func_hook, hook._RegexHook):
++                    regexes.append(RegexPlugin(func_hook))
++                elif isinstance(func_hook, hook._EventHook):
++                    events.append(EventPlugin(func_hook))
++
++            pass
++
++    return commands, regexes, events
++
++
++class PluginManager:
++    """
++    :type bot: core.bot.CloudBot
++    :type plugins: list[FilePlugin]
++    :type commands_by_name: dict[str, CommandPlugin]
++    :type regexes: list[RegexPlugin]
++    """
++
++    def __init__(self, bot):
++        """
++        :type bot: core.bot.CloudBot
++        """
++        self.bot = bot
++
++        self.plugins = []
++        self.commands_by_name = {}
++        self.regexes = []
++        self.sieves = []
++
++
++class FilePlugin:
++    """
++    :type filepath: str
++    :type filename: str
++    :type code: object
++    :type commands: list[CommandPlugin]
++    :type regexes: list[RegexPlugin]
++    :type events: list[EventPlugin]
++    """
++
++    def __init__(self, filepath, filename, code):
++        """
++        :type filepath: str
++        :type filename: str
++        :type code: object
++        """
++        self.filepath = filepath
++        self.filename = filename
++        self.code = code
++        self.commands, self.regexes, self.events = find_hooks(code)
++        pass
++
++
++class _Plugin:
++    """
++    :type function: function
++    """
++
++    def __init__(self, func_hook):
++        """
++        :type func_hook: hook._Hook
++        """
++        self.function = func_hook.function
++        for key, value in func_hook.kwargs.items():
++            setattr(self, key.lower(), value)
++
++
++class CommandPlugin(_Plugin):
++    """
++    :type name: str
++    :type aliases: list[str]
++    :type doc: str
++    :type autohelp: bool
++    :type permissions: list[str]
++    """
++
++    def __init__(self, cmd_hook):
++        """
++        :type cmd_hook: hook._CommandHook
++        """
++        _Plugin.__init__(self, cmd_hook)
++
++        # make sure that autohelp and permissions are set
++        if not "autohelp" in cmd_hook.kwargs:
++            self.autohelp = False
++        if not "permissions" in cmd_hook.kwargs:
++            self.permissions = []
++
++        self.name = cmd_hook.main_alias
++        self.aliases = cmd_hook.aliases
++        self.doc = cmd_hook.doc
++
++
++class RegexPlugin(_Plugin):
++    """
++    :type regexes: set[re.__Regex]
++    """
++
++    def __init__(self, regex_hook):
++        """
++        :type regex_hook: hook._RegexHook
++        """
++        _Plugin.__init__(self, regex_hook)
++        self.regexes = regex_hook.regexes
++
++
++class EventPlugin(_Plugin):
++    """
++    :type events: set[str]
++    """
++
++    def __init__(self, event_hook):
++        """
++        :type event_hook: hook._EventHook
++        """
++        _Plugin.__init__(self, event_hook)
++        self.events = event_hook.events
++
++    def is_catch_all(self):
++        return "*" in self.events
++
++
++class SievePlugin(_Plugin):
++    def __init__(self, sieve_hook):
++        """
++        :type sieve_hook: hook._SieveHook
++        """
++        _Plugin.__init__(self, sieve_hook)
+\ No newline at end of file
+diff --git a/util/hook.py b/util/hook.py
+index 31e069b..f1afc10 100644
+--- a/util/hook.py
++++ b/util/hook.py
+@@ -2,6 +2,161 @@ import inspect
+ import re
+ 
+ 
++class _Hook():
++    """
++    :type function: function
++    :type kwargs: dict[str, V]
++    """
++
++    def __init__(self, function, kwargs):
++        """
++        :type function: function
++        :type kwargs: dict[str, V]
++        """
++        self.function = function
++        self.kwargs = kwargs
++
++
++class _CommandHook(_Hook):
++    """
++    :type main_alias: str
++    :type aliases: set[str]
++    """
++
++    def __init__(self, alias_param, function, kwargs):
++        """
++        :type alias_param: list[str] | str
++        :type function: function
++        :type kwargs: dict[str, V]
++        """
++        _Hook.__init__(self, function, kwargs)
++
++        if isinstance(alias_param, str):
++            self.main_alias = alias_param
++            self.aliases = {alias_param}  # construct a set with one str
++        else:
++            assert isinstance(alias_param, list)
++            self.main_alias = alias_param[0]
++            self.aliases = set(alias_param)  # turn the list into a set
++
++        self.doc = function.__doc__.split('\n', 1)[0]
++
++    def add_hook(self, aliases, kwargs):
++        """
++        :type aliases: list[str] | str
++        """
++        # update kwargs, overwriting duplicates
++        self.kwargs.update(kwargs)
++
++        if isinstance(aliases, str):
++            self.aliases.add(aliases)
++        else:
++            assert isinstance(aliases, list)
++            self.aliases.update(aliases)
++
++
++class _RegexHook(_Hook):
++    """
++    :type regexes: list[re.__Regex]
++    """
++
++    def __init__(self, function, regex_param, kwargs):
++        """
++        :type function: function
++        :type regex_param: list[str | re.__Regex] | str | re.__Regex
++        :type kwargs: dict[str, V]
++        """
++        _Hook.__init__(self, function, kwargs)
++
++        self.regexes = []
++        if isinstance(regex_param, str):
++            # if the paramater is a string, compile and add
++            self.regexes.append(re.compile(regex_param))
++        elif isinstance(regex_param, re.__Regex):
++            # if the paramater is an re.__Regex, just add it
++            self.regexes.append(regex_param)
++        else:
++            assert isinstance(regex_param, list)
++            # if the paramater is a list, add each one
++            for re_to_match in regex_param:
++                if isinstance(re_to_match, str):
++                    re_to_match = re.compile(re_to_match)
++                else:
++                    # make sure that the param is a regex if it isn't a str
++                    assert isinstance(re_to_match, re.__Regex)
++
++                self.regexes.append(re_to_match)
++
++    def add_hook(self, regex_param, kwargs):
++        """
++        :type regex_param: list[str | re.__Regex] | str | re.__Regex
++        :type kwargs: dict[str, V]
++        """
++        # update kwargs, overwriting duplicates
++        self.kwargs.update(kwargs)
++        # add all regex_paramaters to valid regexes
++        if isinstance(regex_param, str):
++            # if the paramater is a string, compile and add
++            self.regexes.append(re.compile(regex_param))
++        elif isinstance(regex_param, re.__Regex):
++            # if the paramater is an re.__Regex, just add it
++            self.regexes.append(regex_param)
++        else:
++            assert isinstance(regex_param, list)
++            # if the paramater is a list, add each one
++            for re_to_match in regex_param:
++                if isinstance(re_to_match, str):
++                    re_to_match = re.compile(re_to_match)
++                else:
++                    assert isinstance(re_to_match, re.__Regex)
++
++                self.regexes.append(re_to_match)
++
++
++class _EventHook(_Hook):
++    """
++    :type events: set[str]
++    """
++
++    def __init__(self, event_param, function, kwargs):
++        """
++        :type event_param: list[str] | str
++        :type function: function
++        :type kwargs: dict[str, V]
++        """
++        _Hook.__init__(self, function, kwargs)
++
++        if isinstance(event_param, str):
++            self.events = {event_param}  # one str set
++        else:
++            assert isinstance(event_param, list)
++            self.events = set(event_param)
++
++    def add_hook(self, event_param, kwargs):
++        """
++        :type event_param: list[str] | str
++        :type kwargs: dict[str, V]
++        """
++        # update kwargs, overwriting duplicates
++        self.kwargs.update(kwargs)
++
++        if isinstance(event_param, str):
++            self.events.add(event_param)
++        else:
++            assert isinstance(event_param, list)
++            self.events.update(event_param)
++
++
++class _SieveHook(_Hook):
++    def __init__(self, function, kwargs):
++        _Hook.__init__(self, function, kwargs)
++        # there isn't that much else to do, as sieves don't have any params
++
++    def add_hook(self, kwargs):
++        # update kwargs, overwriting duplicates
++        self.kwargs.update(kwargs)
++
++
+ def _hook_add(func, add, name=''):
+     if not hasattr(func, '_hook'):
+         func._hook = []
+@@ -21,6 +176,7 @@ def sieve(func):
+     _hook_add(func, ['sieve', (func,)])
+     return func
+ 
++
+ # TODO: Add support for multiple commands in one hook
+ # EG: @hook.command(["command1", "command2"], **args)
+ def command(name=None, **kwargs):
+-- 
+1.9.2
+
