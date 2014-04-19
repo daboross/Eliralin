@@ -1,4 +1,4 @@
-From c00f0eca29691ad651df3b5dc8982a377210bef8 Mon Sep 17 00:00:00 2001
+From 0739e21b3d39369c283d5898bd964dd8fa4e5b00 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 16 Apr 2014 17:38:46 -0700
 Subject: [PATCH] I don't think there's any reason to put a try/except clause

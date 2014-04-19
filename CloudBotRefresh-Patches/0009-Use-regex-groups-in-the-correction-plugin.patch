@@ -1,4 +1,4 @@
-From 9cb3d8d5fc8a8b00c9cfce6559952e61ff03c04b Mon Sep 17 00:00:00 2001
+From 78213a3e45f7e59f29373831b09bc98f41e80559 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 16 Apr 2014 17:41:22 -0700
 Subject: [PATCH] Use regex groups in the correction plugin
