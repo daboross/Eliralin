@@ -1,4 +1,4 @@
-From c28ff19f25fd881ba86d58e7cec2b8e4f7c52029 Mon Sep 17 00:00:00 2001
+From a7afbb9d8bbcc010bbb1d78eba609f774a617072 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 13 Apr 2014 14:57:40 -0700
 Subject: [PATCH] Assign None to input.trigger in __init__

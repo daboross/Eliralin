@@ -1,4 +1,4 @@
-From ac661f68ffdcd532f87696b288ba35dd47e3faa5 Mon Sep 17 00:00:00 2001
+From 7a819cad09a919adec568b793ee3f22a98f70af6 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Thu, 17 Apr 2014 19:47:58 -0700
 Subject: [PATCH] Change "See detailed info at" to " - " in fishbans plugin

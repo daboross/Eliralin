@@ -1,39 +1,9 @@
-From 8604cd561329c932564e7e999490c893b31e5d28 Mon Sep 17 00:00:00 2001
+From b681b03c9bfe6c4a7eea9b8541ac0f947db23b18 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
-Date: Sat, 19 Apr 2014 14:22:55 -0700
-Subject: [PATCH] Try adding more plugin manager stuff - this is totally
- experimental
+Date: Sat, 19 Apr 2014 14:26:19 -0700
+Subject: [PATCH] Experimental plugin manager stuff
 
 
-diff --git a/core/bot.py b/core/bot.py
-index 9492608..ec1a839 100644
---- a/core/bot.py
-+++ b/core/bot.py
-@@ -202,23 +202,3 @@ class CloudBot(threading.Thread):
-         """shuts the bot down and restarts it"""
-         self.do_restart = True
-         self.stop(reason)
--
--
--class PluginManager:
--    """
--    :type plugins: list[Plugin]
--    :type command_to_function: dict[str, V]
--    """
--    def __init__(self, bot):
--        """
--        :type bot: core.bot.CloudBot
--        """
--        self.bot = bot
--
--        self.plugins = []
--        self.command_to_function = {}
--        self.regex = []
--
--    class Plugin:
--        def __init__(self):
--            pass
-\ No newline at end of file
 diff --git a/core/pluginmanager.py b/core/pluginmanager.py
 new file mode 100644
 index 0000000..3750214
