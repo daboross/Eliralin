@@ -1,0 +1,129 @@
+From f06114dc212b31d2da7f8a655e969504e6c3ff63 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Fri, 18 Apr 2014 19:41:53 -0700
+Subject: [PATCH] Merge SSLIRCConnection into IRCConnection
+
+Also, tell what host/port the bot is connecting to when a socket error occurs
+
+diff --git a/core/irc.py b/core/irc.py
+index d6f4284..34d61de 100644
+--- a/core/irc.py
++++ b/core/irc.py
+@@ -7,7 +7,6 @@ from ssl import wrap_socket, CERT_NONE, CERT_REQUIRED, SSLError
+ 
+ from core.permissions import PermissionManager
+ 
+-
+ irc_prefix_rem = re.compile(r'(.*?) (.*?) (.*)').match
+ irc_noprefix_rem = re.compile(r'()(.*?) (.*)').match
+ irc_netmask_rem = re.compile(r':?([^!@]*)!?([^@]*)@?(.*)').match
+@@ -160,23 +159,53 @@ class ParseThread(threading.Thread):
+ 
+ 
+ class IRCConnection(object):
+-    """handles an IRC connection"""
++    """handles an IRC connection
++    :type logger: logging.Logger
++    :type output_queue: queue.Queue
++    :type input_queue; queue.Queue
++    :type socket: socket.socket
++    :type conn_name: str
++    :type host: str
++    :type port: int
++    :type ssl: bool
++    :type ignore_cert_errors: bool
++    """
+ 
+-    def __init__(self, logger, name, host, port, input_queue, output_queue):
++    def __init__(self, logger, name, host, port, input_queue, output_queue, ssl, ignore_cert_errors=True, timeout=300):
+         self.logger = logger
+-        self.output_queue = output_queue  # lines to be sent out
+-        self.input_queue = input_queue  # lines that were received
+-        self.socket = self.create_socket()
+         self.conn_name = name
+         self.host = host
+         self.port = port
+-        self.timeout = 300
++        self.output_queue = output_queue  # lines to be sent out
++        self.input_queue = input_queue  # lines that were received
++        self.ssl = ssl
++        self.ignore_cert_errors = ignore_cert_errors
++        self.timeout = timeout
++        self.socket = self.create_socket()
++        # to be assigned in connect()
++        self.receive_thread = None
++        self.send_thread = None
+ 
+     def create_socket(self):
+-        return socket.socket(socket.AF_INET, socket.TCP_NODELAY)
++        sock = socket.socket(socket.AF_INET, socket.TCP_NODELAY)
++        if self.ssl:
++            if self.ignore_cert_errors:
++                cert_requirement = CERT_NONE
++            else:
++                cert_requirement = CERT_REQUIRED
++            sock = wrap_socket(sock, server_side=False, cert_reqs=cert_requirement)
++
++        return sock
+ 
+     def connect(self):
+-        self.socket.connect((self.host, self.port))
++        try:
++            self.socket.connect((self.host, self.port))
++        except socket.error:
++            if self.ssl:
++                self.logger.warning("Failed to connect to +{}:{}".format(self.host, self.port))
++            else:
++                self.logger.warning("Failed to connect to {}:{}".format(self.host, self.port))
++            raise
+ 
+         self.receive_thread = ReceiveThread(self.logger, self.socket, self.input_queue, self.timeout)
+         self.receive_thread.start()
+@@ -196,19 +225,6 @@ class IRCConnection(object):
+         self.connect()
+ 
+ 
+-class SSLIRCConnection(IRCConnection):
+-    """handles a SSL IRC connection"""
+-
+-    def __init__(self, logger, name, host, port, input_queue, output_queue, ignore_cert_errors):
+-        self.ignore_cert_errors = ignore_cert_errors
+-        IRCConnection.__init__(self, logger, name, host, port, input_queue, output_queue)
+-
+-    def create_socket(self):
+-        return wrap_socket(IRCConnection.create_socket(self), server_side=False,
+-                           cert_reqs=CERT_NONE if self.ignore_cert_errors else
+-                           CERT_REQUIRED)
+-
+-
+ class BotConnection(object):
+     """ A BotConnection represents each connection the bot makes to an IRC server
+     :type bot: core.bot.CloudBot
+@@ -274,7 +290,8 @@ class BotConnection(object):
+         self.permissions = PermissionManager(self)
+ 
+         # create the IRC connection and connect
+-        self.connection = self.create_connection()
++        self.connection = IRCConnection(self.bot.logger, self.name, self.server, self.port, self.input_queue,
++                                        self.output_queue, self.ssl)
+         self.connection.connect()
+ 
+         self.set_pass(self.config.get('server_password'))
+@@ -288,14 +305,6 @@ class BotConnection(object):
+         self.parse_thread.daemon = True
+         self.parse_thread.start()
+ 
+-    def create_connection(self):
+-        if self.ssl:
+-            return SSLIRCConnection(self.bot.logger, self.name, self.server, self.port, self.input_queue,
+-                                    self.output_queue, True)
+-        else:
+-            return IRCConnection(self.bot.logger, self.name, self.server, self.port, self.input_queue,
+-                                 self.output_queue)
+-
+     def stop(self):
+         self.connection.stop()
+ 
+-- 
+1.9.2
+
