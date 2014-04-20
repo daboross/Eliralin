@@ -1,4 +1,4 @@
-From 22538ee83d4485c5714a2d4e04cd417abbb66d3e Mon Sep 17 00:00:00 2001
+From ab930170455b46efc918f741bec2e7708d247790 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:25:28 -0800
 Subject: [PATCH] Replace ? with ^ for factoids

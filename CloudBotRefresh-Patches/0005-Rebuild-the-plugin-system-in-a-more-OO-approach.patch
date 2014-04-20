@@ -1,4 +1,4 @@
-From 980c05cdb533946077ff1a8ed62fe881ab21ff5e Mon Sep 17 00:00:00 2001
+From 400b71033e83512e056efd2dad4d683686ccea18 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 20 Apr 2014 04:01:35 -0700
 Subject: [PATCH] Rebuild the plugin system in a more OO approach.
@@ -43,7 +43,7 @@ index d955b6c..c9717ab 100644
          """ self.plugins format
          {'PLUGIN_TYPE': [(<COMPILED_PLUGIN_FUNTION>,
 diff --git a/core/loader.py b/core/loader.py
-index 579b28d..4088bb0 100644
+index 9531b1b..4088bb0 100644
 --- a/core/loader.py
 +++ b/core/loader.py
 @@ -1,31 +1,10 @@
@@ -93,11 +93,12 @@ index 579b28d..4088bb0 100644
          self.observer.start()
  
          self.load_all()
-@@ -48,119 +27,57 @@ class PluginLoader(object):
+@@ -48,121 +27,57 @@ class PluginLoader(object):
  
      def load_all(self):
          """runs load_file() on all python files in the plugins folder"""
 -        files = set(glob.glob(os.path.join(self.path, '*.py')))
+-        print(files)
 +        files = set(glob.glob(os.path.join(self.plugin_path, '*.py')))
          for f in files:
 -            self.load_file(f, rebuild=True)
@@ -118,6 +119,7 @@ index 579b28d..4088bb0 100644
 -        file_split = os.path.splitext(filename)
 -        title = file_split[0]
 -        extension = file_split[1]
+-        print(extension)
 -        if extension != ".py":
 -            # ignore non-python plugin files
 -            return
@@ -783,10 +785,10 @@ diff --git a/plugins/__init__.py b/plugins/__init__.py
 new file mode 100644
 index 0000000..e69de29
 diff --git a/plugins/core_misc.py b/plugins/core_misc.py
-index 4875ef5..2a92c03 100644
+index f97872a..bb8c6af 100644
 --- a/plugins/core_misc.py
 +++ b/plugins/core_misc.py
-@@ -59,9 +59,8 @@ def onjoin(paraml, conn=None, bot=None):
+@@ -60,9 +60,8 @@ def onjoin(paraml, conn=None, bot=None):
      bot.logger.info("ONJOIN hook completed. Bot ready.")
  
  
