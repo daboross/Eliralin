@@ -1,4 +1,4 @@
-From 61daf238149e8661ad33fbc4a4cac96be5ed4813 Mon Sep 17 00:00:00 2001
+From 54a1860c738e00a402a40d41a2994b7c9eb2040d Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Fri, 18 Apr 2014 20:23:10 -0700
 Subject: [PATCH] Add documentation to IRCConnection. Also show (+)host:port

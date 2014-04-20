@@ -1,4 +1,4 @@
-From 9e5b5506e847bed41429a5f5ecd49ea34a45a294 Mon Sep 17 00:00:00 2001
+From 3f50e0c5afa5bf2f7a64a84623dd3a1536d81eca Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Thu, 17 Apr 2014 19:48:59 -0700
 Subject: [PATCH] Add "decode" arg to http.get, and fix geoip fetching.

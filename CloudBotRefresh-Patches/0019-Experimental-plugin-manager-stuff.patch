@@ -1,15 +1,65 @@
-From c7cabbaca21b2b334dc9659fa8d8b8ed7195ee32 Mon Sep 17 00:00:00 2001
+From ab8b91cce35abbbc499f6b8c6752d14794a17b2e Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 19 Apr 2014 14:26:19 -0700
 Subject: [PATCH] Experimental plugin manager stuff
 
 
+diff --git a/core/loader.py b/core/loader.py
+index 579b28d..785326a 100644
+--- a/core/loader.py
++++ b/core/loader.py
+@@ -6,15 +6,16 @@ import collections
+ from watchdog.observers import Observer
+ from watchdog.tricks import Trick
+ 
+-from core import main
+ 
++from core import main, pluginmanager
++from core.pluginmanager import Plugin
+ 
+-def make_signature(f):
+-    return f.__code__.co_filename, f.__name__, f.__code__.co_firstlineno
+ 
+-
+-def format_plug(plug, kind='', lpad=0):
+-    out = ' ' * lpad + '{}:{}:{}'.format(*make_signature(plug[0]))
++def nice_output(plugin):
++    """
++    :type plugin: Plugin
++    """
++    out = '{}:{}:{}'.format(*make_signature(plug[0]))
+     if kind == 'command':
+         out += ' ' * (50 - len(out)) + plug[1]['name']
+ 
+@@ -103,7 +104,7 @@ class PluginLoader(object):
+                 for plug_type, data in obj._hook:
+                     # add plugin to the plugin list
+                     self.bot.plugins[plug_type] += [data]
+-                    self.bot.logger.info("Loaded plugin: {} ({})".format(format_plug(data), plug_type))
++                    self.bot.logger.info("Loaded plugin: {} ({})".format(nice_output(data), plug_type))
+ 
+         # do a rebuild, unless the bot is loading all plugins (rebuild happens after load_all)
+         if not rebuild:
+@@ -149,11 +150,11 @@ class PluginLoader(object):
+         for plugin in self.bot.plugins['command']:
+             name = plugin[1]['name'].lower()
+             if not re.match(r'^\w+$', name):
+-                self.bot.logger.error('Invalid command name: "{}" ({})'.format(name, format_plug(plugin)))
++                self.bot.logger.error('Invalid command name: "{}" ({})'.format(name, nice_output(plugin)))
+                 continue
+             if name in self.bot.commands:
+                 self.bot.logger.error('Command already registered: "{}" ({}, {})'
+-                                      .format(name, format_plug(self.bot.commands[name]), format_plug(plugin)))
++                                      .format(name, nice_output(self.bot.commands[name]), nice_output(plugin)))
+                 continue
+             self.bot.commands[name] = plugin
+ 
 diff --git a/core/pluginmanager.py b/core/pluginmanager.py
 new file mode 100644
-index 0000000..db1c105
+index 0000000..16a4775
 --- /dev/null
 +++ b/core/pluginmanager.py
-@@ -0,0 +1,247 @@
+@@ -0,0 +1,259 @@
 +import inspect
 +import os
 +import re
@@ -17,8 +67,9 @@ index 0000000..db1c105
 +from util import hook
 +
 +
-+def find_hooks(code):
++def find_hooks(parent, code):
 +    """
++    :type parent: FilePlugin
 +    :type code: object
 +    :rtype: (list[CommandPlugin], list[RegexPlugin], list[EventPlugin], list[SievePlugin])
 +    """
@@ -37,7 +88,7 @@ index 0000000..db1c105
 +                for hook_type, func_hook in func_hooks.items():
 +                    assert func_hook.function == func  # make sure this is the right function
 +
-+                    type_lists[hook_type] = _hook_name_to_plugin[hook_type](func_hook)
++                    type_lists[hook_type] = _hook_name_to_plugin[hook_type](parent, func_hook)
 +
 +    return commands, regexes, events, sieves
 +
@@ -172,24 +223,30 @@ index 0000000..db1c105
 +        self.filepath = filepath
 +        self.filename = filename
 +        self.code = code
-+        self.commands, self.regexes, self.events, self.sieves = find_hooks(code)
++        self.commands, self.regexes, self.events, self.sieves = find_hooks(self, code)
 +
 +
-+class _Plugin:
++class Plugin:
 +    """
++    :type type; str
++    :type file_plugin: FilePlugin
 +    :type function: function
 +    """
 +
-+    def __init__(self, func_hook):
++    def __init__(self, plugin_type, file_plugin, func_hook):
 +        """
++        :type plugin_type: str
++        :type file_plugin: FilePlugin
 +        :type func_hook: hook._Hook
 +        """
++        self.type = plugin_type
++        self.fileplugin = file_plugin
 +        self.function = func_hook.function
 +        for key, value in func_hook.kwargs.items():
 +            setattr(self, key.lower(), value)
 +
 +
-+class CommandPlugin(_Plugin):
++class CommandPlugin(Plugin):
 +    """
 +    :type name: str
 +    :type aliases: list[str]
@@ -198,11 +255,12 @@ index 0000000..db1c105
 +    :type permissions: list[str]
 +    """
 +
-+    def __init__(self, cmd_hook):
++    def __init__(self, file_plugin, cmd_hook):
 +        """
++        :type file_plugin: FilePlugin
 +        :type cmd_hook: hook._CommandHook
 +        """
-+        _Plugin.__init__(self, cmd_hook)
++        Plugin.__init__(self, "command", file_plugin, cmd_hook)
 +
 +        # make sure that autohelp and permissions are set
 +        if not "autohelp" in cmd_hook.kwargs:
@@ -215,41 +273,45 @@ index 0000000..db1c105
 +        self.doc = cmd_hook.doc
 +
 +
-+class RegexPlugin(_Plugin):
++class RegexPlugin(Plugin):
 +    """
 +    :type regexes: set[re.__Regex]
 +    """
 +
-+    def __init__(self, regex_hook):
++    def __init__(self, file_plugin, regex_hook):
 +        """
++        :type file_plugin: FilePlugin
 +        :type regex_hook: hook._RegexHook
 +        """
-+        _Plugin.__init__(self, regex_hook)
++        Plugin.__init__(self, "regex", file_plugin, regex_hook)
 +        self.regexes = regex_hook.regexes
 +
 +
-+class EventPlugin(_Plugin):
++class EventPlugin(Plugin):
 +    """
 +    :type events: set[str]
 +    """
 +
-+    def __init__(self, event_hook):
++    def __init__(self, file_plugin, event_hook):
 +        """
++        :type file_plugin: FilePlugin
 +        :type event_hook: hook._EventHook
 +        """
-+        _Plugin.__init__(self, event_hook)
++        Plugin.__init__(self, "event", file_plugin, event_hook)
 +        self.events = event_hook.events
 +
 +    def is_catch_all(self):
 +        return "*" in self.events
 +
 +
-+class SievePlugin(_Plugin):
-+    def __init__(self, sieve_hook):
++class SievePlugin(Plugin):
++    def __init__(self, file_plugin, sieve_hook):
 +        """
++        :type file_plugin: FilePlugin
 +        :type sieve_hook: hook._SieveHook
 +        """
-+        _Plugin.__init__(self, sieve_hook)
++        Plugin.__init__(self, "sieve", file_plugin, sieve_hook)
++
 +
 +_hook_name_to_plugin = {
 +    "command": CommandPlugin,

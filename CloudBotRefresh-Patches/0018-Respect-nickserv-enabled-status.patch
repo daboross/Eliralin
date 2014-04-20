@@ -1,4 +1,4 @@
-From 83c7f135ac95e7959ad6558820119fe613d60b2f Mon Sep 17 00:00:00 2001
+From bc955a80039699ba4a4879ff51abc23d75281864 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 19 Apr 2014 14:22:10 -0700
 Subject: [PATCH] Respect nickserv "enabled" status
