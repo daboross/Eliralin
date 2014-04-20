@@ -1,66 +1,456 @@
-From cba0d123c964c9d52574c62d47d1f6fb63afce14 Mon Sep 17 00:00:00 2001
+From 385f9a9139030ccea26683ee36f42ee3cdeb5dd6 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 19 Apr 2014 14:26:19 -0700
 Subject: [PATCH] Experimental plugin manager stuff
 
 
+diff --git a/core/bot.py b/core/bot.py
+index d955b6c..c9717ab 100644
+--- a/core/bot.py
++++ b/core/bot.py
+@@ -11,7 +11,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
+ from sqlalchemy import create_engine
+ from core import config, irc, main
+ from core.loader import PluginLoader
+-
++from core.pluginmanager import PluginManager
+ 
+ logger_initialized = False
+ 
+@@ -89,8 +89,6 @@ class CloudBot(threading.Thread):
+ 
+         # stores each bot server connection
+         self.connections = []
+-        # bot commands
+-        self.commands = []
+ 
+         # set up logging
+         self.logger = get_logger()
+@@ -116,7 +114,7 @@ class CloudBot(threading.Thread):
+         self.logger.debug("Bot setup completed.")
+ 
+         # run plugin loader
+-        self.plugins = collections.defaultdict(list)
++        self.plugin_manager = PluginManager(self)
+ 
+         """ self.plugins format
+         {'PLUGIN_TYPE': [(<COMPILED_PLUGIN_FUNTION>,
 diff --git a/core/loader.py b/core/loader.py
-index 579b28d..785326a 100644
+index 579b28d..4088bb0 100644
 --- a/core/loader.py
 +++ b/core/loader.py
-@@ -6,15 +6,16 @@ import collections
+@@ -1,31 +1,10 @@
++import importlib
+ import os
+-import re
+ import glob
+-import collections
+ 
  from watchdog.observers import Observer
  from watchdog.tricks import Trick
  
 -from core import main
- 
-+from core import main, pluginmanager
-+from core.pluginmanager import Plugin
- 
+-
+-
 -def make_signature(f):
 -    return f.__code__.co_filename, f.__name__, f.__code__.co_firstlineno
- 
+-
 -
 -def format_plug(plug, kind='', lpad=0):
 -    out = ' ' * lpad + '{}:{}:{}'.format(*make_signature(plug[0]))
-+def nice_output(plugin):
-+    """
-+    :type plugin: Plugin
-+    """
-+    out = '{}:{}:{}'.format(*make_signature(plug[0]))
-     if kind == 'command':
-         out += ' ' * (50 - len(out)) + plug[1]['name']
+-    if kind == 'command':
+-        out += ' ' * (50 - len(out)) + plug[1]['name']
+-
+-    if kind == 'event':
+-        out += ' ' * (50 - len(out)) + ', '.join(plug[1]['events'])
+-
+-    if kind == 'regex':
+-        out += ' ' * (50 - len(out)) + plug[1]['regex']
+-
+-    return out
+-
  
-@@ -103,7 +104,7 @@ class PluginLoader(object):
-                 for plug_type, data in obj._hook:
-                     # add plugin to the plugin list
-                     self.bot.plugins[plug_type] += [data]
+ class PluginLoader(object):
+     def __init__(self, bot):
+@@ -33,11 +12,11 @@ class PluginLoader(object):
+         :type bot: core.bot.CloudBot
+         """
+         self.observer = Observer()
+-        self.path = os.path.abspath("plugins")
++        self.plugin_path = os.path.abspath("plugins")
+         self.bot = bot
+ 
+         self.event_handler = PluginEventHandler(self, patterns=["*.py"])
+-        self.observer.schedule(self.event_handler, self.path, recursive=False)
++        self.observer.schedule(self.event_handler, self.plugin_path, recursive=False)
+         self.observer.start()
+ 
+         self.load_all()
+@@ -48,119 +27,57 @@ class PluginLoader(object):
+ 
+     def load_all(self):
+         """runs load_file() on all python files in the plugins folder"""
+-        files = set(glob.glob(os.path.join(self.path, '*.py')))
++        files = set(glob.glob(os.path.join(self.plugin_path, '*.py')))
+         for f in files:
+-            self.load_file(f, rebuild=True)
+-        self.rebuild()
++            self.load_file(f)
+ 
+-    def load_file(self, path, rebuild=False):
++    def load_file(self, path):
+         """loads (or reloads) all valid plugins from a specified file
+         :type path: str
+-        :type rebuild: bool
+         """
+-        filename = os.path.basename(path)
+-        if isinstance(filename, bytes):
++        if isinstance(path, bytes):
+             # makes sure that the filename is a 'str' object, not a 'bytes' object
+-            filename = filename.decode()
+-        file_split = os.path.splitext(filename)
+-        title = file_split[0]
+-        extension = file_split[1]
+-        if extension != ".py":
+-            # ignore non-python plugin files
+-            return
++            path = path.decode()
++        filepath = os.path.abspath(path)
++        filename = os.path.basename(path)
++        title_and_extension = os.path.splitext(filename)
+ 
+-        disabled = self.bot.config.get('disabled_plugins', [])
+-        if title in disabled:
+-            self.bot.logger.info("Not loading plugin {}: plugin disabled".format(filename))
++        if title_and_extension[1] != ".py":
++            # ignore non-python plugin files
+             return
++        self.unload_file(filepath)
+ 
+-        # compile the file and eval it in a namespace
+         try:
+-            code = compile(open(path, 'U').read(), filename, 'exec')
+-            namespace = {}
+-            eval(code, namespace)
+-        except Exception:
+-            self.bot.logger.exception("Error compiling {}:".format(filename))
++            plugin_module = importlib.import_module("plugins.{}".format(title_and_extension[0]))
++        except:
++            self.bot.logger.exception("Error loading {}:".format(filename))
+             return
+ 
+-        # remove plugins already loaded from this file
+-        for plug_type, data in self.bot.plugins.items():
+-            self.bot.plugins[plug_type] = [x for x in data
+-                                           if x[0]._filename != filename]
+-
+-        # stop all currently running instances of the plugins from this file
+-        for func, handler in list(self.bot.threads.items()):
+-            if func._filename == filename:
+-                handler.stop()
+-                del self.bot.threads[func]
+-
+-        # find objects with hooks in the plugin namespace
+-        # TODO: kill it with fire, kill it all
+-        for obj in namespace.values():
+-            if hasattr(obj, '_hook'):  # check for magic
+-                if obj._thread:
+-                    self.bot.threads[obj] = main.Handler(self.bot, obj)
+-                for plug_type, data in obj._hook:
+-                    # add plugin to the plugin list
+-                    self.bot.plugins[plug_type] += [data]
 -                    self.bot.logger.info("Loaded plugin: {} ({})".format(format_plug(data), plug_type))
-+                    self.bot.logger.info("Loaded plugin: {} ({})".format(nice_output(data), plug_type))
+-
+-        # do a rebuild, unless the bot is loading all plugins (rebuild happens after load_all)
+-        if not rebuild:
+-            self.rebuild()
++        self.bot.plugin_manager.load_plugin(filepath, plugin_module)
  
-         # do a rebuild, unless the bot is loading all plugins (rebuild happens after load_all)
-         if not rebuild:
-@@ -149,11 +150,11 @@ class PluginLoader(object):
-         for plugin in self.bot.plugins['command']:
-             name = plugin[1]['name'].lower()
-             if not re.match(r'^\w+$', name):
+     def unload_file(self, path):
+         """unloads all loaded plugins from a specified file
+         :type path: str
+         """
++        filepath = os.path.abspath(path)
+         filename = os.path.basename(path)
+         if isinstance(filename, bytes):
+             # makes sure that the filename is a 'str' object, not a 'bytes' object
+             filename = filename.decode()
+-        file_split = os.path.splitext(filename)
+-        title = file_split[0]
+-        extension = file_split[1]
+-        if extension != ".py":
+-            # ignore non-python plugin files
+-            return
++        title_and_extension = os.path.splitext(filename)
+ 
+-        disabled = self.bot.config.get('disabled_plugins', [])
+-        if title in disabled:
+-            # this plugin hasn't been loaded, so no need to unload it
++        if title_and_extension[1] != ".py":
++            # ignore non-python plugin files
+             return
+ 
+-        self.bot.logger.info("Unloading plugins from: {}".format(filename))
+-
+-        # remove plugins loaded from this file
+-        for plugin_type, plugins in self.bot.plugins.items():
+-            self.bot.plugins[plugin_type] = [x for x in plugins if x[0]._filename != filename]
+-
+         # stop all currently running instances of the plugins from this file
+-        for func, handler in list(self.bot.threads.items()):
+-            if func._filename == filename:
++        for running_plugin, handler in list(self.bot.threads.items()):
++            if running_plugin.fileplugin.filepath == filepath:
+                 handler.stop()
+-                del self.bot.threads[func]
+-
+-        self.rebuild()
+-
+-    def rebuild(self):
+-        """rebuilds the cloudbot command and event hook lists"""
+-        self.bot.commands = {}
+-        for plugin in self.bot.plugins['command']:
+-            name = plugin[1]['name'].lower()
+-            if not re.match(r'^\w+$', name):
 -                self.bot.logger.error('Invalid command name: "{}" ({})'.format(name, format_plug(plugin)))
-+                self.bot.logger.error('Invalid command name: "{}" ({})'.format(name, nice_output(plugin)))
-                 continue
-             if name in self.bot.commands:
-                 self.bot.logger.error('Command already registered: "{}" ({}, {})'
+-                continue
+-            if name in self.bot.commands:
+-                self.bot.logger.error('Command already registered: "{}" ({}, {})'
 -                                      .format(name, format_plug(self.bot.commands[name]), format_plug(plugin)))
-+                                      .format(name, nice_output(self.bot.commands[name]), nice_output(plugin)))
-                 continue
-             self.bot.commands[name] = plugin
+-                continue
+-            self.bot.commands[name] = plugin
+-
+-        self.bot.events = collections.defaultdict(list)
+-        for func, args in self.bot.plugins['event']:
+-            for event in args['events']:
+-                self.bot.events[event].append((func, args))
++                del self.bot.threads[running_plugin]
++
++        # unload the plugin
++        self.bot.plugin_manager.unload_plugin(filepath)
  
+ 
+ class PluginEventHandler(Trick):
+diff --git a/core/main.py b/core/main.py
+index f26ac53..3dc6116 100644
+--- a/core/main.py
++++ b/core/main.py
+@@ -1,11 +1,9 @@
+ import inspect
+ import re
+-
+ import _thread
+ import queue
+ from queue import Empty
+ 
+-
+ _thread.stack_size(1024 * 512)  # reduce vm size
+ 
+ 
+@@ -130,16 +128,16 @@ class Input:
+         return self.conn.permissions.has_perm_mask(self.mask, permission)
+ 
+ 
+-def run(bot, func, input):
++def run(bot, plugin, input):
+     """
+     :type bot: core.bot.CloudBot
+-    :type func: func
++    :type plugin: Plugin
+     :type input: Input
+     """
+     bot.logger.debug("Input: {}".format(input.__dict__))
+ 
+     parameters = []
+-    specifications = inspect.getargspec(func)
++    specifications = inspect.getargspec(plugin.function)
+     required_args = specifications[0]
+     if required_args is None:
+         required_args = []
+@@ -149,7 +147,7 @@ def run(bot, func, input):
+ 
+     if uses_db:
+         # create SQLAlchemy session
+-        bot.logger.debug("Opened DB session for: {}".format(func._filename))
++        bot.logger.debug("Opened DB session for: {}".format(plugin.fileplugin.title))
+         input.db = input.bot.db_session()
+ 
+     # all the dynamic arguments
+@@ -158,39 +156,40 @@ def run(bot, func, input):
+             value = getattr(input, required_arg)
+             parameters.append(value)
+         else:
+-            bot.logger.error("Plugin {} asked for invalid argument '{}', " \
+-                             "cancelling execution!".format(func._filename, required_arg))
++            bot.logger.error("Plugin {}:{} asked for invalid argument '{}', cancelling execution!"
++                             .format(plugin.fileplugin.title, plugin.function_name, required_arg))
+             return
+ 
+     try:
+-        out = func(*parameters)
++        out = plugin.function(*parameters)
+     except:
+-        bot.logger.exception("Error in plugin {}:".format(func._filename))
++        bot.logger.exception("Error in plugin {}:".format(plugin.fileplugin.title))
+         bot.logger.info("Parameters used: {}".format(parameters))
+         return
+     finally:
+         if uses_db:
+-            bot.logger.debug("Closed DB session for: {}".format(func._filename))
++            bot.logger.debug("Closed DB session for: {}".format(plugin.fileplugin.title))
+             input.db.close()
+ 
+     if out is not None:
+         input.reply(str(out))
+ 
+ 
+-def do_sieve(sieve, bot, input, func, type, args):
++def do_sieve(sieve, bot, input, plugin, kind):
+     """
+-    :type sieve: function
++    :type sieve: Plugin
+     :type bot: core.bot.CloudBot
+     :type input: Input
+-    :type func: function
+-    :type type: str
++    :type plugin: Plugin
++    :type kind: str
+     :type args: dict[str, ?]
+     :rtype: Input
+     """
+     try:
+-        return sieve(bot, input, func, type, args)
++        return sieve.function(bot, input, plugin.function, kind, plugin.args)
+     except:
+-        bot.logger.exception("Error in sieve {}:".format(func._filename))
++        bot.logger.exception("Error running sieve {}:{} on {}:".format(sieve.fileplugin.title, sieve.function_name,
++                                                                       plugin.function_name))
+         return None
+ 
+ 
+@@ -236,46 +235,26 @@ class Handler:
+         self.input_queue.put(value)
+ 
+ 
+-def dispatch(bot, input, kind, func, args, autohelp=False):
++def dispatch(bot, input, kind, plugin):
+     """
+     :type bot: core.bot.CloudBot
+     :type input: Input
+     :type kind: str
+-    :type func: function
+-    :type args: dict[str, ?]
+-    :type autohelp: bool
++    :type plugin: core.pluginmanager.Plugin
+     """
+-    for sieve, in bot.plugins['sieve']:
+-        input = do_sieve(sieve, bot, input, func, kind, args)
++    for sieve in bot.plugin_manager.sieves:
++        input = do_sieve(sieve, bot, input, plugin, kind)
+         if input is None:
+             return
+ 
+-    if autohelp and args.get('autohelp', True) and not input.text and func.__doc__ is not None:
+-        input.notice(input.conn.config["command_prefix"] + func.__doc__.split('\n', 1)[0])
++    if kind == "command" and plugin.args.get('autohelp', True) and not input.text and plugin.doc is not None:
++        input.notice(input.conn.config["command_prefix"] + plugin.doc)
+         return
+ 
+-    if func._thread:
+-        bot.threads[func].put(input)
++    if plugin.args.get("singlethread", False):
++        bot.threads[plugin].put(input)
+     else:
+-        _thread.start_new_thread(run, (bot, func, input))
+-
+-
+-def match_command(bot, command):
+-    """
+-    :type bot: core.bot.CloudBot
+-    :type command: str
+-    :rtype: str | list
+-    """
+-    commands = list(bot.commands)
+-
+-    # do some fuzzy matching
+-    prefix = [x for x in commands if x.startswith(command)]
+-    if len(prefix) == 1:
+-        return prefix[0]
+-    elif prefix and command not in prefix:
+-        return prefix
+-
+-    return command
++        _thread.start_new_thread(run, (bot, plugin, input))
+ 
+ 
+ def main(bot, conn, out):
+@@ -288,8 +267,11 @@ def main(bot, conn, out):
+     command_prefix = conn.config.get('command_prefix', '.')
+ 
+     # EVENTS
+-    for func, args in bot.events[inp.command] + bot.events['*']:
+-        dispatch(bot, Input(bot, conn, *out), "event", func, args)
++    if inp.command in bot.plugin_manager.events:
++        for event_plugin in bot.plugin_manager.events[inp.command]:
++            dispatch(bot, Input(bot, conn, *out), "event", event_plugin)
++    for event_plugin in bot.plugin_manager.catch_all_events:
++        dispatch(bot, Input(bot, conn, *out), "event", event_plugin)
+ 
+     if inp.command == 'PRIVMSG':
+         # COMMANDS
+@@ -300,32 +282,26 @@ def main(bot, conn, out):
+         command_re = prefix + inp.conn.nick
+         command_re += r'[,;:]+\s+)(\w+)(?:$|\s+)(.*)'
+ 
+-        m = re.match(command_re, inp.lastparam)
++        match = re.match(command_re, inp.lastparam)
+ 
+-        if m:
+-            trigger = m.group(1).lower()
+-            command = match_command(bot, trigger)
+-
+-            if isinstance(command, list):  # multiple potential matches
+-                input = Input(bot, conn, *out)
+-                input.notice("Did you mean {} or {}?".format
+-                             (', '.join(command[:-1]), command[-1]))
+-            elif command in bot.commands:
++        if match:
++            command = match.group(1).lower()
++            if command in bot.plugin_manager.commands:
++                plugin = bot.plugin_manager.commands[command]
+                 input = Input(bot, conn, *out)
+-                input.trigger = trigger
+-                input.text_unstripped = m.group(2)
++                input.trigger = command
++                input.text_unstripped = match.group(2)
+                 input.text = input.text_unstripped.strip()
+                 input.inp = input.text
+ 
+-                func, args = bot.commands[command]
+-                dispatch(bot, input, "command", func, args, autohelp=True)
++                dispatch(bot, input, "command", plugin)
+ 
+         # REGEXES
+-        for func, args in bot.plugins['regex']:
+-            m = args['re'].search(inp.lastparam)
+-            if m:
++        for regex, plugin in bot.plugin_manager.regex_plugins:
++            match = regex.search(inp.lastparam)
++            if match:
+                 input = Input(bot, conn, *out)
+-                input.text = m
+-                input.inp = m
++                input.text = match
++                input.inp = match
+ 
+-                dispatch(bot, input, "regex", func, args)
++                dispatch(bot, input, "regex", plugin)
 diff --git a/core/pluginmanager.py b/core/pluginmanager.py
 new file mode 100644
-index 0000000..16a4775
+index 0000000..ce299a5
 --- /dev/null
 +++ b/core/pluginmanager.py
-@@ -0,0 +1,259 @@
-+import inspect
+@@ -0,0 +1,321 @@
 +import os
 +import re
 +
@@ -79,18 +469,26 @@ index 0000000..16a4775
 +    sieves = []
 +    type_lists = {"command": commands, "regex": regexes, "event": events, "sieve": sieves}
 +    for name, func in code.__dict__.items():
-+        if inspect.getmodule(func) == inspect.getmodule(code):
-+            # if it's a function, and is in the right module
-+            if hasattr(func, "_cloudbot_hook"):
-+                # if it has cloudbot hook
++        if hasattr(func, "_cloudbot_hook"):
++            # if it has cloudbot hook
++            func_hooks = func._cloudbot_hook
++            for hook_type, func_hook in func_hooks.items():
++                assert func_hook.function == func  # make sure this is the right function
 +
-+                func_hooks = func._cloudbot_hook
-+                for hook_type, func_hook in func_hooks.items():
-+                    assert func_hook.function == func  # make sure this is the right function
-+
-+                    type_lists[hook_type] = _hook_name_to_plugin[hook_type](parent, func_hook)
++                type_lists[hook_type].append(_hook_name_to_plugin[hook_type](parent, func_hook))
 +
 +    return commands, regexes, events, sieves
++
++
++def plugin_desc(plugin):
++    if isinstance(plugin, CommandPlugin):
++        return "command {}".format("/".join(plugin.aliases))
++    elif isinstance(plugin, EventPlugin):
++        return "events {} ({})".format(plugin.function_name, ",".join(plugin.events))
++    elif isinstance(plugin, RegexPlugin):
++        return "regex {}".format(plugin.function_name)
++    elif isinstance(plugin, SievePlugin):
++        return "sieve {}".format(plugin.function_name)
 +
 +
 +class PluginManager:
@@ -99,8 +497,8 @@ index 0000000..16a4775
 +
 +    :type bot: core.bot.CloudBot
 +    :type plugins: dict[str, FilePlugin]
-+    :type commands_by_alias: dict[str, CommandPlugin]
-+    :type event_plugins_by_event: dict[str, list[EventPlugin]]
++    :type commands: dict[str, CommandPlugin]
++    :type events: dict[str, list[EventPlugin]]
 +    :type catch_all_events: list[EventPlugin]
 +    :type regex_plugins: list[(re.__Regex, RegexPlugin)]
 +    :type sieves: list[SievePlugin]
@@ -113,8 +511,8 @@ index 0000000..16a4775
 +        self.bot = bot
 +
 +        self.plugins = {}
-+        self.commands_by_alias = {}
-+        self.event_plugins_by_event = {}
++        self.commands = {}
++        self.events = {}
 +        self.catch_all_events = []
 +        self.regex_plugins = []
 +        self.sieves = []
@@ -125,10 +523,33 @@ index 0000000..16a4775
 +        :type plugins: list[(str, object)]
 +        """
 +        for path, code in plugins:
-+            filepath = os.path.abspath(path)
-+            filename = os.path.basename(path)
-+            plugin = FilePlugin(filepath, filename, code)
-+            self.register_plugin(plugin)
++            self.load_plugin(path, code)
++
++    def load_plugin(self, path, code):
++        """loads a plugin from the given path and code object
++        :type path: str
++        :type code: object
++        """
++        filepath = os.path.abspath(path)
++        filename = os.path.basename(path)
++        title = os.path.splitext(filename)[0]
++        if "disabled_plugins" in self.bot.config and title in self.bot.config['disabled_plugins']:
++            self.bot.logger.info("Not loading plugin {}: plugin disabled".format(filename))
++            return
++        plugin = FilePlugin(filepath, filename, title, code)
++        self.register_plugin(plugin)
++
++    def unload_plugin(self, path):
++        """unloads a plugin from the given path
++
++        """
++        filename = os.path.basename(path)
++        title = os.path.splitext(filename)[0]
++        if "disabled_plugins" in self.bot.config and title in self.bot.config['disabled_plugins']:
++            # this plugin hasn't been loaded, so no need to unload it
++            return
++
++        self.unregister_plugin(filename, ignore_not_registered=True)
 +
 +    def register_plugin(self, plugin, check_if_exists=True):
 +        """
@@ -142,7 +563,13 @@ index 0000000..16a4775
 +        # register commands
 +        for command in plugin.commands:
 +            for alias in command.aliases:
-+                self.commands_by_alias[alias] = command
++                if alias in self.commands:
++                    self.bot.logger.warning("Plugin {} attempted to register command {} which was already registered "
++                                            "by {}.Ignoring new assignment.",
++                                            plugin.title, alias, self.commands[alias].fileplugin.title)
++                else:
++                    self.commands[alias] = command
++            self.log_plugin_register(command)
 +
 +        # register events
 +        for event_plugin in plugin.events:
@@ -150,36 +577,50 @@ index 0000000..16a4775
 +                self.catch_all_events.append(event_plugin)
 +            else:
 +                for event_name in event_plugin.events:
-+                    if event_name in self.event_plugins_by_event:
-+                        self.event_plugins_by_event[event_name].append(event_plugin)
++                    if event_name in self.events:
++                        self.events[event_name].append(event_plugin)
 +                    else:
-+                        self.event_plugins_by_event[event_name] = [event_plugin]
++                        self.events[event_name] = [event_plugin]
++            self.log_plugin_register(event_plugin)
 +
 +        # register regexes
 +        for regex_plugin in plugin.regexes:
 +            for regex_match in regex_plugin.regexes:
 +                self.regex_plugins.append((regex_match, regex_plugin))
++            self.log_plugin_register(regex_plugin)
 +
 +        # register sieves
 +        for sieve_plugin in plugin.sieves:
 +            self.sieves.append(sieve_plugin)
++            self.log_plugin_register(sieve_plugin)
 +
-+    def unregister_plugin(self, plugin):
++    def unregister_plugin(self, plugin, ignore_not_registered=False):
 +        """
 +        :param plugin: FilePlugin to directly unload, or str to lookup via filename and then unload.
 +        :type plugin: FilePlugin | str
 +        """
 +        if isinstance(plugin, str):
-+            assert plugin in self.plugins
++            if ignore_not_registered:
++                if not plugin in self.plugins:
++                    return
++            else:
++                assert plugin in self.plugins
 +            plugin = self.plugins[plugin]
 +        else:
-+            assert plugin.filename in self.plugins and self.plugins[plugin.filename] is plugin
++            if ignore_not_registered:
++                if not plugin.filename in self.plugins:
++                    return
++            else:
++                assert plugin.filename in self.plugins
++            assert self.plugins[plugin.filename] is plugin
 +            # we don't want to be unload a plugin which isn't loaded
 +
 +        # unregister commands
 +        for command in plugin.commands:
 +            for alias in command.aliases:
-+                del self.commands_by_alias[alias]
++                if alias in self.commands and self.commands[alias] == command:
++                    # we need to make sure that there wasn't a conflict, and another plugin got this command.
++                    del self.commands[alias]
 +
 +        # unregister events
 +        for event_plugin in plugin.events:
@@ -187,8 +628,8 @@ index 0000000..16a4775
 +                self.catch_all_events.remove(event_plugin)
 +            else:
 +                for event_name in event_plugin.events:
-+                    assert event_name in self.event_plugins_by_event  # this can't be not true
-+                    self.event_plugins_by_event[event_name].remove(event_plugin)
++                    assert event_name in self.events  # this can't be not true
++                    self.events[event_name].remove(event_plugin)
 +
 +        # unregister regexes
 +        for regex_plugin in plugin.regexes:
@@ -202,11 +643,18 @@ index 0000000..16a4775
 +        # remove last reference to plugin
 +        del self.plugins[plugin.filename]
 +
++        self.bot.logger.info("Unloaded all plugins from {}".format(plugin.title))
++
++    def log_plugin_register(self, plugin):
++        self.bot.logger.info(
++            "Loading {} - {}".format(plugin.fileplugin.filename, plugin_desc(plugin)))
++
 +
 +class FilePlugin:
 +    """
 +    :type filepath: str
 +    :type filename: str
++    :type title: str
 +    :type code: object
 +    :type commands: list[CommandPlugin]
 +    :type regexes: list[RegexPlugin]
@@ -214,7 +662,7 @@ index 0000000..16a4775
 +    :type sieves: list[SievePlugin]
 +    """
 +
-+    def __init__(self, filepath, filename, code):
++    def __init__(self, filepath, filename, title, code):
 +        """
 +        :type filepath: str
 +        :type filename: str
@@ -222,6 +670,7 @@ index 0000000..16a4775
 +        """
 +        self.filepath = filepath
 +        self.filename = filename
++        self.title = title
 +        self.code = code
 +        self.commands, self.regexes, self.events, self.sieves = find_hooks(self, code)
 +
@@ -231,6 +680,8 @@ index 0000000..16a4775
 +    :type type; str
 +    :type file_plugin: FilePlugin
 +    :type function: function
++    :type function_name: str
++    :type args: dict[str, unknown]
 +    """
 +
 +    def __init__(self, plugin_type, file_plugin, func_hook):
@@ -242,8 +693,8 @@ index 0000000..16a4775
 +        self.type = plugin_type
 +        self.fileplugin = file_plugin
 +        self.function = func_hook.function
-+        for key, value in func_hook.kwargs.items():
-+            setattr(self, key.lower(), value)
++        self.function_name = self.function.__name__
++        self.args = func_hook.kwargs
 +
 +
 +class CommandPlugin(Plugin):
@@ -269,7 +720,9 @@ index 0000000..16a4775
 +            self.permissions = []
 +
 +        self.name = cmd_hook.main_alias
-+        self.aliases = cmd_hook.aliases
++        self.aliases = list(cmd_hook.aliases)  # turn the set into a list
++        self.aliases.remove(self.name)
++        self.aliases.insert(0, self.name)  # make sure the name, or 'main alias' is in position 0
 +        self.doc = cmd_hook.doc
 +
 +
@@ -320,6 +773,21 @@ index 0000000..16a4775
 +    "sieve": SievePlugin,
 +}
 \ No newline at end of file
+diff --git a/plugins/__init__.py b/plugins/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/plugins/attacks.py b/plugins/attacks.py
+index c43e955..70a028d 100644
+--- a/plugins/attacks.py
++++ b/plugins/attacks.py
+@@ -3,7 +3,6 @@ import re
+ 
+ from util import hook
+ 
+-
+ with open("data/larts.txt") as f:
+     larts = [line.strip() for line in f.readlines()
+              if not line.startswith("//")]
 diff --git a/plugins/core_misc.py b/plugins/core_misc.py
 index 4875ef5..2a92c03 100644
 --- a/plugins/core_misc.py
@@ -392,10 +860,10 @@ index 27d68e0..a544b38 100644
 -    return "\x02{}\x02 - \x02{}\x02 views - \x02{}\x02 videos - \x0{}\x02".format(title, views, num_videos, author)
 +    return "\x02{}\x02 - \x02{}\x02 views - \x02{}\x02 videos - \x02{}\x02".format(title, views, num_videos, author)
 diff --git a/util/hook.py b/util/hook.py
-index 31e069b..2b1d97e 100644
+index 31e069b..28d1639 100644
 --- a/util/hook.py
 +++ b/util/hook.py
-@@ -1,78 +1,282 @@
+@@ -1,78 +1,297 @@
 -import inspect
  import re
  
@@ -404,6 +872,14 @@ index 31e069b..2b1d97e 100644
 -    if not hasattr(func, '_hook'):
 -        func._hook = []
 -    func._hook.append(add)
++class IllegalCommandException(Exception):
++    pass
+ 
+-    if not hasattr(func, '_filename'):
+-        func._filename = func.__code__.co_filename
+ 
+-    if not hasattr(func, '_thread'):  # does function run in its own thread?
+-        func._thread = False
 +class _Hook():
 +    """
 +    :type function: function
@@ -411,8 +887,6 @@ index 31e069b..2b1d97e 100644
 +    :type kwargs: dict[str, V]
 +    """
  
--    if not hasattr(func, '_filename'):
--        func._filename = func.__code__.co_filename
 +    def __init__(self, function, hook_type, kwargs):
 +        """
 +        :type function: function
@@ -422,22 +896,14 @@ index 31e069b..2b1d97e 100644
 +        self.function = function
 +        self.type = hook_type
 +        self.kwargs = kwargs
- 
--    if not hasattr(func, '_thread'):  # does function run in its own thread?
--        func._thread = False
- 
++
++
 +class _CommandHook(_Hook):
 +    """
 +    :type main_alias: str
 +    :type aliases: set[str]
 +    """
- 
--def sieve(func):
--    if func.__code__.co_argcount != 5:
--        raise ValueError(
--            'sieves must take 5 arguments: (bot, input, func, type, args)')
--    _hook_add(func, ['sieve', (func,)])
--    return func
++
 +    def __init__(self, alias_param, function, kwargs):
 +        """
 +        :type alias_param: list[str] | str
@@ -448,10 +914,15 @@ index 31e069b..2b1d97e 100644
 +
 +        if isinstance(alias_param, str):
 +            self.main_alias = alias_param
++            if not re.match(r'^\w+$', alias_param):
++                raise IllegalCommandException("Invalid command name {}".format(alias_param))
 +            self.aliases = {alias_param}  # construct a set with one str
 +        else:
 +            assert isinstance(alias_param, list)
 +            self.main_alias = alias_param[0]
++            for alias in alias_param:
++                if not re.match(r'^\w+$', alias):
++                    raise IllegalCommandException("Invalid command name {}".format(alias))
 +            self.aliases = set(alias_param)  # turn the list into a set
 +
 +        if function.__doc__:
@@ -459,18 +930,23 @@ index 31e069b..2b1d97e 100644
 +        else:
 +            self.doc = None
 +
-+    def add_hook(self, aliases, kwargs):
++    def add_hook(self, alias_param, kwargs):
 +        """
-+        :type aliases: list[str] | str
++        :type alias_param: list[str] | str
 +        """
 +        # update kwargs, overwriting duplicates
 +        self.kwargs.update(kwargs)
 +
-+        if isinstance(aliases, str):
-+            self.aliases.add(aliases)
++        if isinstance(alias_param, str):
++            if not re.match(r'^\w+$', alias_param):
++                raise IllegalCommandException("Invalid command name {}".format(alias_param))
++            self.aliases.add(alias_param)
 +        else:
-+            assert isinstance(aliases, list)
-+            self.aliases.update(aliases)
++            assert isinstance(alias_param, list)
++            for alias in alias_param:
++                if not re.match(r'^\w+$', alias):
++                    raise IllegalCommandException("Invalid command name {}".format(alias))
++            self.aliases.update(alias_param)
 +
 +
 +class _RegexHook(_Hook):
@@ -529,22 +1005,7 @@ index 31e069b..2b1d97e 100644
 +                    assert isinstance(re_to_match, re.__Regex)
 +
 +                self.regexes.append(re_to_match)
- 
--# TODO: Add support for multiple commands in one hook
--# EG: @hook.command(["command1", "command2"], **args)
--def command(name=None, **kwargs):
--    args = {}
--
--    def command_wrapper(func):
--        args.setdefault('name', func.__name__)
--        _hook_add(func, ['command', (func, args)], 'command')
--        return func
--
--    if kwargs or not inspect.isfunction(name):
--        if name is not None:
--            args['name'] = name
--        args.update(kwargs)
--        return command_wrapper
++
 +
 +class _EventHook(_Hook):
 +    """
@@ -588,33 +1049,55 @@ index 31e069b..2b1d97e 100644
 +    def add_hook(self, kwargs):
 +        # update kwargs, overwriting duplicates
 +        self.kwargs.update(kwargs)
-+
-+
+ 
+-def sieve(func):
+-    if func.__code__.co_argcount != 5:
+-        raise ValueError(
+-            'sieves must take 5 arguments: (bot, input, func, type, args)')
+-    _hook_add(func, ['sieve', (func,)])
+-    return func
+ 
+-# TODO: Add support for multiple commands in one hook
+-# EG: @hook.command(["command1", "command2"], **args)
+-def command(name=None, **kwargs):
+-    args = {}
+-
+-    def command_wrapper(func):
+-        args.setdefault('name', func.__name__)
+-        _hook_add(func, ['command', (func, args)], 'command')
+-        return func
+-
+-    if kwargs or not inspect.isfunction(name):
+-        if name is not None:
+-            args['name'] = name
+-        args.update(kwargs)
+-        return command_wrapper
 +def _add_hook(func, hook):
 +    if not hasattr(func, "_cloudbot_hook"):
 +        func._cloudbot_hook = {}
++        # print("creating cloudbot hook on {}: {}".format(func.__name__, func.__dict__))
      else:
 -        return command_wrapper(name)
 +        assert hook.type not in func._cloudbot_hook  # in this case the hook should be using the add_hook method
 +    func._cloudbot_hook[hook.type] = hook
-+
  
-+def _get_hook(func, hook_type):
-+    if hasattr(func, "_cloudbot_hook") and hook_type in func._cloudbot_hook:
-+        return func._cloudbot_hook[hook_type]
  
 -def event(arg=None, **kwargs):
 -    args = kwargs
-+    return None
++def _get_hook(func, hook_type):
++    if hasattr(func, "_cloudbot_hook") and hook_type in func._cloudbot_hook:
++        return func._cloudbot_hook[hook_type]
  
 -    def event_wrapper(func):
 -        args['name'] = func.__name__
 -        args.setdefault('events', ['*'])
 -        _hook_add(func, ['event', (func, args)], 'event')
 -        return func
++    return None
  
 -    if inspect.isfunction(arg):
 -        return event_wrapper(arg, kwargs)
++
 +def _sieve_hook(func, **kwargs):
 +    assert func.__code__.co_argcount == 5, "Sieve plugin has incorrect argument count. Needs params: " \
 +                                           "bot, input, func, type, and args"
@@ -639,29 +1122,13 @@ index 31e069b..2b1d97e 100644
 +    """
 +    if not alias_param:
 +        alias_param = func.__name__
-+
+ 
 +    command_hook = _get_hook(func, "command")
 +    if command_hook:
 +        assert isinstance(command_hook, _CommandHook)
 +        command_hook.add_hook(alias_param, kwargs)
 +    else:
 +        _add_hook(func, _CommandHook(alias_param, func, kwargs))
-+
-+    return func
-+
-+
-+def _event_hook(func, event_param, **kwargs):
-+    """this is the interal event hook
-+    :type func: function
-+    :type event_param: list[str] | str
-+    """
- 
-+    event_hook = _get_hook(func, "event")
-+    if event_hook:
-+        assert isinstance(event_hook, _EventHook)
-+        event_hook.add_hook(event_param, kwargs)
-+    else:
-+        _add_hook(func, _EventHook(event_param, func, kwargs))
  
 -def singlethread(func):
 -    func._thread = True
@@ -670,20 +1137,21 @@ index 31e069b..2b1d97e 100644
  
 -def regex(regex, flags=0, **kwargs):
 -    args = kwargs
-+def _regex_hook(func, regex_param, flags, **kwargs):
-+    """this is the internal regex hook
-+    :type regex_param: str | re.__Regex | list[str | re.__Regex]
-+    :type flags: int
++def _event_hook(func, event_param, **kwargs):
++    """this is the interal event hook
++    :type func: function
++    :type event_param: list[str] | str
 +    """
 +
-+    regex_hook = _get_hook(func, "regex")
-+    if regex_hook:
-+        assert isinstance(regex_hook, _RegexHook)
-+        regex_hook.add_hook(regex_param, flags, kwargs)
++    event_hook = _get_hook(func, "event")
++    if event_hook:
++        assert isinstance(event_hook, _EventHook)
++        event_hook.add_hook(event_param, kwargs)
 +    else:
-+        _add_hook(func, _RegexHook(func, regex_param, flags, kwargs))
++        _add_hook(func, _EventHook(event_param, func, kwargs))
 +
 +    return func
++
  
 -    def regex_wrapper(func):
 -        args['name'] = func.__name__
@@ -691,17 +1159,32 @@ index 31e069b..2b1d97e 100644
 -        args['re'] = re.compile(regex, flags)
 -        _hook_add(func, ['regex', (func, args)], 'regex')
 -        return func
++def _regex_hook(func, regex_param, flags, **kwargs):
++    """this is the internal regex hook
++    :type regex_param: str | re.__Regex | list[str | re.__Regex]
++    :type flags: int
++    """
  
 -    if inspect.isfunction(regex):
 -        raise ValueError("regex decorators require a regex to match against")
++    regex_hook = _get_hook(func, "regex")
++    if regex_hook:
++        assert isinstance(regex_hook, _RegexHook)
++        regex_hook.add_hook(regex_param, flags, kwargs)
+     else:
+-        return regex_wrapper
++        _add_hook(func, _RegexHook(func, regex_param, flags, kwargs))
++
++    return func
++
++
 +def sieve(param=None, **kwargs):
 +    """External sieve decorator. Can be used directly as a decorator, or with args to return a decorator
 +    :type param: function | None
 +    """
 +    if callable(param):
 +        return _sieve_hook(param, **kwargs)
-     else:
--        return regex_wrapper
++    else:
 +        return lambda func: _sieve_hook(func, **kwargs)
 +
 +
@@ -735,6 +1218,19 @@ index 31e069b..2b1d97e 100644
 +    else:  # this decorator is being used as a function, so return a decorator
 +        return lambda func: _regex_hook(func, regex_param, flags, **kwargs)
 \ No newline at end of file
+diff --git a/util/text.py b/util/text.py
+index 20ae1b0..773bacb 100644
+--- a/util/text.py
++++ b/util/text.py
+@@ -223,6 +223,8 @@ def get_text_list(list_, last_word='or'):
+     >>> get_text_list([])
+     u''
+     """
++    if isinstance(list_, set):
++        list_ = list(list_)
+     if len(list_) == 0:
+         return ''
+     if len(list_) == 1:
 -- 
 1.9.2
 
