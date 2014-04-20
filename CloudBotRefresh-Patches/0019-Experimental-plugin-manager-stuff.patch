@@ -1,4 +1,4 @@
-From ba808f770d86c2ee368bca4feea9625b5007a51f Mon Sep 17 00:00:00 2001
+From c7cabbaca21b2b334dc9659fa8d8b8ed7195ee32 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 19 Apr 2014 14:26:19 -0700
 Subject: [PATCH] Experimental plugin manager stuff
@@ -6,10 +6,10 @@ Subject: [PATCH] Experimental plugin manager stuff
 
 diff --git a/core/pluginmanager.py b/core/pluginmanager.py
 new file mode 100644
-index 0000000..67b9725
+index 0000000..db1c105
 --- /dev/null
 +++ b/core/pluginmanager.py
-@@ -0,0 +1,251 @@
+@@ -0,0 +1,247 @@
 +import inspect
 +import os
 +import re
@@ -26,29 +26,18 @@ index 0000000..67b9725
 +    regexes = []
 +    events = []
 +    sieves = []
++    type_lists = {"command": commands, "regex": regexes, "event": events, "sieve": sieves}
 +    for name, func in code.__dict__.items():
-+        if inspect.isfunction(func) and inspect.getmodule(func) == inspect.getmodule(code):
++        if inspect.getmodule(func) == inspect.getmodule(code):
 +            # if it's a function, and is in the right module
-+            if hasattr(func, "_cloudbot_hook") and isinstance(func._cloudbot_hook, hook._Hook):
-+                # if it has cloudbot magic hook
++            if hasattr(func, "_cloudbot_hook"):
++                # if it has cloudbot hook
 +
 +                func_hooks = func._cloudbot_hook
-+                assert isinstance(func_hooks, dict)
-+                for func_hook in func_hooks.values():
-+                    # we just need the values, which are the actual Hooks
-+                    # the keys are for the type of hook, but we can tell that anyways
++                for hook_type, func_hook in func_hooks.items():
 +                    assert func_hook.function == func  # make sure this is the right function
 +
-+                    if isinstance(func_hook, hook._CommandHook):
-+                        commands.append(CommandPlugin(func_hook))
-+                    elif isinstance(func_hook, hook._RegexHook):
-+                        regexes.append(RegexPlugin(func_hook))
-+                    elif isinstance(func_hook, hook._EventHook):
-+                        events.append(EventPlugin(func_hook))
-+                    elif isinstance(func_hook, hook._SieveHook):
-+                        sieves.append(SievePlugin(hook._SieveHook))
-+                    else:
-+                        print("Warning, unknown plugin: {}".format(func_hook))
++                    type_lists[hook_type] = _hook_name_to_plugin[hook_type](func_hook)
 +
 +    return commands, regexes, events, sieves
 +
@@ -81,7 +70,7 @@ index 0000000..67b9725
 +
 +    def register_plugins(self, plugins):
 +        """
-+        :param plugins: list of (file path, file code)
++        :param plugins: list of (file path, module)
 +        :type plugins: list[(str, object)]
 +        """
 +        for path, code in plugins:
@@ -261,43 +250,137 @@ index 0000000..67b9725
 +        :type sieve_hook: hook._SieveHook
 +        """
 +        _Plugin.__init__(self, sieve_hook)
++
++_hook_name_to_plugin = {
++    "command": CommandPlugin,
++    "regex": RegexPlugin,
++    "event": EventPlugin,
++    "sieve": SievePlugin,
++}
 \ No newline at end of file
+diff --git a/plugins/core_misc.py b/plugins/core_misc.py
+index 0195b27..f3e98b4 100644
+--- a/plugins/core_misc.py
++++ b/plugins/core_misc.py
+@@ -61,8 +61,7 @@ def onjoin(paramlist, conn=None, bot=None):
+     bot.logger.info("ONJOIN hook completed. Bot ready.")
+ 
+ 
+-@hook.singlethread
+-@hook.event('004')
++@hook.event('004', singlethread=True)
+ def keep_alive(paramlist, conn=None):
+     """
+     :type paramlist: list[str]
+diff --git a/plugins/history.py b/plugins/history.py
+index 06283ae..73b0d3d 100644
+--- a/plugins/history.py
++++ b/plugins/history.py
+@@ -41,8 +41,7 @@ def track_history(input, message_time, conn):
+     history.append(data)
+ 
+ 
+-@hook.singlethread
+-@hook.event('PRIVMSG', ignorebots=False)
++@hook.event('PRIVMSG', ignorebots=False, singlethread=True)
+ def chat_tracker(paraml, input=None, db=None, conn=None):
+     message_time = time.time()
+     track_seen(input, message_time, db, conn)
+diff --git a/plugins/horoscope.py b/plugins/horoscope.py
+index 8f8e6b3..9dba3f1 100644
+--- a/plugins/horoscope.py
++++ b/plugins/horoscope.py
+@@ -13,12 +13,6 @@ def db_init(db):
+         db.commit()
+         db_ready = True
+ 
+-
+-@hook.onload
+-def init(paraml, db=None):
+-    db_init(db)
+-
+-
+ @hook.command(autohelp=False)
+ def horoscope(inp, db=None, notice=None, nick=None):
+     """horoscope <sign> -- Get your horoscope."""
+diff --git a/plugins/tell.py b/plugins/tell.py
+index 2310cbd..59010f9 100644
+--- a/plugins/tell.py
++++ b/plugins/tell.py
+@@ -25,8 +25,7 @@ def get_tells(db, user_to):
+                       " user_to=lower(:user) order by time", {'user': user_to}).fetchall()
+ 
+ 
+-@hook.singlethread
+-@hook.event('PRIVMSG')
++@hook.event('PRIVMSG', singlethread=True)
+ def tellinput(inp, input=None, notice=None, db=None, nick=None, conn=None):
+     if 'showtells' in input.msg.lower():
+         return
+diff --git a/plugins/youtube.py b/plugins/youtube.py
+index 27d68e0..a544b38 100644
+--- a/plugins/youtube.py
++++ b/plugins/youtube.py
+@@ -134,4 +134,4 @@ def ytplaylist_url(match):
+     author = soup.find('img', {'class': 'channel-header-profile-image'})['title']
+     num_videos = soup.find('ul', {'class': 'header-stats'}).findAll('li')[0].text.split(' ')[0]
+     views = soup.find('ul', {'class': 'header-stats'}).findAll('li')[1].text.split(' ')[0]
+-    return "\x02{}\x02 - \x02{}\x02 views - \x02{}\x02 videos - \x0{}\x02".format(title, views, num_videos, author)
++    return "\x02{}\x02 - \x02{}\x02 views - \x02{}\x02 videos - \x02{}\x02".format(title, views, num_videos, author)
 diff --git a/util/hook.py b/util/hook.py
-index 31e069b..3a5e705 100644
+index 31e069b..2b1d97e 100644
 --- a/util/hook.py
 +++ b/util/hook.py
-@@ -2,6 +2,161 @@ import inspect
+@@ -1,78 +1,282 @@
+-import inspect
  import re
  
  
+-def _hook_add(func, add, name=''):
+-    if not hasattr(func, '_hook'):
+-        func._hook = []
+-    func._hook.append(add)
 +class _Hook():
 +    """
 +    :type function: function
++    :type type: str
 +    :type kwargs: dict[str, V]
 +    """
-+
-+    def __init__(self, function, kwargs):
+ 
+-    if not hasattr(func, '_filename'):
+-        func._filename = func.__code__.co_filename
++    def __init__(self, function, hook_type, kwargs):
 +        """
 +        :type function: function
++        :type hook_type: str
 +        :type kwargs: dict[str, V]
 +        """
 +        self.function = function
++        self.type = hook_type
 +        self.kwargs = kwargs
-+
-+
+ 
+-    if not hasattr(func, '_thread'):  # does function run in its own thread?
+-        func._thread = False
+ 
 +class _CommandHook(_Hook):
 +    """
 +    :type main_alias: str
 +    :type aliases: set[str]
 +    """
-+
+ 
+-def sieve(func):
+-    if func.__code__.co_argcount != 5:
+-        raise ValueError(
+-            'sieves must take 5 arguments: (bot, input, func, type, args)')
+-    _hook_add(func, ['sieve', (func,)])
+-    return func
 +    def __init__(self, alias_param, function, kwargs):
 +        """
 +        :type alias_param: list[str] | str
 +        :type function: function
 +        :type kwargs: dict[str, V]
 +        """
-+        _Hook.__init__(self, function, kwargs)
++        _Hook.__init__(self, function, "command", kwargs)
 +
 +        if isinstance(alias_param, str):
 +            self.main_alias = alias_param
@@ -307,7 +390,10 @@ index 31e069b..3a5e705 100644
 +            self.main_alias = alias_param[0]
 +            self.aliases = set(alias_param)  # turn the list into a set
 +
-+        self.doc = function.__doc__.split('\n', 1)[0]
++        if function.__doc__:
++            self.doc = function.__doc__.split('\n', 1)[0]
++        else:
++            self.doc = None
 +
 +    def add_hook(self, aliases, kwargs):
 +        """
@@ -331,10 +417,10 @@ index 31e069b..3a5e705 100644
 +    def __init__(self, function, regex_param, regex_flags, kwargs):
 +        """
 +        :type function: function
-+        :type regex_param: list[str | re.__Regex] | str | re.__Regex
++        :type regex_param: str | re.__Regex | list[str | re.__Regex]
 +        :type kwargs: dict[str, V]
 +        """
-+        _Hook.__init__(self, function, kwargs)
++        _Hook.__init__(self, function, "regex", kwargs)
 +
 +        self.regexes = []
 +        if isinstance(regex_param, str):
@@ -379,7 +465,22 @@ index 31e069b..3a5e705 100644
 +                    assert isinstance(re_to_match, re.__Regex)
 +
 +                self.regexes.append(re_to_match)
-+
+ 
+-# TODO: Add support for multiple commands in one hook
+-# EG: @hook.command(["command1", "command2"], **args)
+-def command(name=None, **kwargs):
+-    args = {}
+-
+-    def command_wrapper(func):
+-        args.setdefault('name', func.__name__)
+-        _hook_add(func, ['command', (func, args)], 'command')
+-        return func
+-
+-    if kwargs or not inspect.isfunction(name):
+-        if name is not None:
+-            args['name'] = name
+-        args.update(kwargs)
+-        return command_wrapper
 +
 +class _EventHook(_Hook):
 +    """
@@ -392,7 +493,7 @@ index 31e069b..3a5e705 100644
 +        :type function: function
 +        :type kwargs: dict[str, V]
 +        """
-+        _Hook.__init__(self, function, kwargs)
++        _Hook.__init__(self, function, "event", kwargs)
 +
 +        if isinstance(event_param, str):
 +            self.events = {event_param}  # one str set
@@ -417,7 +518,7 @@ index 31e069b..3a5e705 100644
 +
 +class _SieveHook(_Hook):
 +    def __init__(self, function, kwargs):
-+        _Hook.__init__(self, function, kwargs)
++        _Hook.__init__(self, function, "sieve", kwargs)
 +        # there isn't that much else to do, as sieves don't have any params
 +
 +    def add_hook(self, kwargs):
@@ -425,17 +526,151 @@ index 31e069b..3a5e705 100644
 +        self.kwargs.update(kwargs)
 +
 +
- def _hook_add(func, add, name=''):
-     if not hasattr(func, '_hook'):
-         func._hook = []
-@@ -21,6 +176,7 @@ def sieve(func):
-     _hook_add(func, ['sieve', (func,)])
++def _add_hook(func, hook):
++    if not hasattr(func, "_cloudbot_hook"):
++        func._cloudbot_hook = {}
+     else:
+-        return command_wrapper(name)
++        assert hook.type not in func._cloudbot_hook  # in this case the hook should be using the add_hook method
++    func._cloudbot_hook[hook.type] = hook
++
+ 
++def _get_hook(func, hook_type):
++    if hasattr(func, "_cloudbot_hook") and hook_type in func._cloudbot_hook:
++        return func._cloudbot_hook[hook_type]
+ 
+-def event(arg=None, **kwargs):
+-    args = kwargs
++    return None
+ 
+-    def event_wrapper(func):
+-        args['name'] = func.__name__
+-        args.setdefault('events', ['*'])
+-        _hook_add(func, ['event', (func, args)], 'event')
+-        return func
+ 
+-    if inspect.isfunction(arg):
+-        return event_wrapper(arg, kwargs)
++def _sieve_hook(func, **kwargs):
++    assert func.__code__.co_argcount == 5, "Sieve plugin has incorrect argument count. Needs params: " \
++                                           "bot, input, func, type, and args"
++
++    sieve_hook = _get_hook(func, "sieve")
++    if sieve_hook:
++        assert isinstance(sieve_hook, _SieveHook)
++        sieve_hook.add_hook(kwargs)
+     else:
+-        if arg is not None:
+-            args['events'] = arg.split()
+-        return event_wrapper
++        _add_hook(func, _SieveHook(func, kwargs))
++
++    return func
++
++
++def _command_hook(func, alias_param=None, **kwargs):
++    """this is the internal command decorator
++    :type func: function
++    :type alias_param: list[str] | str
++    """
++    if not alias_param:
++        alias_param = func.__name__
++
++    command_hook = _get_hook(func, "command")
++    if command_hook:
++        assert isinstance(command_hook, _CommandHook)
++        command_hook.add_hook(alias_param, kwargs)
++    else:
++        _add_hook(func, _CommandHook(alias_param, func, kwargs))
++
++    return func
++
++
++def _event_hook(func, event_param, **kwargs):
++    """this is the interal event hook
++    :type func: function
++    :type event_param: list[str] | str
++    """
+ 
++    event_hook = _get_hook(func, "event")
++    if event_hook:
++        assert isinstance(event_hook, _EventHook)
++        event_hook.add_hook(event_param, kwargs)
++    else:
++        _add_hook(func, _EventHook(event_param, func, kwargs))
+ 
+-def singlethread(func):
+-    func._thread = True
      return func
  
+ 
+-def regex(regex, flags=0, **kwargs):
+-    args = kwargs
++def _regex_hook(func, regex_param, flags, **kwargs):
++    """this is the internal regex hook
++    :type regex_param: str | re.__Regex | list[str | re.__Regex]
++    :type flags: int
++    """
 +
- # TODO: Add support for multiple commands in one hook
- # EG: @hook.command(["command1", "command2"], **args)
- def command(name=None, **kwargs):
++    regex_hook = _get_hook(func, "regex")
++    if regex_hook:
++        assert isinstance(regex_hook, _RegexHook)
++        regex_hook.add_hook(regex_param, flags, kwargs)
++    else:
++        _add_hook(func, _RegexHook(func, regex_param, flags, kwargs))
++
++    return func
+ 
+-    def regex_wrapper(func):
+-        args['name'] = func.__name__
+-        args['regex'] = regex
+-        args['re'] = re.compile(regex, flags)
+-        _hook_add(func, ['regex', (func, args)], 'regex')
+-        return func
+ 
+-    if inspect.isfunction(regex):
+-        raise ValueError("regex decorators require a regex to match against")
++def sieve(param=None, **kwargs):
++    """External sieve decorator. Can be used directly as a decorator, or with args to return a decorator
++    :type param: function | None
++    """
++    if callable(param):
++        return _sieve_hook(param, **kwargs)
+     else:
+-        return regex_wrapper
++        return lambda func: _sieve_hook(func, **kwargs)
++
++
++def command(param=None, **kwargs):
++    """External command decorator. Can be used directly as a decorator, or with args to return a decorator.
++    :type param: str | list[str] | function
++    """
++    if callable(param):  # this decorator is being used directly
++        return _command_hook(param)
++    else:  # this decorator is being used indirectly, so return a decorator function
++        return lambda func: _command_hook(func, alias_param=param, **kwargs)
++
++
++def event(event_param, **kwargs):
++    """External event decorator. Must be used as a function to return a decorator
++    :type event_param: str | list[str]
++    """
++    if callable(event_param):  # this decorator is being used directly, which isn't good
++        raise TypeError("The event hook must be used as a function that returns a decorator")
++    else:  # this decorator is being used as a function, so return a decorator
++        return lambda func: _event_hook(func, event_param, **kwargs)
++
++
++def regex(regex_param, flags=0, **kwargs):
++    """External regex decorator. Must be used as a function to return a decorator.
++    :type regex_param: str | re.__Regex | list[str | re.__Regex]
++    :type flags: int
++    """
++    if callable(regex_param):  # this decorator is being used directly, which isn't good
++        raise TypeError("The regex hook must be used as a function that returns a decorator")
++    else:  # this decorator is being used as a function, so return a decorator
++        return lambda func: _regex_hook(func, regex_param, flags, **kwargs)
+\ No newline at end of file
 -- 
 1.9.2
 
