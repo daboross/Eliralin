@@ -1,4 +1,4 @@
-From 75f2e7f0d46ce0833567f97681d44d04748f5ab7 Mon Sep 17 00:00:00 2001
+From f64de67f5380c96ee0cdd9430d0ee916d57128b7 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Fri, 18 Apr 2014 20:21:45 -0700
 Subject: [PATCH] Merge SSLIRCConnection into IRCConnection
