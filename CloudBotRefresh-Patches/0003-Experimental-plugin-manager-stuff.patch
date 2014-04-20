@@ -1,4 +1,4 @@
-From 0b6819179d3fe574e21d2b0bf70699266aea0dd9 Mon Sep 17 00:00:00 2001
+From cba0d123c964c9d52574c62d47d1f6fb63afce14 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 19 Apr 2014 14:26:19 -0700
 Subject: [PATCH] Experimental plugin manager stuff
@@ -321,19 +321,21 @@ index 0000000..16a4775
 +}
 \ No newline at end of file
 diff --git a/plugins/core_misc.py b/plugins/core_misc.py
-index 0195b27..f3e98b4 100644
+index 4875ef5..2a92c03 100644
 --- a/plugins/core_misc.py
 +++ b/plugins/core_misc.py
-@@ -61,8 +61,7 @@ def onjoin(paramlist, conn=None, bot=None):
+@@ -59,9 +59,8 @@ def onjoin(paraml, conn=None, bot=None):
      bot.logger.info("ONJOIN hook completed. Bot ready.")
  
  
 -@hook.singlethread
 -@hook.event('004')
+-def keep_alive(paraml, conn=None):
 +@hook.event('004', singlethread=True)
- def keep_alive(paramlist, conn=None):
++def keep_alive(paramlist, conn=None):
      """
-     :type paramlist: list[str]
+     :type paraml: list[str]
+     :type conn: core.irc.BotConnection
 diff --git a/plugins/history.py b/plugins/history.py
 index 06283ae..73b0d3d 100644
 --- a/plugins/history.py

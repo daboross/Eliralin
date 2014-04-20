@@ -1,4 +1,4 @@
-From 84bc1cf54625b1722fd0ae34c3e6b94f7ce94989 Mon Sep 17 00:00:00 2001
+From f6fb95612771aa120165e9cfef8cfcc7179046ca Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Thu, 27 Feb 2014 15:27:51 -0800
 Subject: [PATCH] Change default for regex_chans to disabled
