@@ -1,4 +1,4 @@
-From f3dbd14de23fd75b2b5adc19dd099667f9ce6468 Mon Sep 17 00:00:00 2001
+From d2b19ed2fe59d2adb4c2d6ae6174b60ca24728f0 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 16 Apr 2014 17:39:31 -0700
 Subject: [PATCH] Fix connection re-connecting. We need to re-create the socket

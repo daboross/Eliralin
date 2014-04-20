@@ -1,4 +1,4 @@
-From 8eb13dfcb1a3a87a0c594c719e65f5f3da6ba925 Mon Sep 17 00:00:00 2001
+From 5f3204606c99d962e4e13a8648efb7413cf36a98 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 13 Apr 2014 17:03:39 -0700
 Subject: [PATCH] Move down and isup into one 'pagecheck' plugin. Also fix both

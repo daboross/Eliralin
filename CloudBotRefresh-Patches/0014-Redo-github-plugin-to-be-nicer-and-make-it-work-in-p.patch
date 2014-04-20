@@ -1,4 +1,4 @@
-From 9b32facef31cffd1653dfca727922e70d1aedadc Mon Sep 17 00:00:00 2001
+From 58f4fce9f04c247e8fb29545c15dc9de0d1fbb56 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Fri, 18 Apr 2014 20:17:56 -0700
 Subject: [PATCH] Redo github plugin to be nicer, and make it work in python 3

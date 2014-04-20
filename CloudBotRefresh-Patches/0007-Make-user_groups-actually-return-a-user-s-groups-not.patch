@@ -1,4 +1,4 @@
-From 0cd03b744e74621ce28629b7731095dfa54f98e6 Mon Sep 17 00:00:00 2001
+From d6df98130dbedd10774cf081585a33cf7e2297c0 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 16 Apr 2014 17:40:34 -0700
 Subject: [PATCH] Make user_groups actually return a user's groups, not
