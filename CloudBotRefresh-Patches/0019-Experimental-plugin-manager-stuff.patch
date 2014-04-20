@@ -1,4 +1,4 @@
-From ad8b1fee48cafedd17f30f9a57fd277f1dbed7e6 Mon Sep 17 00:00:00 2001
+From ba808f770d86c2ee368bca4feea9625b5007a51f Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 19 Apr 2014 14:26:19 -0700
 Subject: [PATCH] Experimental plugin manager stuff
@@ -6,10 +6,10 @@ Subject: [PATCH] Experimental plugin manager stuff
 
 diff --git a/core/pluginmanager.py b/core/pluginmanager.py
 new file mode 100644
-index 0000000..8b3a294
+index 0000000..67b9725
 --- /dev/null
 +++ b/core/pluginmanager.py
-@@ -0,0 +1,247 @@
+@@ -0,0 +1,251 @@
 +import inspect
 +import os
 +import re
@@ -32,18 +32,23 @@ index 0000000..8b3a294
 +            if hasattr(func, "_cloudbot_hook") and isinstance(func._cloudbot_hook, hook._Hook):
 +                # if it has cloudbot magic hook
 +
-+                func_hook = func._cloudbot_hook
++                func_hooks = func._cloudbot_hook
++                assert isinstance(func_hooks, dict)
++                for func_hook in func_hooks.values():
++                    # we just need the values, which are the actual Hooks
++                    # the keys are for the type of hook, but we can tell that anyways
++                    assert func_hook.function == func  # make sure this is the right function
 +
-+                assert func_hook.function == func  # Just to be sure
-+
-+                if isinstance(func_hook, hook._CommandHook):
-+                    commands.append(CommandPlugin(func_hook))
-+                elif isinstance(func_hook, hook._RegexHook):
-+                    regexes.append(RegexPlugin(func_hook))
-+                elif isinstance(func_hook, hook._EventHook):
-+                    events.append(EventPlugin(func_hook))
-+
-+            pass
++                    if isinstance(func_hook, hook._CommandHook):
++                        commands.append(CommandPlugin(func_hook))
++                    elif isinstance(func_hook, hook._RegexHook):
++                        regexes.append(RegexPlugin(func_hook))
++                    elif isinstance(func_hook, hook._EventHook):
++                        events.append(EventPlugin(func_hook))
++                    elif isinstance(func_hook, hook._SieveHook):
++                        sieves.append(SievePlugin(hook._SieveHook))
++                    else:
++                        print("Warning, unknown plugin: {}".format(func_hook))
 +
 +    return commands, regexes, events, sieves
 +
@@ -179,7 +184,6 @@ index 0000000..8b3a294
 +        self.filename = filename
 +        self.code = code
 +        self.commands, self.regexes, self.events, self.sieves = find_hooks(code)
-+        pass
 +
 +
 +class _Plugin:
@@ -259,7 +263,7 @@ index 0000000..8b3a294
 +        _Plugin.__init__(self, sieve_hook)
 \ No newline at end of file
 diff --git a/util/hook.py b/util/hook.py
-index 31e069b..f1afc10 100644
+index 31e069b..3a5e705 100644
 --- a/util/hook.py
 +++ b/util/hook.py
 @@ -2,6 +2,161 @@ import inspect
@@ -324,7 +328,7 @@ index 31e069b..f1afc10 100644
 +    :type regexes: list[re.__Regex]
 +    """
 +
-+    def __init__(self, function, regex_param, kwargs):
++    def __init__(self, function, regex_param, regex_flags, kwargs):
 +        """
 +        :type function: function
 +        :type regex_param: list[str | re.__Regex] | str | re.__Regex
@@ -335,7 +339,7 @@ index 31e069b..f1afc10 100644
 +        self.regexes = []
 +        if isinstance(regex_param, str):
 +            # if the paramater is a string, compile and add
-+            self.regexes.append(re.compile(regex_param))
++            self.regexes.append(re.compile(regex_param, regex_flags))
 +        elif isinstance(regex_param, re.__Regex):
 +            # if the paramater is an re.__Regex, just add it
 +            self.regexes.append(regex_param)
@@ -344,14 +348,14 @@ index 31e069b..f1afc10 100644
 +            # if the paramater is a list, add each one
 +            for re_to_match in regex_param:
 +                if isinstance(re_to_match, str):
-+                    re_to_match = re.compile(re_to_match)
++                    re_to_match = re.compile(re_to_match, regex_flags)
 +                else:
 +                    # make sure that the param is a regex if it isn't a str
 +                    assert isinstance(re_to_match, re.__Regex)
 +
 +                self.regexes.append(re_to_match)
 +
-+    def add_hook(self, regex_param, kwargs):
++    def add_hook(self, regex_param, regex_flags, kwargs):
 +        """
 +        :type regex_param: list[str | re.__Regex] | str | re.__Regex
 +        :type kwargs: dict[str, V]
@@ -361,7 +365,7 @@ index 31e069b..f1afc10 100644
 +        # add all regex_paramaters to valid regexes
 +        if isinstance(regex_param, str):
 +            # if the paramater is a string, compile and add
-+            self.regexes.append(re.compile(regex_param))
++            self.regexes.append(re.compile(regex_param, regex_flags))
 +        elif isinstance(regex_param, re.__Regex):
 +            # if the paramater is an re.__Regex, just add it
 +            self.regexes.append(regex_param)
@@ -370,7 +374,7 @@ index 31e069b..f1afc10 100644
 +            # if the paramater is a list, add each one
 +            for re_to_match in regex_param:
 +                if isinstance(re_to_match, str):
-+                    re_to_match = re.compile(re_to_match)
++                    re_to_match = re.compile(re_to_match, regex_flags)
 +                else:
 +                    assert isinstance(re_to_match, re.__Regex)
 +
