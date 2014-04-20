@@ -1,0 +1,19 @@
+From 1dd53abf80acecf0828f770221364defec9e2a88 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Sun, 20 Apr 2014 03:59:28 -0700
+Subject: [PATCH] Fix unicode encoding error in youtube
+
+
+diff --git a/plugins/youtube.py b/plugins/youtube.py
+index 27d68e0..a544b38 100644
+--- a/plugins/youtube.py
++++ b/plugins/youtube.py
+@@ -134,4 +134,4 @@ def ytplaylist_url(match):
+     author = soup.find('img', {'class': 'channel-header-profile-image'})['title']
+     num_videos = soup.find('ul', {'class': 'header-stats'}).findAll('li')[0].text.split(' ')[0]
+     views = soup.find('ul', {'class': 'header-stats'}).findAll('li')[1].text.split(' ')[0]
+-    return "\x02{}\x02 - \x02{}\x02 views - \x02{}\x02 videos - \x0{}\x02".format(title, views, num_videos, author)
++    return "\x02{}\x02 - \x02{}\x02 views - \x02{}\x02 videos - \x02{}\x02".format(title, views, num_videos, author)
+-- 
+1.9.2
+

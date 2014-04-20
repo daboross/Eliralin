@@ -1,0 +1,26 @@
+From 337dff3a435d1004e3f355839e7598ccfaea9e6b Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Sun, 20 Apr 2014 03:59:08 -0700
+Subject: [PATCH] onload does not exist!!!
+
+
+diff --git a/plugins/horoscope.py b/plugins/horoscope.py
+index 8f8e6b3..9dba3f1 100644
+--- a/plugins/horoscope.py
++++ b/plugins/horoscope.py
+@@ -13,12 +13,6 @@ def db_init(db):
+         db.commit()
+         db_ready = True
+ 
+-
+-@hook.onload
+-def init(paraml, db=None):
+-    db_init(db)
+-
+-
+ @hook.command(autohelp=False)
+ def horoscope(inp, db=None, notice=None, nick=None):
+     """horoscope <sign> -- Get your horoscope."""
+-- 
+1.9.2
+

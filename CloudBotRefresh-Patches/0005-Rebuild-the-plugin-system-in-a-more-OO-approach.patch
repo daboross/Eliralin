@@ -1,8 +1,15 @@
-From 385f9a9139030ccea26683ee36f42ee3cdeb5dd6 Mon Sep 17 00:00:00 2001
+From 980c05cdb533946077ff1a8ed62fe881ab21ff5e Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
-Date: Sat, 19 Apr 2014 14:26:19 -0700
-Subject: [PATCH] Experimental plugin manager stuff
+Date: Sun, 20 Apr 2014 04:01:35 -0700
+Subject: [PATCH] Rebuild the plugin system in a more OO approach.
 
+This rewrites a lot of hook.py, ands moves a bunch of stuff from loader.py to pluginmanager.py.
+
+It also removes @hook.singlethread, in favor of singlethread=True param.
+
+It adds support for multiple commands in a hook "@hook.command(["cmd1", "cmd2"])", as well as multiple regexes and events in one regex/event hook.
+
+It does not yet support reloading plugins, though there are just a few more lines of code to write to fix that.
 
 diff --git a/core/bot.py b/core/bot.py
 index d955b6c..c9717ab 100644
@@ -447,7 +454,7 @@ index f26ac53..3dc6116 100644
 +                dispatch(bot, input, "regex", plugin)
 diff --git a/core/pluginmanager.py b/core/pluginmanager.py
 new file mode 100644
-index 0000000..ce299a5
+index 0000000..a5989a3
 --- /dev/null
 +++ b/core/pluginmanager.py
 @@ -0,0 +1,321 @@
@@ -772,22 +779,9 @@ index 0000000..ce299a5
 +    "event": EventPlugin,
 +    "sieve": SievePlugin,
 +}
-\ No newline at end of file
 diff --git a/plugins/__init__.py b/plugins/__init__.py
 new file mode 100644
 index 0000000..e69de29
-diff --git a/plugins/attacks.py b/plugins/attacks.py
-index c43e955..70a028d 100644
---- a/plugins/attacks.py
-+++ b/plugins/attacks.py
-@@ -3,7 +3,6 @@ import re
- 
- from util import hook
- 
--
- with open("data/larts.txt") as f:
-     larts = [line.strip() for line in f.readlines()
-              if not line.startswith("//")]
 diff --git a/plugins/core_misc.py b/plugins/core_misc.py
 index 4875ef5..2a92c03 100644
 --- a/plugins/core_misc.py
@@ -818,23 +812,6 @@ index 06283ae..73b0d3d 100644
  def chat_tracker(paraml, input=None, db=None, conn=None):
      message_time = time.time()
      track_seen(input, message_time, db, conn)
-diff --git a/plugins/horoscope.py b/plugins/horoscope.py
-index 8f8e6b3..9dba3f1 100644
---- a/plugins/horoscope.py
-+++ b/plugins/horoscope.py
-@@ -13,12 +13,6 @@ def db_init(db):
-         db.commit()
-         db_ready = True
- 
--
--@hook.onload
--def init(paraml, db=None):
--    db_init(db)
--
--
- @hook.command(autohelp=False)
- def horoscope(inp, db=None, notice=None, nick=None):
-     """horoscope <sign> -- Get your horoscope."""
 diff --git a/plugins/tell.py b/plugins/tell.py
 index 2310cbd..59010f9 100644
 --- a/plugins/tell.py
@@ -849,18 +826,8 @@ index 2310cbd..59010f9 100644
  def tellinput(inp, input=None, notice=None, db=None, nick=None, conn=None):
      if 'showtells' in input.msg.lower():
          return
-diff --git a/plugins/youtube.py b/plugins/youtube.py
-index 27d68e0..a544b38 100644
---- a/plugins/youtube.py
-+++ b/plugins/youtube.py
-@@ -134,4 +134,4 @@ def ytplaylist_url(match):
-     author = soup.find('img', {'class': 'channel-header-profile-image'})['title']
-     num_videos = soup.find('ul', {'class': 'header-stats'}).findAll('li')[0].text.split(' ')[0]
-     views = soup.find('ul', {'class': 'header-stats'}).findAll('li')[1].text.split(' ')[0]
--    return "\x02{}\x02 - \x02{}\x02 views - \x02{}\x02 videos - \x0{}\x02".format(title, views, num_videos, author)
-+    return "\x02{}\x02 - \x02{}\x02 views - \x02{}\x02 videos - \x02{}\x02".format(title, views, num_videos, author)
 diff --git a/util/hook.py b/util/hook.py
-index 31e069b..28d1639 100644
+index 31e069b..c73e3f6 100644
 --- a/util/hook.py
 +++ b/util/hook.py
 @@ -1,78 +1,297 @@
@@ -1217,20 +1184,6 @@ index 31e069b..28d1639 100644
 +        raise TypeError("The regex hook must be used as a function that returns a decorator")
 +    else:  # this decorator is being used as a function, so return a decorator
 +        return lambda func: _regex_hook(func, regex_param, flags, **kwargs)
-\ No newline at end of file
-diff --git a/util/text.py b/util/text.py
-index 20ae1b0..773bacb 100644
---- a/util/text.py
-+++ b/util/text.py
-@@ -223,6 +223,8 @@ def get_text_list(list_, last_word='or'):
-     >>> get_text_list([])
-     u''
-     """
-+    if isinstance(list_, set):
-+        list_ = list(list_)
-     if len(list_) == 0:
-         return ''
-     if len(list_) == 1:
 -- 
 1.9.2
 
