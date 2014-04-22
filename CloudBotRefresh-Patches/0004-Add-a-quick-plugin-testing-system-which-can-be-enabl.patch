@@ -1,0 +1,178 @@
+From 893db62b35778ffad3f0cdaffdabf50abf06128a Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Tue, 22 Apr 2014 10:29:07 -0700
+Subject: [PATCH] Add a quick plugin testing system, which can be enabled with
+ the --qpt command line argument
+
+
+diff --git a/core/irc.py b/core/irc.py
+index 30f541b..77647e9 100644
+--- a/core/irc.py
++++ b/core/irc.py
+@@ -5,6 +5,7 @@ import threading
+ import queue
+ from ssl import wrap_socket, CERT_NONE, CERT_REQUIRED, SSLError
+ 
++from util import qpt
+ from core.permissions import PermissionManager
+ 
+ irc_prefix_rem = re.compile(r'(.*?) (.*?) (.*)').match
+@@ -227,6 +228,52 @@ class IRCConnection(object):
+         self.connect()
+ 
+ 
++class QptReceiveThread(threading.Thread):
++    """receives messages from IRC and puts them in the input_queue
++    :type input_queue: queue.Queue"""
++
++    def __init__(self, bot, logger, input_queue, output_queue):
++        self.bot = bot
++        self.logger = logger
++        self.input_queue = input_queue
++        self.output_queue = output_queue
++        self.shutdown = False
++        threading.Thread.__init__(self)
++
++    def run(self):
++        time.sleep(1.0)
++        qpt.run_tests(self, self.logger, self.bot, self.input_queue, self.output_queue)
++        self.bot.stop()
++
++
++class QptIRCConnection(object):
++    """fake IRC connection which just feeds back fake input
++    :type logger: logging.Logger
++    :type output_queue: queue.Queue
++    :type input_queue; queue.Queue
++    """
++
++    def __init__(self, bot, logger, input_queue, output_queue):
++        self.bot = bot
++        self.logger = logger
++        self.output_queue = output_queue  # lines to be sent out
++        self.input_queue = input_queue  # lines that were received
++        # to be assigned in connect()
++        self.receive_thread = None
++
++    def connect(self):
++        self.receive_thread = QptReceiveThread(self.bot, self.logger, self.input_queue, self.output_queue)
++        self.receive_thread.start()
++
++    def stop(self):
++        self.receive_thread.shutdown = True
++        time.sleep(0.1)
++
++    def reconnect(self):
++        self.stop()
++        self.connect()
++
++
+ class BotConnection(object):
+     """ A BotConnection represents each connection the bot makes to an IRC server
+     :type bot: core.bot.CloudBot
+@@ -296,8 +343,11 @@ class BotConnection(object):
+         self.permissions = PermissionManager(self)
+ 
+         # create the IRC connection and connect
+-        self.connection = IRCConnection(self.bot.logger, self.name, self.server, self.port, self.input_queue,
+-                                        self.output_queue, self.ssl)
++        if qpt.is_enabled():
++            self.connection = QptIRCConnection(self.bot, self.bot.logger, self.input_queue, self.output_queue)
++        else:
++            self.connection = IRCConnection(self.bot.logger, self.name, self.server, self.port, self.input_queue,
++                                            self.output_queue, self.ssl)
+         self.connection.connect()
+ 
+         self.set_pass(self.config["connection"].get("password"))
+diff --git a/qpt_tests/__init__.py b/qpt_tests/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/util/qpt.py b/util/qpt.py
+new file mode 100644
+index 0000000..25e3251
+--- /dev/null
++++ b/util/qpt.py
+@@ -0,0 +1,80 @@
++import glob
++import importlib
++import inspect
++import os
++import traceback
++import sys
++
++
++def test(func):
++    specifications = inspect.getargspec(func)
++    args = specifications[0]
++    if args is None:
++        args = []
++    func._qpt_test = True
++    func._qpt_args = args
++    func._qpt_name = func.__module__ + "." + func.__name__
++    return func
++
++
++def run_test(logger, func, bot, input_queue, output_queue):
++    if not hasattr(func, "_qpt_test") or not func._qpt_test:
++        return
++
++    logger.info("Running test '{}'".format(func._qpt_name))
++
++    params = []
++    for arg in func._qpt_args:
++        if arg == "bot":
++            params.append(bot)
++        elif arg == "get":
++            params.append(lambda: output_queue.get())
++        elif arg == "send":
++            params.append(lambda line: input_queue.put(line))
++        else:
++            logger.info("Test {} required invalid arg {}".format(func._qpt_name, arg))
++            return
++    try:
++        func(*params)
++    except Exception:
++        logger.warning("Error in test " + func._qpt_name)
++        traceback.print_exc()
++        return False
++    else:
++        return True
++
++
++def run_tests(obj_with_shutdown, logger, bot, input_queue, output_queue):
++    files = set(glob.glob(os.path.join("qpt_tests", '*.py')))
++
++    for file in files:
++
++        if obj_with_shutdown.shutdown:
++            return
++        title = os.path.splitext(os.path.basename(file))[0]
++
++        if title == "__init__":
++            return  # ignore __init__
++
++        logger.info("Running tests in {}".format(title))
++
++        try:
++            module = importlib.import_module("qpt_tests." + title)
++        except Exception:
++            logger.warning("Failed to import test module {}".format(title))
++            traceback.print_exc()
++            continue
++
++        for func in module.__dict__.values():
++
++            if obj_with_shutdown.shutdown:
++                return
++
++            while not output_queue.empty():
++                logger.info("Removed '{}' from queue.".format(output_queue.get()))
++
++            run_test(logger, func, bot, input_queue, output_queue)
++
++
++def is_enabled():
++    return "--qpt" in sys.argv
+-- 
+1.9.2
+

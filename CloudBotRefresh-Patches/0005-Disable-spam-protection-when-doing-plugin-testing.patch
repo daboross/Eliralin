@@ -1,0 +1,28 @@
+From 976c2b0d1727b249cc1d0a82b1c46cc2b8a34930 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Tue, 22 Apr 2014 10:29:44 -0700
+Subject: [PATCH] Disable spam protection when doing plugin testing
+
+
+diff --git a/modules/core_sieve.py b/modules/core_sieve.py
+index 33dc371..7ec9850 100644
+--- a/modules/core_sieve.py
++++ b/modules/core_sieve.py
+@@ -1,4 +1,4 @@
+-from util import hook, bucket
++from util import hook, bucket, qpt
+ 
+ TOKENS = 10
+ RESTORE_RATE = 2
+@@ -52,6 +52,8 @@ def sieve_suite(bot, input, plugin):
+ 
+     # check command spam tokens
+     if plugin.type == "command":
++        if qpt.is_enabled():
++            return input  # Don't run tokens when testing plugins - need to do it quickly
+         uid = input.chan
+ 
+         if not uid in buckets:
+-- 
+1.9.2
+
