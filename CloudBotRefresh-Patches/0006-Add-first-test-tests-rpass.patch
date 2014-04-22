@@ -1,4 +1,4 @@
-From d6e0b0218b74cc200e7c6039d84335f0b272429c Mon Sep 17 00:00:00 2001
+From 3194d8e42404e1dc8ae711127654795efccb7854 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 22 Apr 2014 10:29:56 -0700
 Subject: [PATCH] Add first test, tests rpass.
@@ -6,26 +6,52 @@ Subject: [PATCH] Add first test, tests rpass.
 
 diff --git a/qpt_tests/generic_tests.py b/qpt_tests/generic_tests.py
 new file mode 100644
-index 0000000..3aa7567
+index 0000000..2eb5544
 --- /dev/null
 +++ b/qpt_tests/generic_tests.py
-@@ -0,0 +1,16 @@
+@@ -0,0 +1,42 @@
 +import re
++import time
 +
 +from util import qpt
 +
-+rpass_re = re.compile("NOTICE Dabo :Your password is '\w+ \w+ \w+ \w+'. "
-+                      "Feel free to remove the spaces when using it.")
++command_tests = [
++    (
++        "rpass",
++        r"NOTICE TestUser :Your password is '\w+ \w+ \w+ \w+'. Feel free to remove the spaces when using it."
++    ),
++    (
++        "bf ++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.",
++        r"PRIVMSG #channel :\(TestUser\) Hello World!"
++    ),
++    (
++        "choose option1, option2 option3     option4",
++        r"PRIVMSG #channel :\(TestUser\) (option1|option2|option3|option4)"
++    ),
++    (
++        "coin",
++        "PRIVMSG #channel :\x01ACTION flips a coin and gets (heads|tails).\x01"
++    ),
++    (
++        "coin 0",
++        "PRIVMSG #channel :\x01ACTION makes a coin flipping motion\x01"
++    ),
++]
 +
 +
-+def match_re(reg, _str):
-+    assert reg.match(_str), reg.pattern + " didn't match " + _str
-+
-+
-+@qpt.test
-+def test_rpass(bot, send, get):
-+    send(":Dabo!~dabo@dabo.us PRIVMSG #dabo :>rpass")
-+    match_re(rpass_re, get())
++@qpt.test(times=len(command_tests))
++def test_simple_commands(bot, test_number, get, send):
++    """
++    :type bot: core.bot.CloudBot
++    :type test_number: int
++    """
++    to_send, expected_result = command_tests[test_number]
++    send(":TestUser!~user@example.com PRIVMSG #channel :"
++         + bot.config.get("connections")[0].get("command_prefix")
++         + to_send)
++    result = get()
++    assert re.match(expected_result, result), "{} didn't match {}".format(expected_result, result)
++    time.sleep(0.1)
 -- 
 1.9.2
 
