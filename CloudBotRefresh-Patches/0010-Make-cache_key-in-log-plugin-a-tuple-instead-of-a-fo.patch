@@ -1,0 +1,23 @@
+From 6960c1b7b00fbc79925c3bbcc7c0df5c8a0fabb0 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Tue, 22 Apr 2014 22:13:55 -0700
+Subject: [PATCH] Make cache_key in log plugin a tuple instead of a formatted
+ string
+
+
+diff --git a/modules/log.py b/modules/log.py
+index 6d66a17..14d317c 100644
+--- a/modules/log.py
++++ b/modules/log.py
+@@ -80,7 +80,7 @@ def beautify(input):
+ 
+ def get_log_stream(data_dir, server, chan):
+     new_filename = get_log_filename(data_dir, server, chan)
+-    cache_key = "{} {}".format(server, chan)
++    cache_key = (server, chan)
+     old_filename, log_stream = stream_cache.get(cache_key, (None, None))
+ 
+     if new_filename != old_filename:  # we need to open a new stream
+-- 
+1.9.2
+

@@ -1,45 +1,9 @@
-From a72f9680bb69f8ad295a9d44d9379ada5b587fe3 Mon Sep 17 00:00:00 2001
+From ea702da20e4ed0f92cbb405b69a9f885f3054602 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
-Date: Tue, 22 Apr 2014 21:10:48 -0700
-Subject: [PATCH] Module updates - TODO: split
+Date: Tue, 22 Apr 2014 22:15:22 -0700
+Subject: [PATCH] Mass commit - TODO: split
 
 
-diff --git a/modules/dbtest.py b/modules/dbtest.py
-index 67b8afe..7a88e38 100644
---- a/modules/dbtest.py
-+++ b/modules/dbtest.py
-@@ -14,7 +14,7 @@ def init_db(db):
- 
- 
- @hook.command
--def adduser(text, db):
-+def adduserdb(text, db):
-     init_db(db)
- 
-     # create DB connection
-diff --git a/modules/log.py b/modules/log.py
-index 6d66a17..390893e 100644
---- a/modules/log.py
-+++ b/modules/log.py
-@@ -80,7 +80,7 @@ def beautify(input):
- 
- def get_log_stream(data_dir, server, chan):
-     new_filename = get_log_filename(data_dir, server, chan)
--    cache_key = "{} {}".format(server, chan)
-+    cache_key = (server, chan)
-     old_filename, log_stream = stream_cache.get(cache_key, (None, None))
- 
-     if new_filename != old_filename:  # we need to open a new stream
-@@ -123,4 +123,8 @@ def log(input, bot):
-             channel_log = get_log_stream(bot.data_dir, input.server, channel)
-             channel_log.write(human_readable + '\n')
- 
--        bot.logger.info(human_readable)
-+# Log console separately to prevent lag
-+@hook.event("*")
-+def console_log(input, bot):
-+    human_readable = beautify(input)
-+    bot.logger.info(human_readable)
 diff --git a/modules/minecraft_ping.py b/modules/minecraft_ping.py
 index cc31679..f590f03 100644
 --- a/modules/minecraft_ping.py

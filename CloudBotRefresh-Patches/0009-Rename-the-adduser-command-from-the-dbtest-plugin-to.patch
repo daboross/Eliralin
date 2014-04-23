@@ -1,0 +1,23 @@
+From a13f14f76206cfb52c0b2c12a1499ea51776255c Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Tue, 22 Apr 2014 22:13:02 -0700
+Subject: [PATCH] Rename the 'adduser' command from the dbtest plugin to
+ 'dbadduser' to avoid conflicting with the admin plugin
+
+
+diff --git a/modules/dbtest.py b/modules/dbtest.py
+index 67b8afe..cc9c35a 100644
+--- a/modules/dbtest.py
++++ b/modules/dbtest.py
+@@ -14,7 +14,7 @@ def init_db(db):
+ 
+ 
+ @hook.command
+-def adduser(text, db):
++def dbadduser(text, db):
+     init_db(db)
+ 
+     # create DB connection
+-- 
+1.9.2
+
