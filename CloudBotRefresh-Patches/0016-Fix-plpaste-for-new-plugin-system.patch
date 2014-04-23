@@ -1,0 +1,40 @@
+From 4ca9da210c11bb5021bf4003631726eeb50124d6 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Tue, 22 Apr 2014 22:27:08 -0700
+Subject: [PATCH] Fix plpaste for new plugin system
+
+
+diff --git a/modules/plpaste.py b/modules/plpaste.py
+index 97529cb..a5bdadb 100644
+--- a/modules/plpaste.py
++++ b/modules/plpaste.py
+@@ -1,16 +1,20 @@
+-import os
+ from os import listdir
+ 
+ from util import hook, web
+ 
+ 
+ @hook.command(permissions=["adminonly"])
+-def plpaste(inp, bot=None):
+-    if inp in bot.commands:
+-        with open(os.path.join("modules", bot.commands[inp][0].__code__.co_filename.strip())) as f:
++def plpaste(text, bot):
++    """
++    :type text: str
++    :type bot: core.bot.CloudBot
++    """
++    if text in bot.plugin_manager.commands:
++        file_path = bot.plugin_manager.commands[text].module.file_path
++        with open(file_path) as f:
+             return web.haste(f.read(), ext='py')
+-    elif inp + ".py" in listdir('modules/'):
+-        with open('modules/{}.py'.format(inp)) as f:
++    elif text + ".py" in listdir('modules/'):
++        with open('modules/{}.py'.format(text)) as f:
+             return web.haste(f.read(), ext='py')
+     else:
+         return "Could not find specified plugin."
+-- 
+1.9.2
+

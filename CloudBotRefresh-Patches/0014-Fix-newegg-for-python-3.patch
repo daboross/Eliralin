@@ -1,0 +1,22 @@
+From 6f769813b88549eebf7cacdaaea114ab4dba1b4c Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Tue, 22 Apr 2014 22:26:33 -0700
+Subject: [PATCH] Fix newegg for python 3
+
+
+diff --git a/modules/newegg.py b/modules/newegg.py
+index 7ed66a4..ffc7014 100644
+--- a/modules/newegg.py
++++ b/modules/newegg.py
+@@ -83,7 +83,7 @@ def newegg(inp):
+     # submit the search request
+     r = http.get_json(
+         'http://www.ows.newegg.com/Search.egg/Advanced',
+-        post_data=json.dumps(request)
++        post_data=json.dumps(request).encode('utf-8')
+     )
+ 
+     # get the first result
+-- 
+1.9.2
+

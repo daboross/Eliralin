@@ -1,4 +1,4 @@
-From a13f14f76206cfb52c0b2c12a1499ea51776255c Mon Sep 17 00:00:00 2001
+From d8aa1b6c5f6aedfef0e07835543d7fd1b5fbea9c Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 22 Apr 2014 22:13:02 -0700
 Subject: [PATCH] Rename the 'adduser' command from the dbtest plugin to

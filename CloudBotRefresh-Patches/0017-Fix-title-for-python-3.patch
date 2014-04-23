@@ -1,0 +1,22 @@
+From 9f04f7c4d75806c8adb3af16ea97fba93dcf947a Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Tue, 22 Apr 2014 22:27:20 -0700
+Subject: [PATCH] Fix title for python 3
+
+
+diff --git a/modules/title.py b/modules/title.py
+index 506c793..a31dc42 100644
+--- a/modules/title.py
++++ b/modules/title.py
+@@ -6,7 +6,7 @@ from util import hook, http, urlnorm
+ @hook.command
+ def title(inp):
+     """title <url> -- gets the title of a web page"""
+-    url = urlnorm.normalize(inp.encode('utf-8'), assume_scheme="http")
++    url = urlnorm.normalize(inp, assume_scheme="http")
+ 
+     try:
+         page = http.open(url)
+-- 
+1.9.2
+

@@ -1,0 +1,31 @@
+From 0a84f171e170812ffc90258bf9f42aa52561568d Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Tue, 22 Apr 2014 22:27:42 -0700
+Subject: [PATCH] Fix urban - use formatting's new name
+
+
+diff --git a/modules/urban.py b/modules/urban.py
+index aa9a23c..42a3254 100644
+--- a/modules/urban.py
++++ b/modules/urban.py
+@@ -1,7 +1,6 @@
+ import re
+ 
+-from util import hook, http
+-
++from util import hook, http, formatting
+ 
+ base_url = 'http://www.urbandictionary.com/iphone/search/define'
+ 
+@@ -35,7 +34,7 @@ def urban(text):
+     try:
+         definition = definitions[id_num - 1]['definition'].replace('\r\n', ' ')
+         definition = re.sub('\s+', ' ', definition).strip()  # remove excess spaces
+-        definition = text.truncate_str(definition, 200)
++        definition = formatting.truncate_str(definition, 200)
+     except IndexError:
+         return 'Not found.'
+ 
+-- 
+1.9.2
+

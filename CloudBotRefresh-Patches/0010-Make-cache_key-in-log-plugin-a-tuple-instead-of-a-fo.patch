@@ -1,4 +1,4 @@
-From 6960c1b7b00fbc79925c3bbcc7c0df5c8a0fabb0 Mon Sep 17 00:00:00 2001
+From a321b7a1cab76c526367da332d6786665309c06d Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 22 Apr 2014 22:13:55 -0700
 Subject: [PATCH] Make cache_key in log plugin a tuple instead of a formatted
