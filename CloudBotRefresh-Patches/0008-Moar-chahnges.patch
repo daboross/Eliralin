@@ -1,0 +1,163 @@
+From 5f7ad34b168c00e795a56632769f5c882868d272 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Tue, 22 Apr 2014 17:00:50 -0700
+Subject: [PATCH] Moar chahnges
+
+
+diff --git a/core/irc.py b/core/irc.py
+index 77647e9..bb490c8 100644
+--- a/core/irc.py
++++ b/core/irc.py
+@@ -232,8 +232,9 @@ class QptReceiveThread(threading.Thread):
+     """receives messages from IRC and puts them in the input_queue
+     :type input_queue: queue.Queue"""
+ 
+-    def __init__(self, bot, logger, input_queue, output_queue):
++    def __init__(self, bot, conn, logger, input_queue, output_queue):
+         self.bot = bot
++        self.conn = conn
+         self.logger = logger
+         self.input_queue = input_queue
+         self.output_queue = output_queue
+@@ -242,7 +243,7 @@ class QptReceiveThread(threading.Thread):
+ 
+     def run(self):
+         time.sleep(1.0)
+-        qpt.run_tests(self, self.logger, self.bot, self.input_queue, self.output_queue)
++        qpt.run_tests(self, self.logger, self.bot, self.conn, self.input_queue, self.output_queue)
+         self.bot.stop()
+ 
+ 
+@@ -253,16 +254,17 @@ class QptIRCConnection(object):
+     :type input_queue; queue.Queue
+     """
+ 
+-    def __init__(self, bot, logger, input_queue, output_queue):
++    def __init__(self, bot, conn, input_queue, output_queue):
+         self.bot = bot
+-        self.logger = logger
++        self.conn = conn
++        self.logger = bot.logger
+         self.output_queue = output_queue  # lines to be sent out
+         self.input_queue = input_queue  # lines that were received
+         # to be assigned in connect()
+         self.receive_thread = None
+ 
+     def connect(self):
+-        self.receive_thread = QptReceiveThread(self.bot, self.logger, self.input_queue, self.output_queue)
++        self.receive_thread = QptReceiveThread(self.bot, self.conn, self.logger, self.input_queue, self.output_queue)
+         self.receive_thread.start()
+ 
+     def stop(self):
+@@ -344,7 +346,7 @@ class BotConnection(object):
+ 
+         # create the IRC connection and connect
+         if qpt.is_enabled():
+-            self.connection = QptIRCConnection(self.bot, self.bot.logger, self.input_queue, self.output_queue)
++            self.connection = QptIRCConnection(self.bot, self, self.input_queue, self.output_queue)
+         else:
+             self.connection = IRCConnection(self.bot.logger, self.name, self.server, self.port, self.input_queue,
+                                             self.output_queue, self.ssl)
+diff --git a/modules/core_ctcp.py b/modules/core_ctcp.py
+index 2c18f9b..3d8997f 100644
+--- a/modules/core_ctcp.py
++++ b/modules/core_ctcp.py
+@@ -6,7 +6,7 @@ from util import hook
+ # CTCP responses
+ @hook.regex(r'^\x01VERSION\x01$')
+ def ctcp_version(notice):
+-    notice('\x01VERSION: CloudBot - http://git.io/cloudbotirc')
++    notice('\x01VERSION: CloudBot - http://git.io/Wcloudbotirc')
+ 
+ 
+ @hook.regex(r'^\x01PING\x01$')
+diff --git a/qpt_tests/admin_tests.py b/qpt_tests/admin_tests.py
+new file mode 100644
+index 0000000..0777387
+--- /dev/null
++++ b/qpt_tests/admin_tests.py
+@@ -0,0 +1,19 @@
++import re
++from util.qpt import test
++
++
++def run_command(conn, send, text):
++    send(":TestUser!~user@example.com PRIVMSG #channel :"
++         + conn.config.get("command_prefix") + text)
++
++@test()
++def mass_test(conn, send, get):
++    run_command(conn, send, ">groups")
++    valid_groups = get()
++    match = re.match(r">> PRIVMSG #dabo :(Dabo) Valid groups: {('(\s+)', )+'(\s+)'}", valid_groups)
++    assert match
++    assert len(match.groups()) == 3, match.groups()
++    for group in match.groups():
++        print(group)
++    run_command(conn, send, ">gperms")
++    run_command(conn, send, ">gusers")
+\ No newline at end of file
+diff --git a/qpt_tests/generic_tests.py b/qpt_tests/generic_tests.py
+index 2eb5544..f4b9ac1 100644
+--- a/qpt_tests/generic_tests.py
++++ b/qpt_tests/generic_tests.py
+@@ -28,14 +28,14 @@ command_tests = [
+ 
+ 
+ @qpt.test(times=len(command_tests))
+-def test_simple_commands(bot, test_number, get, send):
++def test_simple_commands(conn, test_number, get, send):
+     """
+     :type bot: core.bot.CloudBot
+     :type test_number: int
+     """
+     to_send, expected_result = command_tests[test_number]
+     send(":TestUser!~user@example.com PRIVMSG #channel :"
+-         + bot.config.get("connections")[0].get("command_prefix")
++         + conn.config.get("command_prefix")
+          + to_send)
+     result = get()
+     assert re.match(expected_result, result), "{} didn't match {}".format(expected_result, result)
+diff --git a/util/qpt.py b/util/qpt.py
+index 95fe816..2546323 100644
+--- a/util/qpt.py
++++ b/util/qpt.py
+@@ -23,7 +23,7 @@ def test(times=1):
+     return lambda func: _test_hook(func, times)
+ 
+ 
+-def run_test(logger, func, bot, input_queue, output_queue):
++def run_test(logger, func, bot, conn, input_queue, output_queue):
+     if not hasattr(func, "_qpt_test") or not func._qpt_test:
+         return
+ 
+@@ -36,6 +36,8 @@ def run_test(logger, func, bot, input_queue, output_queue):
+         for arg in func._qpt_args:
+             if arg == "bot":
+                 params.append(bot)
++            elif arg == "conn":
++                params.append(conn)
+             elif arg == "get":
+                 params.append(lambda: output_queue.get())
+             elif arg == "send":
+@@ -56,7 +58,7 @@ def run_test(logger, func, bot, input_queue, output_queue):
+             continue
+ 
+ 
+-def run_tests(obj_with_shutdown, logger, bot, input_queue, output_queue):
++def run_tests(obj_with_shutdown, logger, bot, conn, input_queue, output_queue):
+     files = set(glob.glob(os.path.join("qpt_tests", '*.py')))
+ 
+     for file in files:
+@@ -83,7 +85,7 @@ def run_tests(obj_with_shutdown, logger, bot, input_queue, output_queue):
+             while not output_queue.empty():
+                 logger.debug("Removed '{}' from queue.".format(output_queue.get()))
+ 
+-            run_test(logger, func, bot, input_queue, output_queue)
++            run_test(logger, func, bot, conn, input_queue, output_queue)
+ 
+             # wait 0.1 second between tests
+             time.sleep(0.1)
+-- 
+1.9.2
+
