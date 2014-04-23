@@ -1,7 +1,7 @@
-From 0a8085ba3b0d95666f6411d65de1305510f347fa Mon Sep 17 00:00:00 2001
+From 21ee4d99fcd927858f58cc8e0c131ddd73a28ae2 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
-Date: Wed, 23 Apr 2014 16:34:26 -0700
-Subject: [PATCH] Add a plugin.has_run attribute for use in determining test
+Date: Wed, 23 Apr 2014 16:42:08 -0700
+Subject: [PATCH] Add a has_run attribute to Plugin for use in determining test
  completeness
 
 
