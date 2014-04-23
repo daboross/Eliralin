@@ -1,4 +1,4 @@
-From 47f171e45ac0cc2cf9328c3f1d0cecfd523dd3c3 Mon Sep 17 00:00:00 2001
+From 92d25abf1c8e5368414708670fb23828f9d877e0 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 22 Apr 2014 10:29:44 -0700
 Subject: [PATCH] Disable spam protection when doing plugin testing
