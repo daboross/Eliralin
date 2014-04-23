@@ -1,4 +1,4 @@
-From 076cdc6d68fb0eb039480d355c26428c0b16af85 Mon Sep 17 00:00:00 2001
+From 1453b173577f03fdedc7a76abf41ca504f384c73 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 22 Apr 2014 22:14:26 -0700
 Subject: [PATCH] Make log plugin log events to console separately from logging
