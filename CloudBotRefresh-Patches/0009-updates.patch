@@ -1,0 +1,322 @@
+From c3f4e996c96700d939b026f4606762c603c1c67a Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Tue, 22 Apr 2014 21:05:07 -0700
+Subject: [PATCH] updates
+
+
+diff --git a/qpt_tests/admin_tests.py b/qpt_tests/admin_tests.py
+index 0777387..34b8d2f 100644
+--- a/qpt_tests/admin_tests.py
++++ b/qpt_tests/admin_tests.py
+@@ -1,19 +1,40 @@
++from operator import attrgetter
+ import re
++
+ from util.qpt import test
+ 
+ 
++def print_all_commands(bot):
++    """
++    :type bot: core.bot.CloudBot
++    """
++    modules = sorted(bot.plugin_manager.modules.values(), key=attrgetter("title"))
++    for module in modules:
++        print("{}: {}".format(
++            module.title,
++            ["/".join(cmd.aliases) for cmd in module.commands]
++        ))
++
++
+ def run_command(conn, send, text):
+     send(":TestUser!~user@example.com PRIVMSG #channel :"
+          + conn.config.get("command_prefix") + text)
+ 
++
+ @test()
+ def mass_test(conn, send, get):
+-    run_command(conn, send, ">groups")
+-    valid_groups = get()
+-    match = re.match(r">> PRIVMSG #dabo :(Dabo) Valid groups: {('(\s+)', )+'(\s+)'}", valid_groups)
+-    assert match
+-    assert len(match.groups()) == 3, match.groups()
+-    for group in match.groups():
+-        print(group)
+-    run_command(conn, send, ">gperms")
+-    run_command(conn, send, ">gusers")
+\ No newline at end of file
++    """
++    :type conn: core.irc.BotConnection
++    """
++    conn.permissions.add_user_to_group("TestUser!~user@example.com", "admins")
++    run_command(conn, send, "groups")
++    assert re.match(r"PRIVMSG #channel :\(TestUser\) Valid groups: {('\S+', )+'\S+'}", get())
++    for group in conn.permissions.get_groups():
++        run_command(conn, send, "gperms {}".format(group))
++        assert re.match(r"PRIVMSG #channel :\(TestUser\) Group \S+ has permissions \[('\S+', )*'\S+'\]", get())
++        run_command(conn, send, "gusers {}".format(group))
++        assert re.match(
++            r"PRIVMSG #channel :\(TestUser\) Group \S+ has members: \[('\S+', )*'\S+'\]|"
++            r"PRIVMSG #channel :\(TestUser\) Group \S+ exists, but has no members",
++            get()
++        )
+diff --git a/qpt_tests/run.py b/qpt_tests/run.py
+new file mode 100644
+index 0000000..f654097
+--- /dev/null
++++ b/qpt_tests/run.py
+@@ -0,0 +1,134 @@
++from util.qpt import test
++
++
++def run_command(conn, send, text):
++    send(":TestUser!~user@example.com PRIVMSG #channel :"
++         + conn.config.get("command_prefix") + text)
++
++
++all_commands = [
++    "say hi",
++    "say #chan2 hi"
++    "message TestUser hi",
++    "nick Eli2",
++    "adduser TestUser2!~user@example.com admins",
++    "deluser TestUser2!~user@example.com",
++    "join #chan2",
++    "part #chan2",
++    "cycle #channel",
++    "me hi",
++    "me #chan2 hi",
++    "ugroups",
++    "lart TestUser",
++    "lart itself",
++    "flirt TestUser",
++    "flirt itself",
++    "insult TestUser",
++    "insult itself",
++    "ltc",
++    "btc",
++    # TODO: cypher
++    "roll 2",
++    "e world",
++    "define world",
++    "domain cloudbot",
++    "drama world",
++    "8 ?",
++    # TODO: encrypt
++    "fact",
++    "bans notch",
++    "bans daboross",
++    "fml",
++    "fortune",
++    "geoip daboross.net",
++    "gitio github.com/ClouDev/CloudBot",
++    "ghissues ClouDev/CloudBot",
++    "g cloudbot",
++    "gis cloudbot",
++    # TODO: translate & googleurl
++    "horoscope",
++    # TODO: ignore & imbd & hulu & imgur
++    "imdb",
++    "kernel",
++    "kill",  # TODO: kill should be in attacks
++    # TODO: lastfm
++    # TODO: lyrics
++    # TODO: mc
++    "randomplugin",
++    "plugin skywars",
++    "mccraft stone",
++    "mcid stone",
++    "mcping play.aemservers.net",
++    "mcstatus",
++    "mcuser zbsh",
++    "mcuser iamnotausernameplz",
++    "mcwiki stone",
++    "mlia",
++    "namegen",
++    "namegen dragons",  # TODO: namegen for each in list
++    "namegen list",
++    "newegg monitor",
++    # TODO: notes
++    "mute Dabo",
++    "unmute Dabo",
++    "op Dabo",
++    "deop Dabo",
++    "ban Dabo",
++    "unban Dabo",
++    "osrc daboross",
++    "down daboross.net",
++    "isup daboross.net",
++    "down asdffdsaasdffdsa.net",
++    "isup asdffdsaasdffdsa.net",
++    "password",
++    "ping dabo.guru",
++    "plpaste admin",
++    "potato Dabo",
++    "python print('Hello World!')",
++    "qr dabo.guru",
++    # TODO: quote, rdio, reddit, rottentomatoes, rt, scene
++    "shorten dabo.guru",
++    "slap Dabo",
++    "slogan CloudBot",
++    # TODO: snopes
++    # TODO: soundcloud
++    "spell hallo",
++    # TODO: spotify, steam, steam_calc
++    "suggest cloudb",
++    "uptime",
++    "memory",
++    "pid",
++    "system",
++    # TODO: time, beats
++    "title dabo.guru",
++    # TODO: tvdb
++    # TODO: twitch
++    "u cloud",
++    "upper cloudbot",
++    # TODO: base64/unbase64/checkbase64
++    "rainbow cloudbot",
++    "usa cloudbot",
++    "munge cloudbot",
++    "titlecase cloud bot",
++    "lower ClOuDbOt",
++    "swapcase cloudBOT",
++    "capitalize cloudbot",
++    # TODO: unescape / escape
++    "reverse racecars",
++    "hash cloudbot",
++    "lengnth cloudbot",
++    "validate dabo.guru",
++    # TODO: valvesounds, vimeo
++    "weather seattle",
++    "wiki seattle",
++    "wa 2 + 2",
++    "xkcd NRO",
++    "answer why is the world green?",
++    "y cloudbot"
++]
++
++
++@test(times=len(all_commands))
++def test_all(conn, send, test_number, get):
++    run_command(conn, send, all_commands[test_number])
++    get()
+\ No newline at end of file
+diff --git a/util/qpt.py b/util/qpt.py
+index 2546323..12e8fe9 100644
+--- a/util/qpt.py
++++ b/util/qpt.py
+@@ -2,6 +2,7 @@ import glob
+ import importlib
+ import inspect
+ import os
++import queue
+ import traceback
+ import sys
+ import time
+@@ -19,11 +20,39 @@ def _test_hook(func, times):
+     return func
+ 
+ 
++def print_both(text):
++    pass
++    # sys.stdout.flush()
++    # print()
++    # print("# "+text)
++    # print()
++
++
++def print_pre(text):
++    pass
++    # sys.stdout.flush()
++    # print()
++    # print("# " + text)
++
++
++def print_post(text):
++    pass
++    # sys.stdout.flush()
++    # print("# " + text)
++    # print()
++
++
+ def test(times=1):
+     return lambda func: _test_hook(func, times)
+ 
+ 
+ def run_test(logger, func, bot, conn, input_queue, output_queue):
++    """
++    :type bot: core.bot.CloudBot
++    :type conn: core.irc.BotConnection
++    :type input_queue: queue.Queue
++    :type output_queue: queue.Queue
++    """
+     if not hasattr(func, "_qpt_test") or not func._qpt_test:
+         return
+ 
+@@ -31,7 +60,7 @@ def run_test(logger, func, bot, conn, input_queue, output_queue):
+         # each test might want to run multiple times, with the test number as an argument.
+         # We'll treat each of these times as a different test
+ 
+-        logger.info("=== Running test {} #{}".format(func._qpt_name, test_number))
++        print_both("Running test {} #{}".format(func._qpt_name, test_number))
+         params = []
+         for arg in func._qpt_args:
+             if arg == "bot":
+@@ -39,24 +68,31 @@ def run_test(logger, func, bot, conn, input_queue, output_queue):
+             elif arg == "conn":
+                 params.append(conn)
+             elif arg == "get":
+-                params.append(lambda: output_queue.get())
++                params.append(lambda: output_queue.get(timeout=5))
+             elif arg == "send":
+                 params.append(lambda line: input_queue.put(line))
+             elif arg == "test_number":
+                 params.append(test_number)
+             else:
+-                logger.info("=== Test {} #{} Failure: required invalid arg {}".format(func._qpt_name, test_number, arg))
++                print_pre("Test {} #{} Failure: required invalid arg {}".format(func._qpt_name, test_number, arg))
+                 continue
+         try:
+             func(*params)
++        except queue.Empty:
++            print_pre("Test {} #{} Failure: queue get failed".format(func._qpt_name, test_number))
++            continue
+         except Exception:
+-            logger.warning("=== Test {} #{} Failure:".format(func._qpt_name, test_number))
++            print_pre("Test {} #{} Failure:".format(func._qpt_name, test_number))
++            sys.stdout.flush()
+             traceback.print_exc()
+             continue
+         else:
+-            logger.info("=== Test {} #{} success".format(func._qpt_name, test_number))
++            print_pre("Test {} #{} success".format(func._qpt_name, test_number))
+             continue
+ 
++    # wait 0.5 second between tests
++    time.sleep(0.5)
++
+ 
+ def run_tests(obj_with_shutdown, logger, bot, conn, input_queue, output_queue):
+     files = set(glob.glob(os.path.join("qpt_tests", '*.py')))
+@@ -73,7 +109,7 @@ def run_tests(obj_with_shutdown, logger, bot, conn, input_queue, output_queue):
+         try:
+             module = importlib.import_module("qpt_tests." + title)
+         except Exception:
+-            logger.warning("=== Failed to start tests in {}:".format(title))
++            print_both("Failed to start tests in {}:".format(title))
+             traceback.print_exc()
+             continue
+ 
+@@ -87,8 +123,8 @@ def run_tests(obj_with_shutdown, logger, bot, conn, input_queue, output_queue):
+ 
+             run_test(logger, func, bot, conn, input_queue, output_queue)
+ 
+-            # wait 0.1 second between tests
+-            time.sleep(0.1)
++            # wait 1 second between tests
++            time.sleep(0.5)
+ 
+ 
+ def is_enabled():
+-- 
+1.9.2
+

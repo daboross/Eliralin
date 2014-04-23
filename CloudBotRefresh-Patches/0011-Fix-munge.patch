@@ -1,0 +1,40 @@
+From e12ec931b1f08e8f9c3daba6c7757e705d375205 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Tue, 22 Apr 2014 21:10:38 -0700
+Subject: [PATCH] Fix munge
+
+
+diff --git a/util/formatting.py b/util/formatting.py
+index ff9e303..41097b5 100644
+--- a/util/formatting.py
++++ b/util/formatting.py
+@@ -42,7 +42,7 @@ def munge(text, munge_count=0):
+     for n in range(len(text)):
+         rep = character_replacements.get(text[n])
+         if rep:
+-            text = text[:n] + rep.decode('utf8') + text[n + 1:]
++            text = text[:n] + rep + text[n + 1:]
+             reps += 1
+             if reps == munge_count:
+                 break
+@@ -101,7 +101,8 @@ character_replacements = {
+     'W': 'Ŵ',
+     'X': 'Χ',
+     'Y': 'Ỳ',
+-    'Z': 'Ż'}
++    'Z': 'Ż'
++}
+ 
+ 
+ def capitalize_first(line):
+@@ -154,7 +155,6 @@ def truncate_str(content, length=100, suffix='...'):
+     else:
+         return content[:length].rsplit(' ', 1)[0] + suffix
+ 
+-
+ # ALL CODE BELOW THIS LINE IS COVERED BY THE FOLLOWING AGREEMENT:
+ 
+ # Copyright (c) Django Software Foundation and individual contributors.
+-- 
+1.9.2
+
