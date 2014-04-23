@@ -1,4 +1,4 @@
-From 97ed5244973e973be5c0111a2ac9fb72933fbcff Mon Sep 17 00:00:00 2001
+From 297904f4b6b1a248a4ac7b11e49aedaed5c5bb18 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:17:29 -0800
 Subject: [PATCH] Add connection-independent database 'idb' and use it in

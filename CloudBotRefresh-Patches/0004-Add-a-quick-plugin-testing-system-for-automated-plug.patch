@@ -1,4 +1,4 @@
-From c053a8d99428b214d524cc2adb377be8976464ba Mon Sep 17 00:00:00 2001
+From 720b7a7dfa049a4a9ac2a5caa4d46f98f747da37 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 22 Apr 2014 21:34:42 -0700
 Subject: [PATCH] Add a "quick" plugin testing system, for automated plugin
@@ -82,6 +82,9 @@ index 30f541b..460144d 100644
          self.connection.connect()
  
          self.set_pass(self.config["connection"].get("password"))
+diff --git a/qpt_tests/__init__.py b/qpt_tests/__init__.py
+new file mode 100644
+index 0000000..e69de29
 diff --git a/util/qpt.py b/util/qpt.py
 new file mode 100644
 index 0000000..2fa3f10
