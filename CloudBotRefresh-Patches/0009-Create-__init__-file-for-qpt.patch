@@ -1,0 +1,12 @@
+From 8bcfe9cf55543115e73d93ef0a232efb091e60c4 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Tue, 22 Apr 2014 21:43:30 -0700
+Subject: [PATCH] Create __init__ file for qpt
+
+
+diff --git a/qpt_tests/__init__.py b/qpt_tests/__init__.py
+new file mode 100644
+index 0000000..e69de29
+-- 
+1.9.2
+

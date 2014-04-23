@@ -1,7 +1,7 @@
-From 92d25abf1c8e5368414708670fb23828f9d877e0 Mon Sep 17 00:00:00 2001
+From b5e97c22c02f49674d5793f1e1ec546acd6bd398 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
-Date: Tue, 22 Apr 2014 10:29:44 -0700
-Subject: [PATCH] Disable spam protection when doing plugin testing
+Date: Tue, 22 Apr 2014 21:36:44 -0700
+Subject: [PATCH] Disable the command limiting system when using qpt
 
 
 diff --git a/modules/core_sieve.py b/modules/core_sieve.py

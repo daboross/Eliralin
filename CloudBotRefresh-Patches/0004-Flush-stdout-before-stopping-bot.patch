@@ -1,4 +1,4 @@
-From 97a334d1beead8302d4ad0a7874917c260aa5f88 Mon Sep 17 00:00:00 2001
+From 8add2b22a0f651bfe2442bacad003c6c0570b2ac Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 22 Apr 2014 21:09:05 -0700
 Subject: [PATCH] Flush stdout before stopping bot

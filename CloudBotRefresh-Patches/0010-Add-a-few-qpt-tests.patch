@@ -1,0 +1,251 @@
+From d7b1ab135d1fc83a2fcd1ed50613652169cb70e1 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Tue, 22 Apr 2014 22:03:36 -0700
+Subject: [PATCH] Add a few qpt tests:
+
+- mass.py - Tests almost all bot commands, but requires the suer to watch console output for errors or incorrect results.
+- test_admin.py - Tests the admin plugin accurantly, validating command results against regexes
+- print_all_commands.py - Debugging test that just prints all the bot's commands to console, currently disabled
+
+diff --git a/qpt_tests/mass.py b/qpt_tests/mass.py
+new file mode 100644
+index 0000000..f045c77
+--- /dev/null
++++ b/qpt_tests/mass.py
+@@ -0,0 +1,177 @@
++import re
++
++from util import qpt
++
++
++def run_command(conn, send, text):
++    send(":TestUser!~user@example.com PRIVMSG #channel :"
++         + conn.config.get("command_prefix") + text)
++
++
++tested_result_commands = [
++    # this is a list of commands to run, and the expected result
++    (
++        "rpass",
++        r"NOTICE TestUser :Your password is '\w+ \w+ \w+ \w+'. Feel free to remove the spaces when using it."
++    ),
++    (
++        "bf ++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.",
++        r"PRIVMSG #channel :\(TestUser\) Hello World!"
++    ),
++    (
++        "choose option1, option2 option3     option4",
++        r"PRIVMSG #channel :\(TestUser\) (option1|option2|option3|option4)"
++    ),
++    (
++        "coin",
++        "PRIVMSG #channel :\x01ACTION flips a coin and gets (heads|tails).\x01"
++    ),
++    (
++        "coin 0",
++        "PRIVMSG #channel :\x01ACTION makes a coin flipping motion\x01"
++    ),
++]
++
++mass_valid_commands = [
++    # this is a list of commands to run, with no expected result
++    # this is for mass tests where you can just check the console results.
++    # where expected result regexes haven't been written yet
++    "say hi",
++    "say #chan2 hi"
++    "message TestUser hi",
++    "nick TestBot2",
++    "adduser TestUser2!~user@example.com admins",
++    "deluser TestUser2!~user@example.com",
++    "join #chan2",
++    "part #chan2",
++    "cycle #channel",
++    "me hi",
++    "me #chan2 hi",
++    "ugroups",
++    "lart TestUser",
++    "lart itself",
++    "flirt TestUser",
++    "flirt itself",
++    "insult TestUser",
++    "insult itself",
++    "ltc",
++    "btc",
++    # TODO: cypher
++    "roll 2",
++    "e world",
++    "define world",
++    "domain cloudbot",
++    "drama world",
++    "8 ?",
++    # TODO: encrypt
++    "fact",
++    "bans notch",
++    "bans daboross",
++    "fml",
++    "fortune",
++    "geoip daboross.net",
++    "gitio github.com/ClouDev/CloudBot",
++    "ghissues ClouDev/CloudBot",
++    "g cloudbot",
++    "gis cloudbot",
++    # TODO: translate & googleurl
++    "horoscope",
++    # TODO: ignore & imbd & hulu & imgur
++    "imdb",
++    "kernel",
++    "kill",  # TODO: kill should be in attacks
++    # TODO: lastfm
++    # TODO: lyrics
++    # TODO: mc
++    "randomplugin",
++    "plugin skywars",
++    "mccraft stone",
++    "mcid stone",
++    "mcping play.aemservers.net",
++    "mcstatus",
++    "mcuser zbsh",
++    "mcuser iamnotausernameplz",
++    "mcwiki stone",
++    "mlia",
++    "namegen",
++    "namegen dragons",  # TODO: namegen for each in list
++    "namegen list",
++    "newegg monitor",
++    # TODO: notes
++    "mute Dabo",
++    "unmute Dabo",
++    "op Dabo",
++    "deop Dabo",
++    "ban Dabo",
++    "unban Dabo",
++    "osrc daboross",
++    "down daboross.net",
++    "isup daboross.net",
++    "down asdffdsaasdffdsa.net",
++    "isup asdffdsaasdffdsa.net",
++    "password",
++    "ping dabo.guru",
++    "plpaste admin",
++    "potato Dabo",
++    "python print('Hello World!')",
++    "qr dabo.guru",
++    # TODO: quote, rdio, reddit, rottentomatoes, rt, scene
++    "shorten dabo.guru",
++    "slap Dabo",
++    "slogan CloudBot",
++    # TODO: snopes
++    # TODO: soundcloud
++    "spell hallo",
++    # TODO: spotify, steam, steam_calc
++    "suggest cloudb",
++    "uptime",
++    "memory",
++    "pid",
++    "system",
++    # TODO: time, beats
++    "title dabo.guru",
++    # TODO: tvdb
++    # TODO: twitch
++    "u cloud",
++    "upper cloudbot",
++    # TODO: base64/unbase64/checkbase64
++    "rainbow cloudbot",
++    "usa cloudbot",
++    "munge cloudbot",
++    "titlecase cloud bot",
++    "lower ClOuDbOt",
++    "swapcase cloudBOT",
++    "capitalize cloudbot",
++    # TODO: unescape / escape
++    "reverse racecars",
++    "hash cloudbot",
++    "lengnth cloudbot",
++    "validate dabo.guru",
++    # TODO: valvesounds, vimeo
++    "weather seattle",
++    "wiki seattle",
++    "wa 2 + 2",
++    "xkcd NRO",
++    "answer why is the world green?",
++    "y cloudbot"
++]
++
++
++@qpt.test(times=len(tested_result_commands))
++def test_command_results(conn, test_number, get, send):
++    """
++    :type conn: core.irc.BotConnection
++    :type test_number: int
++    """
++    command, expected_result = tested_result_commands[test_number]
++    send(run_command(conn, send, command))
++    result = get()
++    assert re.match(expected_result, result), "{} didn't match {}".format(expected_result, result)
++
++
++@qpt.test(times=len(mass_valid_commands))
++def mass_test(conn, send, test_number, get):
++    run_command(conn, send, mass_valid_commands[test_number])
++    # get an result, even if it isn't used.
++    # get an result, even if it isn't used. 
++    get()
+diff --git a/qpt_tests/print_all_commands.py b/qpt_tests/print_all_commands.py
+new file mode 100644
+index 0000000..acfd4c2
+--- /dev/null
++++ b/qpt_tests/print_all_commands.py
+@@ -0,0 +1,17 @@
++# from operator import attrgetter
++#
++# from util.qpt import test
++#
++#
++# @test()
++# def print_all_commands(bot):
++#     """
++#     Prints all commands on a bot, sorted by plugin. This is used for debug.
++#     :type bot: core.bot.CloudBot
++#     """
++#     modules = sorted(bot.plugin_manager.modules.values(), key=attrgetter("title"))
++#     for module in modules:
++#         print("{}: {}".format(
++#             module.title,
++#             ["/".join(cmd.aliases) for cmd in module.commands]
++#         ))
+diff --git a/qpt_tests/test_admin.py b/qpt_tests/test_admin.py
+new file mode 100644
+index 0000000..e649b97
+--- /dev/null
++++ b/qpt_tests/test_admin.py
+@@ -0,0 +1,27 @@
++import re
++
++from util.qpt import test
++
++
++def run_command(conn, send, text):
++    send(":TestUser!~user@example.com PRIVMSG #channel :"
++         + conn.config.get("command_prefix") + text)
++
++
++@test()
++def mass_test(conn, send, get):
++    """
++    :type conn: core.irc.BotConnection
++    """
++    conn.permissions.add_user_to_group("TestUser!~user@example.com", "admins")
++    run_command(conn, send, "groups")
++    assert re.match(r"PRIVMSG #channel :\(TestUser\) Valid groups: {('\S+', )+'\S+'}", get())
++    for group in conn.permissions.get_groups():
++        run_command(conn, send, "gperms {}".format(group))
++        assert re.match(r"PRIVMSG #channel :\(TestUser\) Group \S+ has permissions \[('\S+', )*'\S+'\]", get())
++        run_command(conn, send, "gusers {}".format(group))
++        assert re.match(
++            r"PRIVMSG #channel :\(TestUser\) Group \S+ has members: \[('\S+', )*'\S+'\]|"
++            r"PRIVMSG #channel :\(TestUser\) Group \S+ exists, but has no members",
++            get()
++        )
+-- 
+1.9.2
+
