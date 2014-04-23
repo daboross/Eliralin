@@ -1,0 +1,192 @@
+From 85fdcb2fe7f79984e7d04d4648269b3f315eb6c9 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Wed, 23 Apr 2014 10:08:18 -0700
+Subject: [PATCH] Improve qpt tests
+
+
+diff --git a/qpt_tests/mass.py b/qpt_tests/mass.py
+index f045c77..a6d2113 100644
+--- a/qpt_tests/mass.py
++++ b/qpt_tests/mass.py
+@@ -7,9 +7,8 @@ def run_command(conn, send, text):
+     send(":TestUser!~user@example.com PRIVMSG #channel :"
+          + conn.config.get("command_prefix") + text)
+ 
+-
++# this is a list of commands to run, and the expected result
+ tested_result_commands = [
+-    # this is a list of commands to run, and the expected result
+     (
+         "rpass",
+         r"NOTICE TestUser :Your password is '\w+ \w+ \w+ \w+'. Feel free to remove the spaces when using it."
+@@ -32,10 +31,10 @@ tested_result_commands = [
+     ),
+ ]
+ 
++# this is a list of commands to run, with no expected result
++# this is for mass tests where you can just check the console results.
++# where expected result regexes haven't been written yet
+ mass_valid_commands = [
+-    # this is a list of commands to run, with no expected result
+-    # this is for mass tests where you can just check the console results.
+-    # where expected result regexes haven't been written yet
+     "say hi",
+     "say #chan2 hi"
+     "message TestUser hi",
+@@ -56,8 +55,9 @@ mass_valid_commands = [
+     "insult itself",
+     "ltc",
+     "btc",
+-    # TODO: cypher
+-    "roll 2",
++    "cypher mypassword mytext",
++    "decypher mypassword w5rDssOkw4bDq8On",
++    "roll 2d6",
+     "e world",
+     "define world",
+     "domain cloudbot",
+@@ -79,7 +79,7 @@ mass_valid_commands = [
+     # TODO: ignore & imbd & hulu & imgur
+     "imdb",
+     "kernel",
+-    "kill",  # TODO: kill should be in attacks
++    "kill TestUser",  # TODO: kill should be in attacks
+     # TODO: lastfm
+     # TODO: lyrics
+     # TODO: mc
+@@ -109,7 +109,7 @@ mass_valid_commands = [
+     "isup daboross.net",
+     "down asdffdsaasdffdsa.net",
+     "isup asdffdsaasdffdsa.net",
+-    "password",
++    "password 8",
+     "ping dabo.guru",
+     "plpaste admin",
+     "potato Dabo",
+@@ -145,7 +145,7 @@ mass_valid_commands = [
+     # TODO: unescape / escape
+     "reverse racecars",
+     "hash cloudbot",
+-    "lengnth cloudbot",
++    "length cloudbot",
+     "validate dabo.guru",
+     # TODO: valvesounds, vimeo
+     "weather seattle",
+@@ -164,7 +164,7 @@ def test_command_results(conn, test_number, get, send):
+     :type test_number: int
+     """
+     command, expected_result = tested_result_commands[test_number]
+-    send(run_command(conn, send, command))
++    run_command(conn, send, command)
+     result = get()
+     assert re.match(expected_result, result), "{} didn't match {}".format(expected_result, result)
+ 
+diff --git a/qpt_tests/test_admin.py b/qpt_tests/test_admin.py
+index e649b97..66f625c 100644
+--- a/qpt_tests/test_admin.py
++++ b/qpt_tests/test_admin.py
+@@ -18,7 +18,11 @@ def mass_test(conn, send, get):
+     assert re.match(r"PRIVMSG #channel :\(TestUser\) Valid groups: {('\S+', )+'\S+'}", get())
+     for group in conn.permissions.get_groups():
+         run_command(conn, send, "gperms {}".format(group))
+-        assert re.match(r"PRIVMSG #channel :\(TestUser\) Group \S+ has permissions \[('\S+', )*'\S+'\]", get())
++        assert re.match(
++            r"PRIVMSG #channel :\(TestUser\) Group \S+ has permissions \[('\S+', )*'\S+'\]|"
++            r"PRIVMSG #channel :\(TestUser\) Group \S+ exists, but has no permissions",
++            get()
++        )
+         run_command(conn, send, "gusers {}".format(group))
+         assert re.match(
+             r"PRIVMSG #channel :\(TestUser\) Group \S+ has members: \[('\S+', )*'\S+'\]|"
+diff --git a/util/qpt.py b/util/qpt.py
+index 2fa3f10..80a2993 100644
+--- a/util/qpt.py
++++ b/util/qpt.py
+@@ -39,16 +39,18 @@ def print_after(text):
+     print()
+ 
+ 
+-def print_none(text):
+-    pass
+-    print("# " + text)
+-
+-
+ def test(times=1):
+     return lambda func: _test_hook(func, times)
+ 
+ 
+-def run_test(func, bot, conn, input_queue, output_queue):
++def _send(_queue, line):
++    if not line:
++        raise Exception
++    else:
++        _queue.put(line.strip())
++
++
++def run_test(obj_with_shutdown, func, bot, conn, input_queue, output_queue):
+     """
+     :type bot: core.bot.CloudBot
+     :type conn: core.irc.BotConnection
+@@ -62,6 +64,12 @@ def run_test(func, bot, conn, input_queue, output_queue):
+         # each test might want to run multiple times, with the test number as an argument.
+         # We'll treat each of these times as a different test
+ 
++        if obj_with_shutdown.shutdown:
++            return
++
++        while not output_queue.empty():
++            print_before("Removed '{}' from queue.".format(output_queue.get()))
++
+         print_both("Running test {} #{}".format(func._qpt_name, test_number))
+         params = []
+         for arg in func._qpt_args:
+@@ -72,7 +80,7 @@ def run_test(func, bot, conn, input_queue, output_queue):
+             elif arg == "get":
+                 params.append(lambda: output_queue.get(timeout=5))
+             elif arg == "send":
+-                params.append(lambda line: input_queue.put(line))
++                params.append(lambda line: _send(input_queue, line))
+             elif arg == "test_number":
+                 params.append(test_number)
+             else:
+@@ -81,19 +89,16 @@ def run_test(func, bot, conn, input_queue, output_queue):
+         try:
+             func(*params)
+         except queue.Empty:
++            time.sleep(0.1)  # wait 0.1 second before saying results
+             print_before("Test {} #{} Failure: queue get failed".format(func._qpt_name, test_number))
+-            continue
+         except Exception:
++            time.sleep(0.1)  # wait 0.1 second before saying results
+             print_before("Test {} #{} Failure:".format(func._qpt_name, test_number))
+             sys.stdout.flush()
+             traceback.print_exc()
+-            continue
+         else:
++            time.sleep(0.1)  # wait 0.1 second before saying results
+             print_before("Test {} #{} success".format(func._qpt_name, test_number))
+-            continue
+-
+-    # wait 0.5 second between tests
+-    time.sleep(0.5)
+ 
+ 
+ def run_tests(obj_with_shutdown, logger, bot, conn, input_queue, output_queue):
+@@ -120,13 +125,7 @@ def run_tests(obj_with_shutdown, logger, bot, conn, input_queue, output_queue):
+             if obj_with_shutdown.shutdown:
+                 return
+ 
+-            while not output_queue.empty():
+-                print_none("Removed '{}' from queue.".format(output_queue.get()))
+-
+-            run_test(func, bot, conn, input_queue, output_queue)
+-
+-            # wait 1 second between tests
+-            time.sleep(0.5)
++            run_test(obj_with_shutdown, func, bot, conn, input_queue, output_queue)
+ 
+ 
+ def is_enabled():
+-- 
+1.9.2
+

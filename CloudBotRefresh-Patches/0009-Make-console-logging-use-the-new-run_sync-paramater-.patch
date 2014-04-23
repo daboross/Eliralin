@@ -1,0 +1,33 @@
+From c1cab62cc6a1f34fcb612e2c654990f7eeaaa246 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Wed, 23 Apr 2014 10:07:08 -0700
+Subject: [PATCH] Make console logging use the new 'run_sync' paramater, to
+ make sure that logs show up in order (first person saying command, then
+ command result)
+
+I was getting some instances where the logs would show up in the order: command result, person saying command. this fixes that.
+
+diff --git a/modules/log.py b/modules/log.py
+index 390893e..ceced36 100644
+--- a/modules/log.py
++++ b/modules/log.py
+@@ -57,6 +57,7 @@ def beautify(input):
+     args["server"] = input.conn.nice_name  # use the connection name for server
+ 
+     leng = len(args["paraml"])
++
+     for n, p in enumerate(args["paraml"]):
+         args["param" + str(n)] = p
+         args["param_" + str(abs(n - leng))] = p
+@@ -124,7 +125,7 @@ def log(input, bot):
+             channel_log.write(human_readable + '\n')
+ 
+ # Log console separately to prevent lag
+-@hook.event("*")
++@hook.event("*", run_sync=True)
+ def console_log(input, bot):
+     human_readable = beautify(input)
+     bot.logger.info(human_readable)
+-- 
+1.9.2
+
