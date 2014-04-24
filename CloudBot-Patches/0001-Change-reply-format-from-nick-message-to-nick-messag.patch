@@ -1,4 +1,4 @@
-From 12ca488639a96ff9d9679aeab5b791e9f711ebc8 Mon Sep 17 00:00:00 2001
+From e901f66bbb05c9d9f572eb1290c14a7e0da87165 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 18:58:30 -0800
 Subject: [PATCH] Change reply format from `(<nick>) <message>` to `<nick>,
