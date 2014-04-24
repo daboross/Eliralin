@@ -1,4 +1,4 @@
-From 45175303c9b3623b2f2bc102c5df29bd1fa9f340 Mon Sep 17 00:00:00 2001
+From 9bc9f5103a86e1e9688eab924264bc19790c95c1 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 19:09:15 -0800
 Subject: [PATCH] Don't run regex matching if command is already matched
