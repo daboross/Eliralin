@@ -1,4 +1,4 @@
-From 21ee4d99fcd927858f58cc8e0c131ddd73a28ae2 Mon Sep 17 00:00:00 2001
+From 8e36dd4ff98af7df95b8b3e38f3d47f73129c77f Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 23 Apr 2014 16:42:08 -0700
 Subject: [PATCH] Add a has_run attribute to Plugin for use in determining test
@@ -6,10 +6,10 @@ Subject: [PATCH] Add a has_run attribute to Plugin for use in determining test
 
 
 diff --git a/core/main.py b/core/main.py
-index 54beeb5..bc819e2 100644
+index d976dab..6efec1f 100644
 --- a/core/main.py
 +++ b/core/main.py
-@@ -255,6 +255,8 @@ def dispatch(bot, input, plugin):
+@@ -285,6 +285,8 @@ def dispatch(bot, input, plugin):
              input.notice(input.conn.config["command_prefix"] + plugin.name + " requires additional arguments.")
          return
  
@@ -19,10 +19,10 @@ index 54beeb5..bc819e2 100644
          run(bot, plugin, input)  # make sure the event runs in sync, *before* commands and regexes are run
          # TODO: Possibly make this run in the command's/regex's own thread, or make all of 'main' run async?
 diff --git a/core/pluginmanager.py b/core/pluginmanager.py
-index ad11014..ed3ebab 100644
+index 3da1ccc..d454a11 100644
 --- a/core/pluginmanager.py
 +++ b/core/pluginmanager.py
-@@ -270,6 +270,7 @@ class Plugin:
+@@ -279,6 +279,7 @@ class Plugin:
          self.function = func_hook.function
          self.function_name = self.function.__name__
          self.args = func_hook.kwargs
