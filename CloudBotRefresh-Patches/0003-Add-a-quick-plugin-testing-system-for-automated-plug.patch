@@ -1,4 +1,4 @@
-From 25499a4c20a4c62318976ec1f2a80962dd114941 Mon Sep 17 00:00:00 2001
+From 2ad42cef6d62efe328d19d0ef4dbfe8742e0feeb Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 22 Apr 2014 21:34:42 -0700
 Subject: [PATCH] Add a "quick" plugin testing system, for automated plugin

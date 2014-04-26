@@ -1,4 +1,4 @@
-From 80cfb8e172ba83429be19450be112a5b0ed4427b Mon Sep 17 00:00:00 2001
+From 8dd2f50c7671163e483e96f82853016a878b030d Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 23 Apr 2014 16:42:47 -0700
 Subject: [PATCH] Add a few qpt tests:
@@ -9,18 +9,14 @@ Subject: [PATCH] Add a few qpt tests:
 
 diff --git a/qpt_tests/mass.py b/qpt_tests/mass.py
 new file mode 100644
-index 0000000..de39488
+index 0000000..96e4a82
 --- /dev/null
 +++ b/qpt_tests/mass.py
-@@ -0,0 +1,281 @@
+@@ -0,0 +1,280 @@
 +import re
 +
 +from util import qpt
 +
-+
-+def run_command(conn, send, text):
-+    send(":TestUser!~user@example.com PRIVMSG #channel :"
-+         + conn.config.get("command_prefix") + text)
 +
 +# this is a list of commands to run, and the expected result
 +tested_result_commands = [
@@ -96,10 +92,10 @@ index 0000000..de39488
 +    "drama world",
 +    # eightball.py
 +    "8 ?",
-+    # encrypt.py - TODO
++    # encrypt.py - test_encrypt.py
 +    # fact.py
 +    "fact",
-+    # factoids.py - TODO
++    # factoids.py - test_factoids.py
 +    # fishbans.py
 +    "bancount notch",
 +    "bancount daboross",
@@ -127,7 +123,8 @@ index 0000000..de39488
 +    # hulu.py - TODO
 +    # ignore.py - TODO
 +    # imdb.py - TODO
-+    # imgur.py - TODO
++    # imgur.py
++    "imgur",
 +    # kernel.py
 +    "kernel",
 +    # kill.py
@@ -200,6 +197,9 @@ index 0000000..de39488
 +    "qr dabo.guru",
 +    # quote.py - TODO
 +    # rdio.py - TODO
++    # recipe.py
++    "dinner",
++    "recipe",
 +    # reddit.py - TODO
 +    # rottentomatoes.py - TODO
 +    # rss.py - TODO
@@ -278,59 +278,95 @@ index 0000000..de39488
 +
 +
 +@qpt.test(times=len(tested_result_commands))
-+def test_command_results(conn, test_number, get, send):
++def test_command_results(test_number, run_command, get):
 +    """
-+    :type conn: core.irc.BotConnection
 +    :type test_number: int
 +    """
 +    command, expected_result = tested_result_commands[test_number]
-+    run_command(conn, send, command)
++    run_command(command)
 +    result = get()
 +    assert re.match(expected_result, result), "{} didn't match {}".format(expected_result, result)
 +
 +
 +@qpt.test(times=len(mass_valid_commands))
-+def mass_test(conn, send, test_number, get):
-+    run_command(conn, send, mass_valid_commands[test_number])
++def mass_test(test_number, run_command, get):
++    run_command(mass_valid_commands[test_number])
 +    # get an result, even if it isn't used.
 +    get()
 diff --git a/qpt_tests/test_admin.py b/qpt_tests/test_admin.py
 new file mode 100644
-index 0000000..66f625c
+index 0000000..7c648d8
 --- /dev/null
 +++ b/qpt_tests/test_admin.py
-@@ -0,0 +1,31 @@
+@@ -0,0 +1,26 @@
 +import re
 +
 +from util.qpt import test
 +
 +
-+def run_command(conn, send, text):
-+    send(":TestUser!~user@example.com PRIVMSG #channel :"
-+         + conn.config.get("command_prefix") + text)
-+
-+
 +@test()
-+def mass_test(conn, send, get):
++def mass_test(run_command, conn, get):
 +    """
 +    :type conn: core.irc.BotConnection
 +    """
 +    conn.permissions.add_user_to_group("TestUser!~user@example.com", "admins")
-+    run_command(conn, send, "groups")
++    run_command("groups")
 +    assert re.match(r"PRIVMSG #channel :\(TestUser\) Valid groups: {('\S+', )+'\S+'}", get())
 +    for group in conn.permissions.get_groups():
-+        run_command(conn, send, "gperms {}".format(group))
++        run_command("gperms {}".format(group))
 +        assert re.match(
 +            r"PRIVMSG #channel :\(TestUser\) Group \S+ has permissions \[('\S+', )*'\S+'\]|"
 +            r"PRIVMSG #channel :\(TestUser\) Group \S+ exists, but has no permissions",
 +            get()
 +        )
-+        run_command(conn, send, "gusers {}".format(group))
++        run_command("gusers {}".format(group))
 +        assert re.match(
 +            r"PRIVMSG #channel :\(TestUser\) Group \S+ has members: \[('\S+', )*'\S+'\]|"
 +            r"PRIVMSG #channel :\(TestUser\) Group \S+ exists, but has no members",
 +            get()
 +        )
+diff --git a/qpt_tests/test_encrypt.py b/qpt_tests/test_encrypt.py
+new file mode 100644
+index 0000000..0e4758d
+--- /dev/null
++++ b/qpt_tests/test_encrypt.py
+@@ -0,0 +1,11 @@
++import re
++from util import qpt
++
++@qpt.test()
++def test_encrypt(run_command, get):
++    run_command("encrypt mypass mytext")
++    match = re.match(r"PRIVMSG #channel :\(TestUser\) (.+)", get())
++    assert match
++    assert match.groups()
++    run_command("decrypt mypass {}".format(match.groups()[0]))
++    assert re.match(r"PRIVMSG #channel :\(TestUser\) mytext", get())
+\ No newline at end of file
+diff --git a/qpt_tests/test_factoids.py b/qpt_tests/test_factoids.py
+new file mode 100644
+index 0000000..e0302ef
+--- /dev/null
++++ b/qpt_tests/test_factoids.py
+@@ -0,0 +1,17 @@
++import re
++
++from util import qpt
++
++
++@qpt.test()
++def test_factoids(run_command, send, get):
++    run_command("r qpttest qpttestcode")
++    get()
++    send(":TestUser!~user@example.com PRIVMSG #channel :?qpttest")
++    assert re.match(r"PRIVMSG #channel :qpttestcode", get())
++
++    run_command("f qpttestcode")
++    get()
++
++    run_command("listfactoids")
++    get()
+\ No newline at end of file
 diff --git a/qpt_tests/z_print.py b/qpt_tests/z_print.py
 new file mode 100644
 index 0000000..24359a6
