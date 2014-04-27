@@ -1,4 +1,4 @@
-From 2ad42cef6d62efe328d19d0ef4dbfe8742e0feeb Mon Sep 17 00:00:00 2001
+From aded18a76fdfcb36972c19a9d507973068e56e72 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 22 Apr 2014 21:34:42 -0700
 Subject: [PATCH] Add a "quick" plugin testing system, for automated plugin
@@ -7,18 +7,18 @@ Subject: [PATCH] Add a "quick" plugin testing system, for automated plugin
 The quick plugin testing, or "qpt", can be enabled with the "--qpt" command line argument.
 
 diff --git a/core/irc.py b/core/irc.py
-index 444bd57..ce5d652 100644
+index 72e380c..0ce99f8 100644
 --- a/core/irc.py
 +++ b/core/irc.py
-@@ -5,6 +5,7 @@ import threading
+@@ -6,6 +6,7 @@ import threading
  import queue
- from ssl import wrap_socket, CERT_NONE, CERT_REQUIRED, SSLError
+ from ssl import wrap_socket, CERT_NONE, CERT_REQUIRED
  
 +from util import qpt
  from core.permissions import PermissionManager
  
  irc_prefix_rem = re.compile(r'(.*?) (.*?) (.*)').match
-@@ -227,6 +228,49 @@ class IRCConnection(object):
+@@ -210,6 +211,49 @@ class IRCConnection(object):
          self.connect()
  
  
@@ -68,22 +68,19 @@ index 444bd57..ce5d652 100644
  class BotConnection(object):
      """ A BotConnection represents each connection the bot makes to an IRC server
      :type bot: core.bot.CloudBot
-@@ -296,9 +340,12 @@ class BotConnection(object):
-         # create permissions manager
+@@ -279,7 +323,11 @@ class BotConnection(object):
          self.permissions = PermissionManager(self)
  
--        # create the IRC connection
--        self.connection = IRCConnection(self.bot.logger, self.name, self.server, self.port, self.input_queue,
--                                        self.output_queue, self.ssl)
-+        # create the IRC connection and connect
+         # create the IRC connection
+-        self.connection = IRCConnection(self)
 +        if qpt.is_enabled():
 +            self.connection = QptIRCConnection(self)
 +        else:
-+            self.connection = IRCConnection(self.bot.logger, self.name, self.server, self.port, self.input_queue,
-+                                            self.output_queue, self.ssl)
++            self.connection = IRCConnection(self)
++
  
-         # create the parse_thread, to be started in connect()
-         self.parse_thread = ParseThread(self.input_queue, self.output_queue, self.parsed_queue)
+         self.connected = False
+ 
 diff --git a/qpt_tests/__init__.py b/qpt_tests/__init__.py
 new file mode 100644
 index 0000000..e69de29

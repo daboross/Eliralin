@@ -1,4 +1,4 @@
-From 66748db247f6d83bdd74e6d854d242b2266d40c9 Mon Sep 17 00:00:00 2001
+From 8e60a4af3788745dc677d9a8f90ad352005169be Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 26 Apr 2014 14:52:22 -0700
 Subject: [PATCH] Make input.server equal to conn.name rather than conn.server.
