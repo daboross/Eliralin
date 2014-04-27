@@ -1,4 +1,4 @@
-From ef14c8f2ad4d330b54e1006664ffe9235b2c3d77 Mon Sep 17 00:00:00 2001
+From 7f1326a70c52c22a4c4173d9ba3d032bf89fa45f Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 22 Apr 2014 21:34:42 -0700
 Subject: [PATCH] Add a "quick" plugin testing system, for automated plugin
@@ -7,7 +7,7 @@ Subject: [PATCH] Add a "quick" plugin testing system, for automated plugin
 The quick plugin testing, or "qpt", can be enabled with the "--qpt" command line argument.
 
 diff --git a/core/irc.py b/core/irc.py
-index 542bf77..1a7acec 100644
+index cb48303..85d2a39 100644
 --- a/core/irc.py
 +++ b/core/irc.py
 @@ -6,6 +6,7 @@ import threading
