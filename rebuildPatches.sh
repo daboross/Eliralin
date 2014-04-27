@@ -22,8 +22,8 @@ function cleanupPatches {
 }
 
 function savePatches {
-    what=$1
-    target=$2
+    local what=$1
+    local target=$2
     cd "$basedir/$target"
     git format-patch --no-stat -N -o "$basedir/${what}-Patches/" upstream/upstream
     cd "$basedir"

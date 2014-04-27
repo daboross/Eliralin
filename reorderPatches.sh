@@ -1,7 +1,8 @@
 #!/bin/bash
-
-cleanPatches() {
-    cd "${1}-Patches"
+basedir=`pwd`
+function cleanPatches {
+    local target="$1"
+    cd "$basedir/$target-Patches"
     local -i NUM=1
     for NAME in *; do
         NAME_WITHOUT="${NAME:4}"
@@ -14,7 +15,6 @@ cleanPatches() {
         fi
         NUM="$((NUM + 1))"
     done
-    cd ../
 }
 cleanPatches CloudBot
 cleanPatches CloudBotRefresh

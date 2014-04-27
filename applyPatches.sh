@@ -4,22 +4,27 @@ basedir=`pwd`
 echo "Rebuilding Forked projects.... "
 
 function applyPatch {
-    what=$1
-    target=$2
+    local what=$1
+    local target=$2
+    local branch=$3
+
     cd "$basedir/$what"
-    git branch -f upstream >/dev/null
+
+    git branch -f $branch > /dev/null
 
     cd "$basedir"
-    if [ ! -d  "$basedir/$target" ]; then
-        git clone $1 $target -b upstream
+
+    if [[ ! -d  "$basedir/$target" ]]; then
+        git clone $1 $target -b $branch -o upstream
     fi
+
     cd "$basedir/$target"
+
     echo "Resetting $target to $what..."
-    git remote rm upstream 2>/dev/null 2>&1
-    git remote add upstream ../$what >/dev/null 2>&1
-    git checkout master >/dev/null 2>&1
-    git fetch upstream >/dev/null 2>&1
-    git reset --hard upstream/upstream
+    git checkout $branch &> /dev/null
+    git fetch upstream &> /dev/null
+    git reset --hard upstream/$branch
+
     echo "  Applying patches to $target..."
     git am --abort
     git am --3way "$basedir/${what}-Patches/"*.patch
@@ -27,11 +32,11 @@ function applyPatch {
         echo "  Something did not apply cleanly to $target."
         echo "  Please review above details and finish the apply then"
         echo "  save the changes with rebuildPatches.sh"
-        exit 1
+        return 1
     else
         echo "  Patches applied cleanly to $target"
     fi
 }
 
-applyPatch CloudBot Eliralin
-applyPatch CloudBotRefresh EliralinRefresh
+applyPatch CloudBot Eliralin develop
+applyPatch CloudBotRefresh EliralinRefresh refresh
