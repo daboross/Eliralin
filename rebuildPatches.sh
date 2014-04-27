@@ -24,8 +24,9 @@ function cleanupPatches {
 function savePatches {
     local what=$1
     local target=$2
+    local branch=$3
     cd "$basedir/$target"
-    git format-patch --no-stat -N -o "$basedir/${what}-Patches/" upstream/upstream
+    git format-patch --no-stat -N -o "$basedir/${what}-Patches/" upstream/$branch
     cd "$basedir"
     git add -A
     git add "$basedir/${what}-Patches"
@@ -33,5 +34,5 @@ function savePatches {
     echo "  Patches saved for $what to $what-Patches/"
 }
 
-savePatches CloudBot Eliralin
-savePatches CloudBotRefresh EliralinRefresh
+savePatches CloudBot Eliralin develop
+savePatches CloudBotRefresh EliralinRefresh slay-the-beast
