@@ -1,0 +1,61 @@
+From 2dd142932ff7f309ff7a8cd83f31bf5755a5ae1c Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Sun, 27 Apr 2014 14:32:55 -0700
+Subject: [PATCH] Add thread dump module
+
+
+diff --git a/modules/threaddump.py b/modules/threaddump.py
+new file mode 100644
+index 0000000..67e2923
+--- /dev/null
++++ b/modules/threaddump.py
+@@ -0,0 +1,46 @@
++import os
++import threading
++import traceback
++import _thread
++import sys
++
++from util import hook, web
++
++
++def get_thread_dump():
++    code = []
++    threads = [(thread_id, traceback.extract_stack(stack)) for thread_id, stack in sys._current_frames().items()]
++    current_dir = os.path.abspath(".")
++    current_thread_id = threading.current_thread()._ident
++    for thread_id, stack in threads:
++        if thread_id == current_thread_id:
++            code.append("# ThreadID: {} -- Current thread".format(thread_id))
++        else:
++            code.append("# ThreadID: {}".format(thread_id))
++        for filename, lineno, name, line in stack:
++            assert isinstance(filename, str)
++            if filename.startswith(current_dir):
++                filename = "..." + filename[len(current_dir):]
++            code.append("File: '{}', line {}, in {}".format(filename, lineno, name))
++            if line:
++                code.append("  {}".format(line.strip()))
++        code.append("")  # new line
++    return web.haste("\n".join(code), ext='txt')
++
++
++@hook.command(autohelp=False, permissions=["botcontrol"])
++def threaddump(reply):
++    reply("Running thread dump")
++    return "Thread dump located at {}".format(get_thread_dump())
++
++
++@hook.onload()
++def start_watch_thread():
++    _thread.start_new_thread(input_watch_thread, ())
++
++
++def input_watch_thread():
++    while True:
++        input()
++        print("Running thread dump")
++        print("Thread dump located at {}".format(get_thread_dump()))
+-- 
+1.9.2
+

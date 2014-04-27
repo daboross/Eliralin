@@ -1,4 +1,4 @@
-From e818db8f6e920145d094298e94fb8403e41f4021 Mon Sep 17 00:00:00 2001
+From c6413e41db49e4c2c9d78060e91d9506bcb650b0 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:19:10 -0800
 Subject: [PATCH] Create eliralin_utility.py for extras
@@ -6,16 +6,14 @@ Subject: [PATCH] Create eliralin_utility.py for extras
 
 diff --git a/modules/eliralin_utility.py b/modules/eliralin_utility.py
 new file mode 100644
-index 0000000..7314659
+index 0000000..6de03eb
 --- /dev/null
 +++ b/modules/eliralin_utility.py
-@@ -0,0 +1,133 @@
+@@ -0,0 +1,118 @@
 +from random import random
 +import socket
-+import sys
-+import traceback
 +
-+from util import hook, web
++from util import hook
 +
 +
 +@hook.command(["josephus", "jose"])
@@ -93,19 +91,6 @@ index 0000000..7314659
 +        current = func(current)
 +
 +    message((spaces - 1) * ' ' + ('----' if len(type_input[1]) % 2 == 0 else '---'))
-+
-+
-+@hook.command(permissions=["permissions"])
-+def threaddump():
-+    print("Running thread dump")
-+    code = []
-+    for threadId, stack in sys._current_frames().items():
-+        code.append("\n# ThreadID: %s" % threadId)
-+        for filename, lineno, name, line in traceback.extract_stack(stack):
-+            code.append('File: "%s", line %d, in %s' % (filename, lineno, name))
-+            if line:
-+                code.append("  %s" % (line.strip()))
-+    return "Thread dump located at {}".format(web.haste("\n".join(code), ext='txt'))
 +
 +
 +@hook.command

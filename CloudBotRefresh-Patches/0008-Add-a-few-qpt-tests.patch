@@ -1,4 +1,4 @@
-From 115bb8871408771ea004fb326611cbd5700dd986 Mon Sep 17 00:00:00 2001
+From cb3351132196aa0ebcc9d34fe2c7663907216a51 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 23 Apr 2014 16:42:47 -0700
 Subject: [PATCH] Add a few qpt tests:

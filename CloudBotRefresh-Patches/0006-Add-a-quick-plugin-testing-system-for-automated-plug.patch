@@ -1,4 +1,4 @@
-From 8d943e80b70839ba9a8d78df34050ba12ca98144 Mon Sep 17 00:00:00 2001
+From 666ceaf26eae715b5c0873fce23f8f1185d25e1d Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 22 Apr 2014 21:34:42 -0700
 Subject: [PATCH] Add a "quick" plugin testing system, for automated plugin
@@ -86,10 +86,10 @@ new file mode 100644
 index 0000000..e69de29
 diff --git a/util/qpt.py b/util/qpt.py
 new file mode 100644
-index 0000000..69d63d1
+index 0000000..f58c71b
 --- /dev/null
 +++ b/util/qpt.py
-@@ -0,0 +1,132 @@
+@@ -0,0 +1,139 @@
 +import glob
 +import importlib
 +import inspect
@@ -142,6 +142,11 @@ index 0000000..69d63d1
 +        _queue.put(line.strip())
 +
 +
++def _run_command(conn, _queue, text):
++    _send(_queue, ":TestUser!~user@example.com PRIVMSG #channel :"
++                  + conn.config.get("command_prefix") + text)
++
++
 +def run_test(obj_with_shutdown, func, bot, conn, input_queue, output_queue):
 +    """
 +    :type bot: core.bot.CloudBot
@@ -173,6 +178,8 @@ index 0000000..69d63d1
 +                params.append(lambda: output_queue.get(timeout=5))
 +            elif arg == "send":
 +                params.append(lambda line: _send(input_queue, line))
++            elif arg == "run_command":
++                params.append(lambda text: _run_command(conn, input_queue, text))
 +            elif arg == "test_number":
 +                params.append(test_number)
 +            else:
