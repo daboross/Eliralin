@@ -7,4 +7,4 @@ function update {
     git add "$1"
 }
 update CloudBot develop
-update CloudBotRefresh refresh
+update CloudBotRefresh slay-the-beast

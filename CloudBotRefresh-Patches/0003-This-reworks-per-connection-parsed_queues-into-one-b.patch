@@ -1,0 +1,263 @@
+From d6feeaba1689d8564491fe0ce78238ad9cd30234 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Sun, 27 Apr 2014 13:59:53 -0700
+Subject: [PATCH] This reworks per-connection parsed_queues into one
+ bot.queued_messages queue.
+
+List of all changes:
+
+- Renames cloudbot.start_bot() to cloudbot.start(), and makes it start IRC connections there as well
+- Reworks the main cloudbot loop in cloudbot.start() to just use self.queued_messages.get() instead of looping through connections
+- Since the start() method will hang until a new message is recieved, the bot will now put StopIteration into self.queued_messages after bot.stop() is called
+- Since there's only one queue, messages now have a "conn" key, which contains the BotConnection that they came from.
+- Instead of sending StopIteration, the IRC thread will send {"conn": BotConnection, "reconnect": True} (a dict) to signify that it needs to be restarted
+- IRCConnection and RecieveThread now have a 'botconn' attribute that is the BotConnection they are associated with. They need to know this in order to send messages to the bot.parsed_messages queue containing the BotConnection object
+- main.main now takes parameters (bot, input_params) instead of (bot, conn, input_params) because input_params has a conn value in it.
+
+diff --git a/cloudbot.py b/cloudbot.py
+index a1df700..64569c0 100755
+--- a/cloudbot.py
++++ b/cloudbot.py
+@@ -46,7 +46,7 @@ def main():
+ 
+     while True:
+         # start the bot master
+-        cloudbot.start_bot()
++        cloudbot.start()
+ 
+         if cloudbot.do_restart:
+             # if cloudbot should restart, create a new bot object
+diff --git a/core/bot.py b/core/bot.py
+index 997cd67..3041ed9 100644
+--- a/core/bot.py
++++ b/core/bot.py
+@@ -86,6 +86,13 @@ class CloudBot:
+         self.running = True
+         self.do_restart = False
+ 
++        # stores all queued messages from all connections
++        self.queued_messages = queue.Queue()
++        # format: [{
++        #   "conn": BotConnection, "raw": str, "prefix": str, "command": str, "params": str, "nick": str,
++        #   "user": str, "host": str, "mask": str, "paramlist": list[str], "lastparam": str
++        # }]
++
+         # stores each bot server connection
+         self.connections = []
+ 
+@@ -126,29 +133,36 @@ class CloudBot:
+ 
+         self.loader = PluginLoader(self)
+ 
++    def start(self):
++        """
++        Starts CloudBot.
++        This method first connects all of the IRC conections, then receives input from the IRC engine and processes it
++        """
+         # start connections
+-        self.connect()
++        for conn in self.connections:
++            conn.connect()
+ 
+-    def start_bot(self):
+-        """receives input from the IRC engine and processes it"""
+         self.logger.info("Starting main thread.")
+         while self.running:
+-            for connection in self.connections:
+-                try:
+-                    incoming_parameters = connection.parsed_queue.get_nowait()
+-                    if incoming_parameters == StopIteration:
+-                        print("StopIteration")
+-                        # IRC engine has signalled timeout, so reconnect (ugly)
+-                        connection.connection.reconnect()
+-                        # don't send main StopIteration, it can't handle it
+-                        continue
+-                    main.main(self, connection, incoming_parameters)
+-                except queue.Empty:
+-                    pass
+-
+-            # if no messages are in the incoming queue, sleep
+-            while self.running and all(connection.parsed_queue.empty() for connection in self.connections):
+-                time.sleep(.1)
++            # This method will block until a new message is recieved.
++            message = self.queued_messages.get()
++
++            if not self.running:
++                # When the bot is stopped, StopIteration is put into the queue to make sure that
++                # self.queued_messages.get() doesn't block this thread forever.
++                # But we don't actually want to process that message, so if we're stopped, just exit.
++                return
++
++            if "reconnect" in message and message["reconnect"]:
++                # The IRC engine will put {"reconnect": True, "conn": BotConnection} into the message queue when the
++                # connection times out, and it needs to be restarted. We'll do that.
++                connection = message["conn"]
++                self.logger.info("[{}] Reconnecting to IRC server".format(connection.readable_name))
++                connection.connection.reconnect()
++                # We've dealt with this message, no need to send it to main
++                continue
++
++            main.main(self, message)
+ 
+     def create_connections(self):
+         """ Create a BotConnection for all the networks defined in the config """
+@@ -168,11 +182,6 @@ class CloudBot:
+                                                       readable_name=readable_name))
+             self.logger.debug("[{}] Created connection.".format(readable_name))
+ 
+-    def connect(self):
+-        """ Connects each BotConnection to it's irc server """
+-        for conn in self.connections:
+-            conn.connect()
+-
+     def stop(self, reason=None):
+         """quits all networks and shuts the bot down"""
+         self.logger.info("Stopping bot.")
+@@ -198,6 +207,10 @@ class CloudBot:
+             self.logger.debug("Stopping logging engine")
+             logging.shutdown()
+         self.running = False
++        # We need to make sure that the main loop actually exists after this method is called. This will ensure that the
++        # blocking queued_messages.get() method is executed, then the method will stop without processing it because
++        # self.running = False
++        self.queued_messages.put(StopIteration)
+ 
+     def restart(self, reason=None):
+         """shuts the bot down and restarts it"""
+diff --git a/core/irc.py b/core/irc.py
+index 72e380c..542bf77 100644
+--- a/core/irc.py
++++ b/core/irc.py
+@@ -37,7 +37,8 @@ class ReceiveThread(threading.Thread):
+     :type logger: logging.Logger
+     :type readable_name: str
+     :type output_queue: queue.Queue
+-    :type parsed_queue: queue.Queue
++    :type message_queue: queue.Queue
++    :type botconn: BotConnection
+     :type shutdown: bool
+     """
+ 
+@@ -51,7 +52,8 @@ class ReceiveThread(threading.Thread):
+         self.logger = ircconn.logger
+         self.readable_name = ircconn.readable_name
+         self.output_queue = ircconn.output_queue
+-        self.parsed_queue = ircconn.parsed_queue
++        self.message_queue = ircconn.message_queue
++        self.botconn = ircconn.botconn
+ 
+         self.shutdown = False
+         threading.Thread.__init__(self)
+@@ -61,7 +63,7 @@ class ReceiveThread(threading.Thread):
+ 
+     def handle_receive_exception(self, error, last_timestamp):
+         if time.time() - last_timestamp > self.timeout:
+-            self.parsed_queue.put(StopIteration)
++            self.message_queue.put({"conn": self.botconn, "reconnect": True})
+             self.socket.close()
+             return True
+         return False
+@@ -76,7 +78,7 @@ class ReceiveThread(threading.Thread):
+                     last_timestamp = time.time()
+                 else:
+                     if time.time() - last_timestamp > self.timeout:
+-                        self.parsed_queue.put(StopIteration)
++                        self.message_queue.put({"conn": self.botconn, "reconnect": True})
+                         self.socket.close()
+                         return
+                     time.sleep(1)
+@@ -104,9 +106,10 @@ class ReceiveThread(threading.Thread):
+                         paramlist[-1] = paramlist[-1][1:]
+                     lastparam = paramlist[-1]
+                 # put the parsed message in the response queue
+-                self.parsed_queue.put({
+-                    "raw": msg, "prefix": prefix, "command": command, "params": params, "nick": nick, "user": user,
+-                    "host": host, "mask": mask, "paramlist": paramlist, "lastparam": lastparam
++                self.message_queue.put({
++                    "conn": self.botconn, "raw": msg, "prefix": prefix, "command": command, "params": params,
++                    "nick": nick, "user": user, "host": host, "mask": mask, "paramlist": paramlist,
++                    "lastparam": lastparam
+                 })
+                 # if the server pings us, pong them back
+                 if command == "PING":
+@@ -144,7 +147,8 @@ class IRCConnection(object):
+     :type port: int
+     :type ssl: bool
+     :type output_queue: queue.Queue
+-    :type parsed_queue: queue.Queue
++    :type message_queue: queue.Queue
++    :type botconn: BotConnection
+     :type ignore_cert_errors: bool
+     :type timeout: int
+     :type socket: socket.socket
+@@ -163,7 +167,8 @@ class IRCConnection(object):
+         self.port = conn.port
+         self.ssl = conn.ssl
+         self.output_queue = conn.output_queue  # lines to be sent out
+-        self.parsed_queue = conn.parsed_queue  # parsed lines that were recieved
++        self.message_queue = conn.message_queue  # global queue for parsed lines that were recieved
++        self.botconn = conn
+ 
+         self.ignore_cert_errors = ignore_cert_errors
+         self.timeout = timeout
+@@ -268,9 +273,7 @@ class BotConnection(object):
+         self.vars = {}
+         self.history = {}
+ 
+-        self.parsed_queue = queue.Queue()  # responses from the server are placed here
+-        # format: [raw, prefix, command, params,
+-        # nick, user, host, mask, paramlist, lastparam]
++        self.message_queue = bot.queued_messages  # global parsed message queue, for parsed recieved messages
+ 
+         self.input_queue = queue.Queue()
+         self.output_queue = queue.Queue()
+diff --git a/core/main.py b/core/main.py
+index 8dbbe4d..44ae36c 100644
+--- a/core/main.py
++++ b/core/main.py
+@@ -308,21 +308,20 @@ def dispatch(bot, input, plugin):
+         _thread.start_new_thread(run, (bot, plugin, input))
+ 
+ 
+-def main(bot, conn, input_params):
++def main(bot, input_params):
+     """
+     :type bot: core.bot.CloudBot
+-    :type conn: core.irc.BotConnection
+-    :type input_params: dict[str, unknown]
++    :type input_params: dict[str, core.irc.BotConnection | str | list[str]]
+     """
+-    inp = Input(bot=bot, conn=conn, **input_params)
+-    command_prefix = conn.config.get('command_prefix', '.')
++    inp = Input(bot=bot, **input_params)
++    command_prefix = input_params["conn"].config.get('command_prefix', '.')
+ 
+     # EVENTS
+     if inp.command in bot.plugin_manager.events:
+         for event_plugin in bot.plugin_manager.events[inp.command]:
+-            dispatch(bot, Input(bot=bot, conn=conn, **input_params), event_plugin)
++            dispatch(bot, Input(bot=bot, **input_params), event_plugin)
+     for event_plugin in bot.plugin_manager.catch_all_events:
+-        dispatch(bot, Input(bot=bot, conn=conn, **input_params), event_plugin)
++        dispatch(bot, Input(bot=bot, **input_params), event_plugin)
+ 
+     if inp.command == 'PRIVMSG':
+         # COMMANDS
+@@ -339,12 +338,12 @@ def main(bot, conn, input_params):
+             command = match.group(1).lower()
+             if command in bot.plugin_manager.commands:
+                 plugin = bot.plugin_manager.commands[command]
+-                input = Input(bot=bot, conn=conn, text=match.group(2).strip(), trigger=command, **input_params)
++                input = Input(bot=bot, text=match.group(2).strip(), trigger=command, **input_params)
+                 dispatch(bot, input, plugin)
+ 
+         # REGEXES
+         for regex, plugin in bot.plugin_manager.regex_plugins:
+             match = regex.search(inp.lastparam)
+             if match:
+-                input = Input(bot=bot, conn=conn, match=match, **input_params)
++                input = Input(bot=bot, match=match, **input_params)
+                 dispatch(bot, input, plugin)
+-- 
+1.9.2
+

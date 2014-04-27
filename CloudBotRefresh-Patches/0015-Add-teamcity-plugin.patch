@@ -1,4 +1,4 @@
-From d685b2ceafc2b63f258b9bf2c21742526e10141a Mon Sep 17 00:00:00 2001
+From 48efb72fb9f14ac03877c2fb697b531f7f7aad3b Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 18 Jan 2014 03:22:17 -0800
 Subject: [PATCH] Add teamcity plugin

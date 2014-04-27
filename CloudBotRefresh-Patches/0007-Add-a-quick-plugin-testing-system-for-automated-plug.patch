@@ -1,4 +1,4 @@
-From 666ceaf26eae715b5c0873fce23f8f1185d25e1d Mon Sep 17 00:00:00 2001
+From ef14c8f2ad4d330b54e1006664ffe9235b2c3d77 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 22 Apr 2014 21:34:42 -0700
 Subject: [PATCH] Add a "quick" plugin testing system, for automated plugin
@@ -7,7 +7,7 @@ Subject: [PATCH] Add a "quick" plugin testing system, for automated plugin
 The quick plugin testing, or "qpt", can be enabled with the "--qpt" command line argument.
 
 diff --git a/core/irc.py b/core/irc.py
-index 72e380c..0ce99f8 100644
+index 542bf77..1a7acec 100644
 --- a/core/irc.py
 +++ b/core/irc.py
 @@ -6,6 +6,7 @@ import threading
@@ -18,7 +18,7 @@ index 72e380c..0ce99f8 100644
  from core.permissions import PermissionManager
  
  irc_prefix_rem = re.compile(r'(.*?) (.*?) (.*)').match
-@@ -210,6 +211,49 @@ class IRCConnection(object):
+@@ -215,6 +216,49 @@ class IRCConnection(object):
          self.connect()
  
  
@@ -68,7 +68,7 @@ index 72e380c..0ce99f8 100644
  class BotConnection(object):
      """ A BotConnection represents each connection the bot makes to an IRC server
      :type bot: core.bot.CloudBot
-@@ -279,7 +323,11 @@ class BotConnection(object):
+@@ -282,7 +326,11 @@ class BotConnection(object):
          self.permissions = PermissionManager(self)
  
          # create the IRC connection

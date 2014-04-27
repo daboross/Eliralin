@@ -1,4 +1,4 @@
-From b97e9a58b86423be6342f5df65e812b149b057f4 Mon Sep 17 00:00:00 2001
+From 4ae335c1e5399706113fbd4bd814e99b25d7233e Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 27 Apr 2014 12:24:10 -0700
 Subject: [PATCH] Documentation, also simplify SendThread. I'm seriously
