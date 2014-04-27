@@ -1,22 +1,22 @@
-From d81ce1d84140f4c6e5ba71985ca51b8f85aa8a8e Mon Sep 17 00:00:00 2001
+From 61918794feaed41054cea6e12f353176588f9b0c Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 26 Apr 2014 19:49:34 -0700
 Subject: [PATCH] Add more dinner phrases
 
 
 diff --git a/modules/recipe.py b/modules/recipe.py
-index d4ef996..918daf3 100644
+index d4ef996..5f7b742 100644
 --- a/modules/recipe.py
 +++ b/modules/recipe.py
 @@ -17,6 +17,11 @@ phrases = [
      "WHY DON'T YOU EAT SOME FUCKING \x02{}?\x02",
      "MAKE SOME FUCKING \x02{}\x02",
      "INDUCE FOOD COMA WITH SOME FUCKING \x02{}\x02"
-+    u"CLASSILY PARTAKE IN SOME FUCKING \x02{}\x02",
-+    u"COOK UP SOME FUCKING \x02{}\x02",
-+    u"CURE YOUR MOUTH'S POST TRAUMATIC STRESS DISORDER WITH SOME FUCKING \x02{}\x02",
-+    u"PROCURE SOME CHILD LABOR TO COOK UP SOME FUCKING \x02{}\x02",
-+    u"YOUR INDECISION IS FAR LESS APPETIZING THAN SOME FUCKING \x02{}\x02"
++    "CLASSILY PARTAKE IN SOME FUCKING \x02{}\x02",
++    "COOK UP SOME FUCKING \x02{}\x02",
++    "CURE YOUR MOUTH'S POST TRAUMATIC STRESS DISORDER WITH SOME FUCKING \x02{}\x02",
++    "PROCURE SOME CHILD LABOR TO COOK UP SOME FUCKING \x02{}\x02",
++    "YOUR INDECISION IS FAR LESS APPETIZING THAN SOME FUCKING \x02{}\x02"
  ]
  
  clean_key = lambda i: i.split("#")[1]

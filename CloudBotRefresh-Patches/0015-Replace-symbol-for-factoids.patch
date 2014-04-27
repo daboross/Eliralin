@@ -1,4 +1,4 @@
-From ac970c4ee4cb25f5d005767a1c42812ad22561bd Mon Sep 17 00:00:00 2001
+From 29be42b70e4ec3eb0508e06d70196d094c4dfd99 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 26 Apr 2014 19:43:21 -0700
 Subject: [PATCH] Replace symbol for factoids.
