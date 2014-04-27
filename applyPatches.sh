@@ -10,7 +10,7 @@ function applyPatch {
 
     cd "$basedir/$what"
 
-    git branch -f $branch #> /dev/null
+    git checkout -B $branch #> /dev/null
 
     cd "$basedir"
 
@@ -21,8 +21,8 @@ function applyPatch {
     cd "$basedir/$target"
 
     echo "Resetting $target to $what..."
-    git checkout $branch #&> /dev/null
-    git fetch upstream #&> /dev/null
+    git checkout $branch &> /dev/null
+    git fetch upstream &> /dev/null
     git reset --hard upstream/$branch
 
     echo "  Applying patches to $target..."
