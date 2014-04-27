@@ -1,4 +1,4 @@
-From 9c209cefb3bd576ea75b413da2f81e23d5f2e66a Mon Sep 17 00:00:00 2001
+From 8e22a60788d13162ae439b8a9e12cae72e8f2fa1 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 27 Apr 2014 11:20:54 -0700
 Subject: [PATCH] Merge recieve thread and parse thread, also rename nice_name

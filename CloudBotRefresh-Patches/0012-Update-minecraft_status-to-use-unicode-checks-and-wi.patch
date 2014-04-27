@@ -1,4 +1,4 @@
-From a386f3576e75f1b76a5b881d8e9e615f58eec340 Mon Sep 17 00:00:00 2001
+From e74f5c21aaa4391bcd25923c4f069adfd7302c1b Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:05:12 -0800
 Subject: [PATCH] Update minecraft_status to use unicode checks, and with a new
@@ -6,53 +6,48 @@ Subject: [PATCH] Update minecraft_status to use unicode checks, and with a new
 
 
 diff --git a/modules/minecraft_status.py b/modules/minecraft_status.py
-index de60e94..1eb7ec6 100644
+index de60e94..c26706e 100644
 --- a/modules/minecraft_status.py
 +++ b/modules/minecraft_status.py
-@@ -2,8 +2,15 @@ import json
- 
+@@ -3,42 +3,40 @@ import json
  from util import hook, http
  
-+green_prefix = u"\x02\x0f"
-+green_suffix = u": \x033\x02\u2714"
-+yellow_prefix = u"\x02\x0f"
-+yellow_suffix = u": \x037\x02\u26A0"
-+red_prefix = u"\x02\x0f"
-+red_suffix = u": \x034\x02\u2716"
  
 -@hook.command(autohelp=False)
++green_prefix = "\x02\x0f"
++green_suffix = ": \x033\x02\u2714"
++yellow_prefix = "\x02\x0f"
++yellow_suffix = ": \x037\x02\u26A0"
++red_prefix = "\x02\x0f"
++red_suffix = ": \x034\x02\u2716"
++
 +
 +@hook.command(["mcs", "mcstatus", "mojang"], autohelp=False)
  def mcstatus():
      """mcstatus -- Checks the status of various Mojang (the creators of Minecraft) servers."""
  
-@@ -15,30 +22,20 @@ def mcstatus():
-     # lets just reformat this data to get in a nice format
-     data = json.loads(request.replace("}", "").replace("{", "").replace("]", "}").replace("[", "{"))
+     try:
+-        request = http.get("http://status.mojang.com/check")
++        result = http.get("http://status.mojang.com/check")
+     except (http.URLError, http.HTTPError) as e:
+         return "Unable to get Minecraft server status: {}".format(e)
  
--    out = []
+-    # lets just reformat this data to get in a nice format
+-    data = json.loads(request.replace("}", "").replace("{", "").replace("]", "}").replace("[", "{"))
 -
+-    out = []
++    data = json.loads(result)
+ 
      # use a loop so we don't have to update it if they add more servers
 -    green = []
 -    yellow = []
 -    red = []
 -    for server, status in list(data.items()):
-+    servers = []
-+    for server, status in data.items():
-+        if server == "minecraft.net":
-+            server = "MC|Website"
-+        elif server.endswith(".mojang.com"):
-+            server = "MJ|{}".format(server[:-11].capitalize())
-+        elif server.endswith(".minecraft.net"):
-+            server = "MC|{}".format(server[:-14].capitalize())
-+
-         if status == "green":
+-        if status == "green":
 -            green.append(server)
-+            servers.append(u"{}{}{}".format(green_prefix, server, green_suffix))
-         elif status == "yellow":
+-        elif status == "yellow":
 -            yellow.append(server)
-+            servers.append(u"{}{}{}".format(yellow_prefix, server, yellow_suffix))
-         else:
+-        else:
 -            red.append(server)
 -
 -    if green:
@@ -68,7 +63,22 @@ index de60e94..1eb7ec6 100644
 -
 -    return "\x0f" + out.replace(".mojang.com", ".mj") \
 -        .replace(".minecraft.net", ".mc")
-+            servers.append(u"{}{}{}".format(red_prefix, server, red_suffix))
++    servers = []
++    for server_dict in data:
++        for server, status in server_dict.items():
++            if server == "minecraft.net":
++                server = "MC|Website"
++            elif server.endswith(".mojang.com"):
++                server = "MJ|{}".format(server[:-11].capitalize())
++            elif server.endswith(".minecraft.net"):
++                server = "MC|{}".format(server[:-14].capitalize())
++
++            if status == "green":
++                servers.append("{}{}{}".format(green_prefix, server, green_suffix))
++            elif status == "yellow":
++                servers.append("{}{}{}".format(yellow_prefix, server, yellow_suffix))
++            else:
++                servers.append("{}{}{}".format(red_prefix, server, red_suffix))
 +    return "  ".join(servers)
 -- 
 1.9.2
