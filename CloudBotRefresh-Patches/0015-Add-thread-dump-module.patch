@@ -1,4 +1,4 @@
-From c1de2fa6c3fe6a1517128f64795b71cca25cad60 Mon Sep 17 00:00:00 2001
+From 76e143933b7672376429a0b8324f8f42614edc93 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 27 Apr 2014 14:32:55 -0700
 Subject: [PATCH] Add thread dump module
@@ -6,14 +6,13 @@ Subject: [PATCH] Add thread dump module
 
 diff --git a/modules/threaddump.py b/modules/threaddump.py
 new file mode 100644
-index 0000000..36af25f
+index 0000000..20abc8b
 --- /dev/null
 +++ b/modules/threaddump.py
-@@ -0,0 +1,70 @@
+@@ -0,0 +1,71 @@
 +import os
 +import threading
 +import traceback
-+import _thread
 +import sys
 +
 +from util import hook, web
@@ -56,7 +55,9 @@ index 0000000..36af25f
 +                filename = "." + filename[len(current_dir):]
 +            elif filename.startswith("/usr/lib/python"):
 +                # this is totally os-biased
-+                filename = filename[:len("/usr/lib/python")]
++                filename = filename[len("/usr/lib/"):]
++            elif filename.startswith("/usr/local/lib/python"):
++                filename = filename[len("/usr/local/lib/"):]
 +            code.append("{}:{} - {}".format(filename, lineno, name))
 +            if line:
 +                code.append("  {}".format(line.strip()))
@@ -72,7 +73,7 @@ index 0000000..36af25f
 +
 +@hook.onload()
 +def start_watch_thread():
-+    _thread.start_new_thread(input_watch_thread, ())
++    threading.Thread(target=input_watch_thread, name="Thread dump").start()
 +
 +
 +def input_watch_thread():
