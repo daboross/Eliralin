@@ -1,4 +1,4 @@
-From bc08fb0e1a14076660a212f4b8a881728a45e9eb Mon Sep 17 00:00:00 2001
+From c1de2fa6c3fe6a1517128f64795b71cca25cad60 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 27 Apr 2014 14:32:55 -0700
 Subject: [PATCH] Add thread dump module
@@ -6,10 +6,10 @@ Subject: [PATCH] Add thread dump module
 
 diff --git a/modules/threaddump.py b/modules/threaddump.py
 new file mode 100644
-index 0000000..67e2923
+index 0000000..36af25f
 --- /dev/null
 +++ b/modules/threaddump.py
-@@ -0,0 +1,46 @@
+@@ -0,0 +1,70 @@
 +import os
 +import threading
 +import traceback
@@ -19,21 +19,45 @@ index 0000000..67e2923
 +from util import hook, web
 +
 +
++def get_name(thread_id):
++    current_thread = threading.current_thread()
++    if thread_id == current_thread._ident:
++        is_current = True
++        thread = threading.current_thread()
++    else:
++        is_current = False
++        thread = threading._active.get(thread_id)
++
++    if thread is not None:
++        if thread.name is not None:
++            name = thread.name
++        else:
++            name = "Unnamed thread"
++    else:
++        name = "Unknown thread"
++
++    if is_current:
++        name += " - Current thread"
++
++    return name
++
++
 +def get_thread_dump():
 +    code = []
-+    threads = [(thread_id, traceback.extract_stack(stack)) for thread_id, stack in sys._current_frames().items()]
++    threads = [(get_name(thread_id), traceback.extract_stack(stack))
++               for thread_id, stack in sys._current_frames().items()]
 +    current_dir = os.path.abspath(".")
-+    current_thread_id = threading.current_thread()._ident
-+    for thread_id, stack in threads:
-+        if thread_id == current_thread_id:
-+            code.append("# ThreadID: {} -- Current thread".format(thread_id))
-+        else:
-+            code.append("# ThreadID: {}".format(thread_id))
++    for thread_name, stack in threads:
++        code.append("# {}".format(thread_name))
++
 +        for filename, lineno, name, line in stack:
 +            assert isinstance(filename, str)
 +            if filename.startswith(current_dir):
-+                filename = "..." + filename[len(current_dir):]
-+            code.append("File: '{}', line {}, in {}".format(filename, lineno, name))
++                filename = "." + filename[len(current_dir):]
++            elif filename.startswith("/usr/lib/python"):
++                # this is totally os-biased
++                filename = filename[:len("/usr/lib/python")]
++            code.append("{}:{} - {}".format(filename, lineno, name))
 +            if line:
 +                code.append("  {}".format(line.strip()))
 +        code.append("")  # new line
