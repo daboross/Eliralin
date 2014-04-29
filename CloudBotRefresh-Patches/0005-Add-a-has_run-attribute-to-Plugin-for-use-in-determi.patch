@@ -1,4 +1,4 @@
-From 8c5cbc1842cfbaab08b69a87222a366eae69c0c1 Mon Sep 17 00:00:00 2001
+From d0f432d0885a130e518c0909ea6e4a11cdbac6ac Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 23 Apr 2014 16:42:08 -0700
 Subject: [PATCH] Add a has_run attribute to Plugin for use in determining test
@@ -19,10 +19,10 @@ index d51b89d..cab0ea4 100644
          run(bot, plugin, input)  # make sure the event runs in sync, *before* commands and regexes are run
          # TODO: Possibly make this run in the command's/regex's own thread, or make all of 'main' run async?
 diff --git a/core/pluginmanager.py b/core/pluginmanager.py
-index 9fa73e5..9315e55 100644
+index f2cbde7..7938704 100644
 --- a/core/pluginmanager.py
 +++ b/core/pluginmanager.py
-@@ -333,6 +333,7 @@ class Plugin:
+@@ -366,6 +366,7 @@ class Plugin:
          self.function = func_hook.function
          self.function_name = self.function.__name__
          self.args = func_hook.kwargs
