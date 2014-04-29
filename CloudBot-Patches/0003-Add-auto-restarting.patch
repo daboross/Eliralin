@@ -1,4 +1,4 @@
-From 8840fba84e76b9071f4fc7d89efb4675c344c956 Mon Sep 17 00:00:00 2001
+From 03842222eb994a59a1654d84315fbd8d19967546 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 19:08:56 -0800
 Subject: [PATCH] Add auto restarting
