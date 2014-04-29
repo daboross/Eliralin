@@ -1,0 +1,100 @@
+From 70e61bdb72c8463ae9e800041c2b907eeef3612a Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Tue, 29 Apr 2014 02:58:21 -0700
+Subject: [PATCH] Add per-channel command prefixes
+
+
+diff --git a/modules/per_channel_prefix.py b/modules/per_channel_prefix.py
+new file mode 100644
+index 0000000..9117d53
+--- /dev/null
++++ b/modules/per_channel_prefix.py
+@@ -0,0 +1,85 @@
++import re
++
++from sqlalchemy import Table, Column, String, UniqueConstraint
++
++from core import main
++
++from util import hook, botvars
++
++table = Table(
++    "prefixes",
++    botvars.metadata,
++    Column("connection", String),
++    Column("channel", String),
++    Column("prefix", String),
++    UniqueConstraint("connection", "channel", "prefix")
++)
++
++
++@hook.onload()
++def load_command_re(db):
++    """
++    :type db: sqlalchemy.orm.Session
++    """
++    global chan_re
++    channel_prefixes = {}
++    for row in db.execute(table.select()):
++        connection = row["connection"]
++        channel = row["channel"]
++        prefix = row["prefix"]
++        key = (connection, channel)
++        if key in channel_prefixes:
++            channel_prefixes[key].append(re.escape(prefix))
++        else:
++            channel_prefixes[key] = [re.escape(prefix)]
++
++    chan_re = {}
++    for key, prefixes in channel_prefixes.items():
++        command_re = r"([{}])(\w+)(?:$|\s+)(.*)".format("".join(prefixes))
++        chan_re[key] = re.compile(command_re)
++
++
++@hook.command(permissions=["botcontrol"])
++def addprefix(text, conn, chan, db):
++    """delprefix <prefix> - Adds a command prefix <prefix> to the current channel
++    :type text: str
++    :type chan: str
++    :type db: sqlalchemy.orm.Session
++    """
++    print("Adding prefix {} to {}".format(text, chan))
++    db.execute(table.insert().values(connection=conn.name, channel=chan, prefix=text))
++    db.commit()
++    load_command_re(db)
++    return "Added command prefix {} to {}".format(text, chan)
++
++
++@hook.command(permissions=["botcontrol"])
++def delprefix(text, chan, db):
++    """delprefix <prefix> - Removes command prefix <prefix> from the current channel
++    :type text: str
++    :type chan: str
++    :type db: sqlalchemy.orm.Session
++    """
++    print("Removing prefix {} from {}".format(text, chan))
++    db.execute(table.delete().where(table.c.channel == chan).where(table.c.prefix == text))
++    db.commit()
++    load_command_re(db)
++    return "Removed command prefix {} from {}".format(text, chan)
++
++
++@hook.event("PRIVMSG")
++def run_extra_prefix(input, bot, conn, chan, lastparam):
++    key = (conn.name, chan)
++    if key in chan_re:
++        match = chan_re[key].match(lastparam)
++        if match:
++            print(match.groups())
++            command = match.group(2).lower()
++            if command in bot.plugin_manager.commands:
++                plugin = bot.plugin_manager.commands[command]
++                # this input is a one-use input, so we can just modify it and send it to the plugin
++                input.trigger = command
++                input.text = match.group(3).strip()
++                main.dispatch(bot, input, plugin)
++            else:
++                print("Command not found {}".format(command))
+-- 
+1.9.2
+
