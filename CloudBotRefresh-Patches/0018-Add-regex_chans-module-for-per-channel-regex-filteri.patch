@@ -1,4 +1,4 @@
-From 56239f7effcc139f2a8cc12855cd3aa0d1d70f69 Mon Sep 17 00:00:00 2001
+From 8a70c70844c2d8a46c8c437a29b0924e59c6f42f Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:18:39 -0800
 Subject: [PATCH] Add regex_chans module for per-channel regex filtering
@@ -6,7 +6,7 @@ Subject: [PATCH] Add regex_chans module for per-channel regex filtering
 
 diff --git a/modules/regex_chans.py b/modules/regex_chans.py
 new file mode 100644
-index 0000000..47ef86c
+index 0000000..fabff86
 --- /dev/null
 +++ b/modules/regex_chans.py
 @@ -0,0 +1,142 @@
@@ -61,7 +61,7 @@ index 0000000..47ef86c
 +
 +
 +def delete_status(db, conn, chan):
-+    db.execute(table.delete().where(connection=conn, channel=chan))
++    db.execute(table.delete().where(table.c.connection == conn).where(table.c.channel == chan))
 +    db.commit()
 +
 +
