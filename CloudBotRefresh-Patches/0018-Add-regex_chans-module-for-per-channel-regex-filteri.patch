@@ -1,4 +1,4 @@
-From 8a70c70844c2d8a46c8c437a29b0924e59c6f42f Mon Sep 17 00:00:00 2001
+From d27eb328f5a44e847e5e6516c8f9ba67a62843c9 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:18:39 -0800
 Subject: [PATCH] Add regex_chans module for per-channel regex filtering

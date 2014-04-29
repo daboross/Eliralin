@@ -1,4 +1,4 @@
-From cfcca6a91b22d379e0eb438f13b7f54edc874d10 Mon Sep 17 00:00:00 2001
+From 8ec1b5cfeb63c65cd8b3c661baed80b10deb7a28 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 26 Apr 2014 19:43:21 -0700
 Subject: [PATCH] Replace symbol for factoids.
@@ -6,10 +6,10 @@ Subject: [PATCH] Replace symbol for factoids.
 Changes ?fact to ^fact
 
 diff --git a/modules/factoids.py b/modules/factoids.py
-index edc8a5f..5689b0c 100644
+index bba8f92..d82b9d4 100644
 --- a/modules/factoids.py
 +++ b/modules/factoids.py
-@@ -97,7 +97,7 @@ def info(text, notice, db):
+@@ -130,7 +130,7 @@ def info(text, notice):
          notice("Unknown Factoid.")
  
  
