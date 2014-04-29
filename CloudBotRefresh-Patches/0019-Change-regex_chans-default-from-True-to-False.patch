@@ -1,0 +1,22 @@
+From caaff973405a3205dd325bef6b7c55a6fe2cf8fe Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Tue, 29 Apr 2014 12:31:44 -0700
+Subject: [PATCH] Change regex_chans default from True to False
+
+
+diff --git a/modules/regex_chans.py b/modules/regex_chans.py
+index fabff86..0ef8f82 100644
+--- a/modules/regex_chans.py
++++ b/modules/regex_chans.py
+@@ -14,7 +14,7 @@ table = Table(
+ # Default value.
+ # If True, all channels without a setting will have regex enabled
+ # If False, all channels without a setting will have regex disabled
+-default_enabled = True
++default_enabled = False
+ 
+ 
+ @hook.onload()
+-- 
+1.9.2
+
