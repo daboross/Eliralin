@@ -39,4 +39,4 @@ function applyPatch {
 }
 
 applyPatch CloudBot Eliralin develop
-applyPatch CloudBotRefresh EliralinRefresh slay-the-beast
+applyPatch CloudBotRefresh EliralinRefresh master

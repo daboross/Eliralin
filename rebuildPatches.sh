@@ -35,4 +35,4 @@ function savePatches {
 }
 
 savePatches CloudBot Eliralin develop
-savePatches CloudBotRefresh EliralinRefresh slay-the-beast
+savePatches CloudBotRefresh EliralinRefresh master
