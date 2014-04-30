@@ -1,0 +1,21 @@
+From 81c4a95f3208d189cefc6273e0cca8604e953c01 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Tue, 29 Apr 2014 16:58:41 -0700
+Subject: [PATCH] Update per-channel-prefixes
+
+
+diff --git a/modules/per_channel_prefix.py b/modules/per_channel_prefix.py
+index 9117d53..628516d 100644
+--- a/modules/per_channel_prefix.py
++++ b/modules/per_channel_prefix.py
+@@ -80,6 +80,5 @@ def run_extra_prefix(input, bot, conn, chan, lastparam):
+                 # this input is a one-use input, so we can just modify it and send it to the plugin
+                 input.trigger = command
+                 input.text = match.group(3).strip()
++                input.inp = inp.text  # re-set inp as well, for compatibilty
+                 main.dispatch(bot, input, plugin)
+-            else:
+-                print("Command not found {}".format(command))
+-- 
+1.9.2
+
