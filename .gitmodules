@@ -1,6 +1,3 @@
-[submodule "CloudBot"]
-	path = CloudBot
-	url = https://github.com/ClouDev/CloudBot.git
-[submodule "CloudBotRefresh"]
-	path = CloudBotRefresh
+[submodule "Refresh"]
+	path = Refresh
 	url = https://github.com/CloudBotIRC/Refresh.git

@@ -34,5 +34,4 @@ function savePatches {
     echo "  Patches saved for $what to $what-Patches/"
 }
 
-savePatches CloudBot Eliralin develop
-savePatches CloudBotRefresh EliralinRefresh master
+savePatches Refresh Eliralin master

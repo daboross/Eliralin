@@ -16,5 +16,4 @@ function cleanPatches {
         NUM="$((NUM + 1))"
     done
 }
-cleanPatches CloudBot
-cleanPatches CloudBotRefresh
+cleanPatches Refresh

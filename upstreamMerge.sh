@@ -9,5 +9,4 @@ function update {
     cd ../
     git add "$1"
 }
-update CloudBot develop
-update CloudBotRefresh master
+update Refresh master

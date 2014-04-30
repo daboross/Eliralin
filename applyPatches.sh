@@ -38,5 +38,4 @@ function applyPatch {
     fi
 }
 
-applyPatch CloudBot Eliralin develop
-applyPatch CloudBotRefresh EliralinRefresh master
+applyPatch Refresh Eliralin master

@@ -10,5 +10,4 @@ function update {
     cd "$basedir/$target"
     git push git@github.com:daboross/CloudBot.git $branch:$upstream_branch -f
 }
-update Eliralin develop eliralin
-update EliralinRefresh master eliralin-refresh
+update Eliralin master master
