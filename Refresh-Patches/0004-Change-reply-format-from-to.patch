@@ -1,11 +1,11 @@
-From 93eb693b6d7d84e46291751022b05a8cda7cc9b5 Mon Sep 17 00:00:00 2001
+From 67c9b41c6e68189fd919318e57ab8cb575c5f359 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 26 Apr 2014 18:39:33 -0700
 Subject: [PATCH] Change reply format from ({}) to {},
 
 
 diff --git a/core/main.py b/core/main.py
-index de63a1d..d31435f 100644
+index cdbc0c9..b2a24e8 100644
 --- a/core/main.py
 +++ b/core/main.py
 @@ -115,7 +115,7 @@ class Input:

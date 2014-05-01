@@ -1,11 +1,11 @@
-From f813a560ef6802b679769506a664146387e2e616 Mon Sep 17 00:00:00 2001
+From a8f7fc7828f03ab138fe387b741d09a4f8cb0bfb Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 8 Apr 2014 01:19:13 -0700
 Subject: [PATCH] Set config indent to 4.
 
 
 diff --git a/core/config.py b/core/config.py
-index a3a4bab..060c0a7 100644
+index 7f3ad90..83960b9 100644
 --- a/core/config.py
 +++ b/core/config.py
 @@ -10,7 +10,7 @@ from watchdog.tricks import Trick
