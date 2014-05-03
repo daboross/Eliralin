@@ -3,10 +3,11 @@ basedir=`pwd`
 function update {
     local what=$1
     local branch=$2
+    local remote_branch=$3
     cd "$basedir/$what"
     git checkout -B "$branch"
-    git fetch && git reset --hard "origin/${2}"
+    git fetch && git reset --hard "origin/${remote_branch}"
     cd ../
-    git add "$1"
+    git add "$what"
 }
-update Refresh master
+update Refresh master python3.4
