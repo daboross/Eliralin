@@ -1,19 +1,22 @@
-From dd013595f67484301770c83b4438408fee644672 Mon Sep 17 00:00:00 2001
+From 7df93761ea195fde76db7b8e0eb21764829136eb Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
-Date: Sun, 27 Apr 2014 14:32:55 -0700
-Subject: [PATCH] Add thread dump module
+Date: Sat, 3 May 2014 23:44:11 +0200
+Subject: [PATCH] Add profiling module for profiling
 
 
-diff --git a/modules/threaddump.py b/modules/threaddump.py
+diff --git a/modules/profiling.py b/modules/profiling.py
 new file mode 100644
-index 0000000..3c7a120
+index 0000000..07574f8
 --- /dev/null
-+++ b/modules/threaddump.py
-@@ -0,0 +1,71 @@
++++ b/modules/profiling.py
+@@ -0,0 +1,93 @@
 +import os
 +import threading
 +import traceback
 +import sys
++import objgraph
++import gc
++from pympler import muppy, summary, tracker
 +
 +from util import hook, web
 +
@@ -71,16 +74,46 @@ index 0000000..3c7a120
 +    return "Thread dump located at {}".format(get_thread_dump())
 +
 +
++@hook.command(autohelp=False, permissions=["botcontrol"])
++def show_types():
++    print(gc.collect())
++    objgraph.show_most_common_types(limit=20)
++
++
++@hook.command(autohelp=False, permissions=["botcontrol"])
++def show_growth():
++    print(gc.collect())
++    objgraph.show_growth(limit=10)
++
++
++@hook.command(autohelp=False, permissions=["botcontrol"])
++def pympler_summary():
++    all_objects = muppy.get_objects()
++    sum = summary.summarize(all_objects)
++    summary.print_(sum)
++
++
 +@hook.onload()
-+def start_watch_thread():
-+    threading.Thread(target=input_watch_thread, name="Thread dump", daemon=True).start()
++def create_tracker():
++    global tr
++    tr = tracker.SummaryTracker()
 +
++@hook.command(autohelp=False, permissions=["botcontrol"])
++def pympler_diff():
++    print("Printing diff")
++    tr.print_diff()
++    print("Done printing diff")
+diff --git a/requirements.txt b/requirements.txt
+index ffa21e9..7412124 100644
+--- a/requirements.txt
++++ b/requirements.txt
+@@ -9,3 +9,6 @@ pycrypto
+ pbkdf2
+ tweepy
+ yql
 +
-+def input_watch_thread():
-+    while True:
-+        input()
-+        print("Running thread dump")
-+        print("Thread dump located at {}".format(get_thread_dump()))
++objgraph
++pympler
 -- 
 1.9.2
 
