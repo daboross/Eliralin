@@ -1,4 +1,4 @@
-From add71776ae5eb5e80fa26b5439e719b61ea5f15a Mon Sep 17 00:00:00 2001
+From dd013595f67484301770c83b4438408fee644672 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 27 Apr 2014 14:32:55 -0700
 Subject: [PATCH] Add thread dump module

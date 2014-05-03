@@ -1,4 +1,4 @@
-From 4e725d3a6e1f3123edbdf69cf0ae47aa876d2dbd Mon Sep 17 00:00:00 2001
+From 88d58b0283b2c6af50fc37213a3e8f8cd71cdbb2 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 23 Apr 2014 16:42:08 -0700
 Subject: [PATCH] Add a has_run attribute to Plugin for use in determining test
@@ -6,30 +6,30 @@ Subject: [PATCH] Add a has_run attribute to Plugin for use in determining test
 
 
 diff --git a/core/main.py b/core/main.py
-index 8fe3ee9..cdbc0c9 100644
+index 06e7f60..3c474ba 100644
 --- a/core/main.py
 +++ b/core/main.py
-@@ -298,6 +298,8 @@ def dispatch(bot, input, plugin):
+@@ -342,6 +342,8 @@ def dispatch(bot, input, plugin):
              input.notice(input.conn.config["command_prefix"] + plugin.name + " requires additional arguments.")
          return
  
 +    plugin.has_run = True
 +
-     if plugin.type == "event" and plugin.args.get("run_sync"):
-         run(bot, plugin, input)  # make sure the event runs in sync, *before* commands and regexes are run
-         # TODO: Possibly make this run in the command's/regex's own thread, or make all of 'main' run async?
+     if plugin.run_sync:
+         yield from run_sync(bot, plugin, input)
+     elif plugin.single_thread:
 diff --git a/core/pluginmanager.py b/core/pluginmanager.py
-index 35bcd41..42c88e7 100644
+index 61506b3..6f472c0 100644
 --- a/core/pluginmanager.py
 +++ b/core/pluginmanager.py
-@@ -364,6 +364,7 @@ class Plugin:
-         self.function = func_hook.function
-         self.function_name = self.function.__name__
-         self.args = func_hook.kwargs
+@@ -399,6 +399,7 @@ class Plugin:
+             logging.getLogger("cloudbot").warning("Ignoring extra args {} from {}:{}".format(
+                 func_hook.kwargs, self.module.title, self.function_name
+             ))
 +        self.has_run = False
  
      def __repr__(self):
-         return "type: {}, module: {}, args: {}".format(self.type, self.module.file_name, self.args)
+         return "type: {}, module: {}, ignore_bots: {}, permissions: {}, single_thread: {}, run_sync: {}".format(
 -- 
 1.9.2
 
