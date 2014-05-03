@@ -1,0 +1,60 @@
+From 4d7acb5db0714e7b44d907882877e2790432a992 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Fri, 2 May 2014 17:13:24 -0700
+Subject: [PATCH] Add minecraft bridge.
+
+---
+ modules/minecraftbridge.py | 41 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
+ create mode 100644 modules/minecraftbridge.py
+
+diff --git a/modules/minecraftbridge.py b/modules/minecraftbridge.py
+new file mode 100644
+index 0000000..7d7c9ce
+--- /dev/null
++++ b/modules/minecraftbridge.py
+@@ -0,0 +1,41 @@
++import re
++
++from core import main
++from util import hook
++
++
++@hook.event("PRIVMSG")
++def run_extra_prefix(input, bot, conn, lastparam):
++    """
++    :type input: core.main.Input
++    :type bot: core.bot.CloudBot
++    :type conn: core.connection.BotConnection
++    :type lastparam: str
++    """
++    command_re = re.compile(r'^<\[[^\]]+\]([^>]+)> (?:[{}]|{}[,;:]+\s+)(\w+)(?:$|\s+)(.*)'.format(
++        conn.config.get('command_prefix', '.'), conn.nick
++    ))
++    match = command_re.match(lastparam)
++    print("Checking {}".format(command_re.pattern))
++    if match:
++        command = match.group(2).lower()
++        print("Matched command {}".format(command))
++        if command in bot.plugin_manager.commands:
++            plugin = bot.plugin_manager.commands[command]
++            # this input is a one-use input, so we can just modify it and send it to the plugin
++            input.trigger = command
++            input.text = match.group(3).strip()
++            input.inp = input.text  # re-set inp as well, for compatibility
++            input.old_nick = input.nick
++            input.nick = match.group(1)
++
++            def notice(message, target=None):
++                if target is None or target is input.nick:
++                    target = input.old_nick
++                    input.message(message, target=target)
++                else:
++                    input.notice(message, target=target)
++
++            input.notice = notice
++            print("Dispatching {}".format(command))
++            main.dispatch(bot, input, plugin)
+-- 
+1.9.2
+
