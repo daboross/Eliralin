@@ -1,4 +1,4 @@
-From 11ce244709ae435a1c2d06839c50c4c0fec88b01 Mon Sep 17 00:00:00 2001
+From f505efc4bc9f8235e408ca4c97671c78a839276c Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 23 Apr 2014 16:42:08 -0700
 Subject: [PATCH] Add a has_run attribute to Plugin for use in determining test
@@ -6,22 +6,22 @@ Subject: [PATCH] Add a has_run attribute to Plugin for use in determining test
 
 
 diff --git a/core/main.py b/core/main.py
-index db19d31..08a043d 100644
+index 2c3580b..f1155f4 100644
 --- a/core/main.py
 +++ b/core/main.py
-@@ -342,6 +342,7 @@ def dispatch(bot, input, plugin):
+@@ -349,6 +349,7 @@ def dispatch(bot, input, plugin):
              input.notice(input.conn.config["command_prefix"] + plugin.name + " requires additional arguments.")
-         return
+         return False
  
 +    plugin.has_run = True
      if plugin.threaded:
          if plugin.single_thread:
              if plugin.module.title in bot.threads:
 diff --git a/core/pluginmanager.py b/core/pluginmanager.py
-index 7879ed4..9245616 100644
+index 768c85d..14dec9e 100644
 --- a/core/pluginmanager.py
 +++ b/core/pluginmanager.py
-@@ -401,6 +401,7 @@ class Plugin:
+@@ -406,6 +406,7 @@ class Plugin:
              logging.getLogger("cloudbot").warning("Ignoring extra args {} from {}:{}".format(
                  func_hook.kwargs, self.module.title, self.function_name
              ))
