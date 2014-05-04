@@ -1,4 +1,4 @@
-From e6d2a695cd6865842ba7f8ef83f72537267e4d03 Mon Sep 17 00:00:00 2001
+From 11ce244709ae435a1c2d06839c50c4c0fec88b01 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 23 Apr 2014 16:42:08 -0700
 Subject: [PATCH] Add a has_run attribute to Plugin for use in determining test
@@ -6,30 +6,29 @@ Subject: [PATCH] Add a has_run attribute to Plugin for use in determining test
 
 
 diff --git a/core/main.py b/core/main.py
-index 06e7f60..3c474ba 100644
+index db19d31..08a043d 100644
 --- a/core/main.py
 +++ b/core/main.py
-@@ -342,6 +342,8 @@ def dispatch(bot, input, plugin):
+@@ -342,6 +342,7 @@ def dispatch(bot, input, plugin):
              input.notice(input.conn.config["command_prefix"] + plugin.name + " requires additional arguments.")
          return
  
 +    plugin.has_run = True
-+
-     if plugin.run_sync:
-         yield from run_sync(bot, plugin, input)
-     elif plugin.single_thread:
+     if plugin.threaded:
+         if plugin.single_thread:
+             if plugin.module.title in bot.threads:
 diff --git a/core/pluginmanager.py b/core/pluginmanager.py
-index 61506b3..6f472c0 100644
+index 7879ed4..9245616 100644
 --- a/core/pluginmanager.py
 +++ b/core/pluginmanager.py
-@@ -399,6 +399,7 @@ class Plugin:
+@@ -401,6 +401,7 @@ class Plugin:
              logging.getLogger("cloudbot").warning("Ignoring extra args {} from {}:{}".format(
                  func_hook.kwargs, self.module.title, self.function_name
              ))
 +        self.has_run = False
  
      def __repr__(self):
-         return "type: {}, module: {}, ignore_bots: {}, permissions: {}, single_thread: {}, run_sync: {}".format(
+         return "type: {}, module: {}, ignore_bots: {}, permissions: {}, single_thread: {}, threaded: {}".format(
 -- 
 1.9.2
 
