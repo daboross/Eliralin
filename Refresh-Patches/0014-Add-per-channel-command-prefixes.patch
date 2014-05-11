@@ -1,4 +1,4 @@
-From 62775ca8314750a34c6d6a8178518e24f5e14954 Mon Sep 17 00:00:00 2001
+From dd806af5d5902252cc09eb04ee937e719cfe3d17 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 29 Apr 2014 02:58:21 -0700
 Subject: [PATCH] Add per-channel command prefixes
@@ -6,7 +6,7 @@ Subject: [PATCH] Add per-channel command prefixes
 
 diff --git a/modules/prefixes.py b/modules/prefixes.py
 new file mode 100644
-index 0000000..ba24e4d
+index 0000000..ce575fd
 --- /dev/null
 +++ b/modules/prefixes.py
 @@ -0,0 +1,83 @@
@@ -79,7 +79,7 @@ index 0000000..ba24e4d
 +    return "Removed command prefix {} from {}".format(text, chan)
 +
 +
-+@hook.event("PRIVMSG")
++@hook.event("PRIVMSG", threaded=False)
 +def run_extra_prefix(input, bot, conn, chan, lastparam):
 +    key = (conn.name, chan)
 +    if key in chan_re:
