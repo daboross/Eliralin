@@ -1,4 +1,4 @@
-From 39d09d0177d86332f255870b255efd484ccb28a9 Mon Sep 17 00:00:00 2001
+From 31930e34127d46d6f7ba75703c2657a9012389e1 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 23 Apr 2014 16:42:08 -0700
 Subject: [PATCH] Add a has_run attribute to Plugin for use in determining test
@@ -6,14 +6,14 @@ Subject: [PATCH] Add a has_run attribute to Plugin for use in determining test
 
 
 diff --git a/core/main.py b/core/main.py
-index 2f417b8..ab26d0d 100644
+index 2f417b8..76c3271 100644
 --- a/core/main.py
 +++ b/core/main.py
 @@ -373,6 +373,7 @@ def dispatch(bot, input, plugin):
              input.notice(input.conn.config["command_prefix"] + plugin.name + " requires additional arguments.")
          return False
  
-+	plugin.has_run = True
++        plugin.has_run = True
      if plugin.single_thread:
          key = (plugin.module.title, plugin.function_name)
          handler = bot.handlers.get(key)
