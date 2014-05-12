@@ -1,4 +1,4 @@
-From e76a94372f58cfd332ef04e55032caa9edc5149b Mon Sep 17 00:00:00 2001
+From e36bcb032bd63f3bf41021f63ef122e258a25ee1 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 5 May 2014 00:35:46 -0700
 Subject: [PATCH] Add threaded argument to a ton of plugins
@@ -278,10 +278,10 @@ index d4a7b7c..ae922e8 100644
  def ctcp_time(notice):
      notice('\x01TIME: The time is: {}'.format(time.strftime("%r", time.localtime())))
 diff --git a/modules/core_misc.py b/modules/core_misc.py
-index a54aa0f..eb08262 100644
+index 562b0b8..69967f0 100644
 --- a/modules/core_misc.py
 +++ b/modules/core_misc.py
-@@ -7,7 +7,7 @@ socket.setdefaulttimeout(10)
+@@ -8,7 +8,7 @@ socket.setdefaulttimeout(10)
  
  
  # Auto-join on Invite (Configurable, defaults to True)
@@ -290,22 +290,13 @@ index a54aa0f..eb08262 100644
  def invite(paramlist, conn):
      """
      :type paramlist: list[str]
-@@ -19,7 +19,7 @@ def invite(paramlist, conn):
+@@ -20,7 +20,7 @@ def invite(paramlist, conn):
  
  
  # Identify to NickServ (or other service)
 -@hook.event('004')
 +@hook.event('004', threaded=False)
  def onjoin(conn, bot):
-     """
-     :type conn: core.irc.BotConnection
-@@ -58,7 +58,7 @@ def onjoin(conn, bot):
-     bot.logger.info("ONJOIN hook completed. Bot ready.")
- 
- 
--@hook.event('004', singlethread=True)
-+@hook.event('004', threaded=True, singlethread=True)
- def keep_alive(conn):
      """
      :type conn: core.irc.BotConnection
 diff --git a/modules/core_tracker.py b/modules/core_tracker.py

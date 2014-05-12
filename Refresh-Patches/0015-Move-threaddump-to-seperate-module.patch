@@ -1,4 +1,4 @@
-From 7ebbe50c1ffd1b4e2f13d7c0571ba864379d1c8b Mon Sep 17 00:00:00 2001
+From 919ca146bf720307b9a3f15d0462a9f456b7360a Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 12 May 2014 15:12:57 -0700
 Subject: [PATCH] Move threaddump to seperate module

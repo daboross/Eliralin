@@ -1,11 +1,11 @@
-From 42e1fb4486c03586017bdfd8d19f927e94d0d6a6 Mon Sep 17 00:00:00 2001
+From 01ce0b0e547e7c31cfe8faa60d0e058c623076aa Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 12 May 2014 15:16:34 -0700
 Subject: [PATCH] Remove all reloading using watchdog.
 
 
 diff --git a/core/bot.py b/core/bot.py
-index 022da48..91f27cb 100644
+index 026ddc7..ddd941a 100644
 --- a/core/bot.py
 +++ b/core/bot.py
 @@ -13,7 +13,6 @@ from sqlalchemy.schema import MetaData
@@ -32,16 +32,16 @@ index 022da48..91f27cb 100644
          self.plugin_manager = PluginManager(self)
  
      def run(self):
-@@ -152,8 +149,6 @@ class CloudBot:
-     def main_loop(self):
-         # load plugins
-         yield from self.plugin_manager.load_all(os.path.abspath("modules"))
+@@ -155,8 +152,6 @@ class CloudBot:
+         # if we we're stopped while loading modules, cancel that and just stop
+         if not self.running:
+             return
 -        # start plugin reloader
 -        self.loader.start()
          # start connections
          yield from asyncio.gather(*[conn.connect() for conn in self.connections], loop=self.loop)
          # run a manual garbage collection cycle, to clean up any unused objects created during initialization
-@@ -193,12 +188,6 @@ class CloudBot:
+@@ -196,12 +191,6 @@ class CloudBot:
          """quits all networks and shuts the bot down"""
          self.logger.info("Stopping bot.")
  
@@ -52,8 +52,8 @@ index 022da48..91f27cb 100644
 -        self.loader.stop()
 -
          for connection in self.connections:
-             self.logger.debug("[{}] Closing connection.".format(connection.readable_name))
- 
+             if not connection.connected:
+                 # Don't close a connection that hasn't connected
 diff --git a/core/config.py b/core/config.py
 index 83960b9..be25a2f 100644
 --- a/core/config.py
