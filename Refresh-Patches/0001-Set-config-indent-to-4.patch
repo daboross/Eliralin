@@ -1,4 +1,4 @@
-From e3997fddd60994bcd974e6b532be62a9e4fce99c Mon Sep 17 00:00:00 2001
+From 1ccd58903ae9fd27dd61a6baa2ca39c1a1806b9d Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 8 Apr 2014 01:19:13 -0700
 Subject: [PATCH] Set config indent to 4.
@@ -27,5 +27,5 @@ index 7f3ad90..83960b9 100644
  
      def watcher(self):
 -- 
-1.9.2
+1.9.3
 

@@ -1,0 +1,22 @@
+From 67715755f4f879f25f336d0c7a2357117c8c58ce Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Mon, 12 May 2014 15:06:22 -0700
+Subject: [PATCH] Fix doc string in Input
+
+
+diff --git a/core/main.py b/core/main.py
+index 61bc260..75699af 100644
+--- a/core/main.py
++++ b/core/main.py
+@@ -5,7 +5,7 @@ import re
+ class Input:
+     """
+     :type bot: core.bot.CloudBot
+-    :type conn: core.irc.BotConnection
++    :type conn: core.connection.BotConnection
+     :type raw: str
+     :type prefix: str
+     :type command: str
+-- 
+1.9.3
+

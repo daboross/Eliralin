@@ -1,0 +1,207 @@
+From 42e1fb4486c03586017bdfd8d19f927e94d0d6a6 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Mon, 12 May 2014 15:16:34 -0700
+Subject: [PATCH] Remove all reloading using watchdog.
+
+
+diff --git a/core/bot.py b/core/bot.py
+index 022da48..91f27cb 100644
+--- a/core/bot.py
++++ b/core/bot.py
+@@ -13,7 +13,6 @@ from sqlalchemy.schema import MetaData
+ from core.connection import BotConnection
+ from util import botvars
+ from core import config, main
+-from core.loader import PluginLoader
+ from core.pluginmanager import PluginManager
+ 
+ logger_initialized = False
+@@ -79,7 +78,6 @@ class CloudBot:
+     :type data_dir: bytes
+     :type config: core.config.Config
+     :type plugin_manager: core.pluginmanager.PluginManager
+-    :type loader: core.loader.PluginLoader
+     :type db_engine: sqlalchemy.engine.Engine
+     :type db_factory: sqlalchemy.orm.session.sessionmaker
+     :type db_session: sqlalchemy.orm.scoping.scoped_session
+@@ -137,7 +135,6 @@ class CloudBot:
+         # create bot connections
+         self.create_connections()
+ 
+-        self.loader = PluginLoader(self)
+         self.plugin_manager = PluginManager(self)
+ 
+     def run(self):
+@@ -152,8 +149,6 @@ class CloudBot:
+     def main_loop(self):
+         # load plugins
+         yield from self.plugin_manager.load_all(os.path.abspath("modules"))
+-        # start plugin reloader
+-        self.loader.start()
+         # start connections
+         yield from asyncio.gather(*[conn.connect() for conn in self.connections], loop=self.loop)
+         # run a manual garbage collection cycle, to clean up any unused objects created during initialization
+@@ -193,12 +188,6 @@ class CloudBot:
+         """quits all networks and shuts the bot down"""
+         self.logger.info("Stopping bot.")
+ 
+-        self.logger.debug("Stopping config reloader.")
+-        self.config.stop()
+-
+-        self.logger.debug("Stopping plugin loader.")
+-        self.loader.stop()
+-
+         for connection in self.connections:
+             self.logger.debug("[{}] Closing connection.".format(connection.readable_name))
+ 
+diff --git a/core/config.py b/core/config.py
+index 83960b9..be25a2f 100644
+--- a/core/config.py
++++ b/core/config.py
+@@ -3,9 +3,6 @@ import os
+ import time
+ import sys
+ 
+-from watchdog.observers import Observer
+-from watchdog.tricks import Trick
+-
+ 
+ class Config(dict):
+     """
+@@ -30,20 +27,6 @@ class Config(dict):
+         self.update(*args, **kwargs)
+ 
+         # populate self with config data
+-        self.load_config()
+-
+-        # Declaring here, to be assigned later
+-        self.observer = None
+-        self.event_handler = None
+-        # start watcher
+-        self.watcher()
+-
+-    def stop(self):
+-        """shuts down the config reloader"""
+-        self.observer.stop()
+-
+-    def load_config(self):
+-        """(re)loads the bot config from the config file"""
+         if not os.path.exists(self.path):
+             # if there is no config, show an error and die
+             self.logger.critical("No config file found, bot shutting down!")
+@@ -66,36 +49,3 @@ class Config(dict):
+         """saves the contents of the config dict to the config file"""
+         json.dump(self, open(self.path, 'w'), sort_keys=True, indent=4)
+         self.logger.info("Config saved to file.")
+-
+-    def watcher(self):
+-        """starts the watchdog to automatically reload the config when it changes on disk"""
+-        self.observer = Observer()
+-
+-        pattern = "*{}".format(self.filename)
+-
+-        self.event_handler = ConfigEventHandler(self.bot, self, patterns=[pattern])
+-        self.observer.schedule(self.event_handler, path='.', recursive=False)
+-        self.observer.start()
+-
+-
+-class ConfigEventHandler(Trick):
+-    """
+-    :type bot: core.bot.CloudBot
+-    :type config: core.config.Config
+-    :type logger: logging.Logger
+-    """
+-
+-    def __init__(self, bot, config, *args, **kwargs):
+-        """
+-        :type bot: core.bot.CloudBot
+-        :type config: Config
+-        """
+-        self.bot = bot
+-        self.config = config
+-        self.logger = config.logger
+-        Trick.__init__(self, *args, **kwargs)
+-
+-    def on_any_event(self, event):
+-        if self.bot.running:
+-            self.logger.info("Config changed, triggering reload.")
+-            self.config.load_config()
+diff --git a/core/loader.py b/core/loader.py
+deleted file mode 100644
+index 7ea1bc9..0000000
+--- a/core/loader.py
++++ /dev/null
+@@ -1,70 +0,0 @@
+-import asyncio
+-import os
+-
+-from watchdog.observers import Observer
+-from watchdog.tricks import Trick
+-
+-
+-class PluginLoader(object):
+-    def __init__(self, bot):
+-        """
+-        :type bot: core.bot.CloudBot
+-        """
+-        self.observer = Observer()
+-        self.module_path = os.path.abspath("modules")
+-        self.bot = bot
+-
+-        self.event_handler = PluginEventHandler(self, patterns=["*.py"])
+-        self.observer.schedule(self.event_handler, self.module_path, recursive=False)
+-
+-    def start(self):
+-        """Starts the plugin reloader"""
+-        self.observer.start()
+-
+-    def stop(self):
+-        """Stops the plugin reloader"""
+-        self.observer.stop()
+-
+-    def load_file(self, path):
+-        """
+-        Loads a module, given its file path.
+-        :type path: str
+-        """
+-        # call_soon_threadsafe doesn't support kwargs, so use a lambda
+-        self.bot.loop.call_soon_threadsafe(
+-            lambda: asyncio.async(self.bot.plugin_manager.load_module(path), loop=self.bot.loop))
+-
+-    def unload_file(self, path):
+-        """
+-        Unloads a module, given its file path.
+-        :type path: str
+-        """
+-        # call_soon_threadsafe doesn't support kwargs, so use a lambda
+-        self.bot.loop.call_soon_threadsafe(
+-            lambda: asyncio.async(self.bot.plugin_manager.unload_module(path), loop=self.bot.loop))
+-
+-
+-class PluginEventHandler(Trick):
+-    def __init__(self, loader, *args, **kwargs):
+-        """
+-        :type loader: PluginLoader
+-        """
+-        self.loader = loader
+-        Trick.__init__(self, *args, **kwargs)
+-
+-    def on_created(self, event):
+-        self.loader.load_file(event.src_path.decode())
+-
+-    def on_deleted(self, event):
+-        self.loader.unload_file(event.src_path.decode())
+-
+-    def on_modified(self, event):
+-        self.loader.load_file(event.src_path.decode())
+-
+-    def on_moved(self, event):
+-        if event.src_path.endswith(b".py"):
+-            # if it's moved from a non-.py file, don't unload it
+-            self.loader.unload_file(event.src_path.decode())
+-        if event.dest_path.endswith(b".py"):
+-            # if it's moved to a non-.py file, don't load it
+-            self.loader.load_file(event.dest_path.decode())
+-- 
+1.9.3
+

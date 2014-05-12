@@ -1,4 +1,4 @@
-From 75c70b5f3cfef4c0cd2d40711694219edbb9091a Mon Sep 17 00:00:00 2001
+From e415cdbe4175c6ecf197d4d124eb3c7c09edda82 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:13:03 -0800
 Subject: [PATCH] Change ctcp reply to return 'Eliralin'
@@ -18,5 +18,5 @@ index 2c18f9b..d4a7b7c 100644
  
  @hook.regex(r'^\x01PING\x01$')
 -- 
-1.9.2
+1.9.3
 

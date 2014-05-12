@@ -1,4 +1,4 @@
-From 3e575a8e3b2bd8a8c7d3dc07bbcfc146ec2c3815 Mon Sep 17 00:00:00 2001
+From e76a94372f58cfd332ef04e55032caa9edc5149b Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 5 May 2014 00:35:46 -0700
 Subject: [PATCH] Add threaded argument to a ton of plugins
@@ -1138,5 +1138,5 @@ index c0d7b6a..e0d96c1 100644
      location = match.group(4).split("/")[-1]
      if not test(location):
 -- 
-1.9.2
+1.9.3
 

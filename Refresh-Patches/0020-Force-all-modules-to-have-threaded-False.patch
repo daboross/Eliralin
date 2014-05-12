@@ -1,0 +1,27 @@
+From d0b7ad04699abc8b8bc84c91fcd1d6016f89440e Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Mon, 12 May 2014 15:17:06 -0700
+Subject: [PATCH] Force all modules to have threaded=False
+
+
+diff --git a/core/pluginmanager.py b/core/pluginmanager.py
+index 65abe39..3faf009 100644
+--- a/core/pluginmanager.py
++++ b/core/pluginmanager.py
+@@ -398,6 +398,13 @@ class Plugin:
+             if not asyncio.iscoroutine(self.function):
+                 self.function = asyncio.coroutine(self.function)
+ 
++        if self.threaded:
++            logging.getLogger("cloudbot").warning("Setting threaded=False on {}:{}".format(
++                self.module.title, self.function_name))
++            self.threaded = False
++            if not asyncio.iscoroutine(self.function):
++                self.function = asyncio.coroutine(self.function)
++
+         self.ignore_bots = func_hook.kwargs.pop("ignorebots", False)
+         self.permissions = func_hook.kwargs.pop("permissions", [])
+         self.single_thread = func_hook.kwargs.pop("singlethread", False)
+-- 
+1.9.3
+

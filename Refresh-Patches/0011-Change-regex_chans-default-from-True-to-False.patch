@@ -1,4 +1,4 @@
-From 57e98dbfc763de9eb6fa4ff41832c45922a4b2ca Mon Sep 17 00:00:00 2001
+From affd13b43b7a8b7ed2c2e93e010a47821bd0458a Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 29 Apr 2014 12:31:44 -0700
 Subject: [PATCH] Change regex_chans default from True to False
@@ -18,5 +18,5 @@ index fabff86..0ef8f82 100644
  
  @hook.onload()
 -- 
-1.9.2
+1.9.3
 

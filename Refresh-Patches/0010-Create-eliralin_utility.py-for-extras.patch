@@ -1,4 +1,4 @@
-From 0506240adffc3f027931986c9e50c6a882af8efa Mon Sep 17 00:00:00 2001
+From 08f56d5cf3745636db5f5801d8866971829df2cb Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:19:10 -0800
 Subject: [PATCH] Create eliralin_utility.py for extras
@@ -129,5 +129,5 @@ index 0000000..6de03eb
 +        reply("Failed")
 +        raise
 -- 
-1.9.2
+1.9.3
 

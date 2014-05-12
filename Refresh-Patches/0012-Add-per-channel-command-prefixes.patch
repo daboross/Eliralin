@@ -1,4 +1,4 @@
-From 666cbd5dff4a9572d3e2fbe1d8b8e64625f6b552 Mon Sep 17 00:00:00 2001
+From 3eb122838f4383629ff7bc61c0627c852976896b Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 29 Apr 2014 02:58:21 -0700
 Subject: [PATCH] Add per-channel command prefixes
@@ -94,5 +94,5 @@ index 0000000..ce575fd
 +                input.inp = input.text  # re-set inp as well, for compatibilty
 +                yield from main.dispatch(bot, input, plugin)
 -- 
-1.9.2
+1.9.3
 
