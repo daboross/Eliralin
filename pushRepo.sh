@@ -8,6 +8,6 @@ function update {
     echo "Pushing $target"
 
     cd "$basedir/$target"
-    git push git@github.com:daboross/CloudBot.git $branch:$upstream_branch -f
+    git push git@github.com:daboross/EliRefresh.git $branch:$upstream_branch -f
 }
 update Eliralin master master

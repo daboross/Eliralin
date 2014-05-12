@@ -8,6 +8,6 @@ function update {
     echo "Pulling $target"
 
     cd "$basedir/$target"
-    git pull git@github.com:daboross/CloudBot.git $upstream_branch:$branch "${@:4}"
+    git pull git@github.com:daboross/EliRefresh.git $upstream_branch:$branch "${@:4}"
 }
 update Eliralin master master "$@"
