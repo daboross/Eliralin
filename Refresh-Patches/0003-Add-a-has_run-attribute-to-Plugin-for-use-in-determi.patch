@@ -1,4 +1,4 @@
-From 4f113937bf254638c9b0cde2a648c36a33856c9b Mon Sep 17 00:00:00 2001
+From 39d09d0177d86332f255870b255efd484ccb28a9 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 23 Apr 2014 16:42:08 -0700
 Subject: [PATCH] Add a has_run attribute to Plugin for use in determining test
@@ -6,22 +6,22 @@ Subject: [PATCH] Add a has_run attribute to Plugin for use in determining test
 
 
 diff --git a/core/main.py b/core/main.py
-index 2c3580b..f1155f4 100644
+index 2f417b8..ab26d0d 100644
 --- a/core/main.py
 +++ b/core/main.py
-@@ -349,6 +349,7 @@ def dispatch(bot, input, plugin):
+@@ -373,6 +373,7 @@ def dispatch(bot, input, plugin):
              input.notice(input.conn.config["command_prefix"] + plugin.name + " requires additional arguments.")
          return False
  
-+    plugin.has_run = True
-     if plugin.threaded:
-         if plugin.single_thread:
-             if plugin.module.title in bot.threads:
++	plugin.has_run = True
+     if plugin.single_thread:
+         key = (plugin.module.title, plugin.function_name)
+         handler = bot.handlers.get(key)
 diff --git a/core/pluginmanager.py b/core/pluginmanager.py
-index 768c85d..14dec9e 100644
+index 92a9175..fdcb3a5 100644
 --- a/core/pluginmanager.py
 +++ b/core/pluginmanager.py
-@@ -406,6 +406,7 @@ class Plugin:
+@@ -407,6 +407,7 @@ class Plugin:
              logging.getLogger("cloudbot").warning("Ignoring extra args {} from {}:{}".format(
                  func_hook.kwargs, self.module.title, self.function_name
              ))
