@@ -1,4 +1,4 @@
-From 01ce0b0e547e7c31cfe8faa60d0e058c623076aa Mon Sep 17 00:00:00 2001
+From 2ac5717c581fa190b3b3f3e3749337535193847d Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 12 May 2014 15:16:34 -0700
 Subject: [PATCH] Remove all reloading using watchdog.

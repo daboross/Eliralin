@@ -1,4 +1,4 @@
-From 75845dcabc76e5e43ed8823b1bd75c9affad188f Mon Sep 17 00:00:00 2001
+From a9a901fc9a0e59cd017398a4c2b434cf097d0656 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 3 May 2014 23:44:11 +0200
 Subject: [PATCH] Add profiling module for profiling
@@ -6,72 +6,22 @@ Subject: [PATCH] Add profiling module for profiling
 
 diff --git a/modules/profiling.py b/modules/profiling.py
 new file mode 100644
-index 0000000..07574f8
+index 0000000..e0aea21
 --- /dev/null
 +++ b/modules/profiling.py
-@@ -0,0 +1,93 @@
-+import os
-+import threading
-+import traceback
-+import sys
-+import objgraph
+@@ -0,0 +1,44 @@
 +import gc
++
++import objgraph
 +from pympler import muppy, summary, tracker
 +
-+from util import hook, web
-+
-+
-+def get_name(thread_id):
-+    current_thread = threading.current_thread()
-+    if thread_id == current_thread._ident:
-+        is_current = True
-+        thread = threading.current_thread()
-+    else:
-+        is_current = False
-+        thread = threading._active.get(thread_id)
-+
-+    if thread is not None:
-+        if thread.name is not None:
-+            name = thread.name
-+        else:
-+            name = "Unnamed thread"
-+    else:
-+        name = "Unknown thread"
-+
-+    if is_current:
-+        name += " - Current thread"
-+
-+    return name
-+
-+
-+def get_thread_dump():
-+    code = []
-+    threads = [(get_name(thread_id), traceback.extract_stack(stack))
-+               for thread_id, stack in sys._current_frames().items()]
-+    current_dir = os.path.abspath(".")
-+    for thread_name, stack in threads:
-+        code.append("# {}".format(thread_name))
-+
-+        for filename, lineno, name, line in stack:
-+            assert isinstance(filename, str)
-+            if filename.startswith(current_dir):
-+                filename = "." + filename[len(current_dir):]
-+            elif filename.startswith("/usr/lib/python"):
-+                # this is totally os-biased
-+                filename = filename[len("/usr/lib/"):]
-+            elif filename.startswith("/usr/local/lib/python"):
-+                filename = filename[len("/usr/local/lib/"):]
-+            code.append("{}:{} - {}".format(filename, lineno, name))
-+            if line:
-+                code.append("  {}".format(line.strip()))
-+        code.append("")  # new line
-+    return web.haste("\n".join(code), ext='txt')
++from util import hook, threaddump
 +
 +
 +@hook.command(autohelp=False, permissions=["botcontrol"])
 +def threaddump(reply):
 +    reply("Running thread dump")
-+    return "Thread dump located at {}".format(get_thread_dump())
++    return "Thread dump located at {}".format(threaddump.get_thread_dump())
 +
 +
 +@hook.command(autohelp=False, permissions=["botcontrol"])
@@ -98,6 +48,7 @@ index 0000000..07574f8
 +    global tr
 +    tr = tracker.SummaryTracker()
 +
++
 +@hook.command(autohelp=False, permissions=["botcontrol"])
 +def pympler_diff():
 +    print("Printing diff")
@@ -114,6 +65,54 @@ index ffa21e9..7412124 100644
 +
 +objgraph
 +pympler
+diff --git a/util/threaddump.py b/util/threaddump.py
+new file mode 100644
+index 0000000..a980ae6
+--- /dev/null
++++ b/util/threaddump.py
+@@ -0,0 +1,42 @@
++import threading
++import traceback
++import sys
++
++from util import web
++
++
++def get_name(thread_id):
++    current_thread = threading.current_thread()
++    if thread_id == current_thread._ident:
++        is_current = True
++        thread = current_thread
++    else:
++        is_current = False
++        thread = threading._active.get(thread_id)
++
++    if thread is not None:
++        if thread.name is not None:
++            name = thread.name
++        else:
++            name = "Unnamed thread"
++    else:
++        name = "Unknown thread"
++
++    if is_current:
++        name += " - Current thread"
++
++    return name
++
++
++def get_thread_dump():
++    code = []
++    threads = [(get_name(thread_id), traceback.extract_stack(stack))
++               for thread_id, stack in sys._current_frames().items()]
++    for thread_name, stack in threads:
++        code.append("# {}".format(thread_name))
++        for filename, lineno, name, line in stack:
++            code.append("{}:{} - {}".format(filename, lineno, name))
++            if line:
++                code.append("    {}".format(line.strip()))
++        code.append("")  # new line
++    return web.haste("\n".join(code), ext='txt')
 -- 
 1.9.3
 

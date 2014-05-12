@@ -1,4 +1,4 @@
-From 1e6e04990d2c502d357aaea39753af4892a9c67e Mon Sep 17 00:00:00 2001
+From 8c3278c0eb5a0d965afa95b24bd5a85f650d6c98 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 12 May 2014 15:17:06 -0700
 Subject: [PATCH] Force all modules to have threaded=False
