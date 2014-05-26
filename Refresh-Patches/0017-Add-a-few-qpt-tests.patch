@@ -1,4 +1,4 @@
-From c56996b80b1957c0364447a5c8778adb524f7bb0 Mon Sep 17 00:00:00 2001
+From 608447b7cc70048b220fc295fce9d9c03e7291b7 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 23 Apr 2014 16:42:47 -0700
 Subject: [PATCH] Add a few qpt tests:
@@ -295,10 +295,10 @@ index 0000000..e921ce0
 +    yield from get()
 diff --git a/qpt_tests/test_admin.py b/qpt_tests/test_admin.py
 new file mode 100644
-index 0000000..468c3fa
+index 0000000..9d1a2ab
 --- /dev/null
 +++ b/qpt_tests/test_admin.py
-@@ -0,0 +1,26 @@
+@@ -0,0 +1,28 @@
 +import re
 +
 +from cloudbot.util.qpt import test
@@ -307,9 +307,11 @@ index 0000000..468c3fa
 +@test()
 +def mass_test(conn, run_command, get):
 +    """
-+    :type conn: core.irc.BotConnection
++    :type conn: cloudbot.core.connection.BotConnection
 +    """
 +    conn.permissions.add_user_to_group("TestUser!~user@example.com", "admins")
++    conn.bot.config.save_config()
++    conn.permissions.reload()
 +    yield from run_command("groups")
 +    assert re.match(r"PRIVMSG #channel :\(TestUser\) Valid groups: {('\S+', )+'\S+'}", (yield from get()))
 +    for group in conn.permissions.get_groups():
