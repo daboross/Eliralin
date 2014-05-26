@@ -1,14 +1,14 @@
-From 3dc5af8f65727e35e205000f51c9b66e2fdfb974 Mon Sep 17 00:00:00 2001
+From 00d1834b87c900acb9bf5896a85f4ef86f0443e6 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:13:03 -0800
 Subject: [PATCH] Change ctcp reply to return 'Eliralin'
 
 
-diff --git a/modules/core_ctcp.py b/modules/core_ctcp.py
-index 2c18f9b..d4a7b7c 100644
---- a/modules/core_ctcp.py
-+++ b/modules/core_ctcp.py
-@@ -6,7 +6,7 @@ from util import hook
+diff --git a/plugins/core_ctcp.py b/plugins/core_ctcp.py
+index 1393228..8453d57 100644
+--- a/plugins/core_ctcp.py
++++ b/plugins/core_ctcp.py
+@@ -6,7 +6,7 @@ from cloudbot import hook
  # CTCP responses
  @hook.regex(r'^\x01VERSION\x01$')
  def ctcp_version(notice):

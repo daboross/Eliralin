@@ -1,16 +1,16 @@
-From 5d4cb06c58744a36ac21f1c751c4f64dcf23364b Mon Sep 17 00:00:00 2001
+From 37501dda6af6fe8843d8243681f50dac0d23f621 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:05:12 -0800
 Subject: [PATCH] Update minecraft_status to use unicode checks, and with a new
  format.
 
 
-diff --git a/modules/minecraft_status.py b/modules/minecraft_status.py
-index de60e94..c26706e 100644
---- a/modules/minecraft_status.py
-+++ b/modules/minecraft_status.py
+diff --git a/plugins/minecraft_status.py b/plugins/minecraft_status.py
+index 02f193e..d1a6ab4 100644
+--- a/plugins/minecraft_status.py
++++ b/plugins/minecraft_status.py
 @@ -3,42 +3,40 @@ import json
- from util import hook, http
+ from cloudbot import hook, http
  
  
 -@hook.command(autohelp=False)

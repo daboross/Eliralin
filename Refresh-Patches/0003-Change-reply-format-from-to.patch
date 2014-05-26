@@ -1,14 +1,14 @@
-From 8e577c5827a69b607c1d281978d3ba6cd61fe0be Mon Sep 17 00:00:00 2001
+From 1cef7187c78795532b2c2cbcf1f140d361c8929b Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 26 Apr 2014 18:39:33 -0700
 Subject: [PATCH] Change reply format from ({}) to {},
 
 
-diff --git a/core/main.py b/core/main.py
-index 4da45b8..87b2371 100644
---- a/core/main.py
-+++ b/core/main.py
-@@ -109,7 +109,7 @@ class Input:
+diff --git a/cloudbot/core/events.py b/cloudbot/core/events.py
+index 1137931..2237204 100644
+--- a/cloudbot/core/events.py
++++ b/cloudbot/core/events.py
+@@ -122,7 +122,7 @@ class BaseEvent:
          if target == self.nick:
              self.conn.msg(target, message)
          else:
@@ -17,6 +17,13 @@ index 4da45b8..87b2371 100644
  
      def action(self, message, target=None):
          """sends an action to the current channel/user or a specific channel/user
+@@ -243,4 +243,4 @@ class RegexEvent(BaseEvent):
+         super().__init__(bot=bot, conn=conn, hook=hook, base_event=base_event, irc_raw=irc_raw, irc_prefix=irc_prefix,
+                          irc_command=irc_command, irc_paramlist=irc_paramlist, irc_message=irc_message, nick=nick,
+                          user=user, host=host, mask=mask)
+-        self.match = match
+\ No newline at end of file
++        self.match = match
 -- 
 1.9.3
 
