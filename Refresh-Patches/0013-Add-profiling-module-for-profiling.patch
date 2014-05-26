@@ -1,9 +1,26 @@
-From 6e2f1802c924df68e664f2300e8639e5ca3aa099 Mon Sep 17 00:00:00 2001
+From af3360af0b09dcaf4a198ab5372df86430c0d101 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 3 May 2014 23:44:11 +0200
 Subject: [PATCH] Add profiling module for profiling
 
 
+diff --git a/cloudbot/__init__.py b/cloudbot/__init__.py
+index 102f2ec..d2ee8b7 100644
+--- a/cloudbot/__init__.py
++++ b/cloudbot/__init__.py
+@@ -5,9 +5,11 @@ import os
+ 
+ from .core import bot, connection, config, permissions, pluginmanager, events
+ from .util import botvars, bucket, formatting, hook, http, pyexec, textgen, timeformat, timesince, urlnorm, web
++from .util import threaddump
+ 
+ __all__ = ["core", "util", "bot", "connection", "config", "permissions", "pluginmanager", "events", "botvars", "bucket",
+-           "formatting", "hook", "http", "pyexec", "textgen", "timeformat", "timesince", "urlnorm", "web", "dev_mode"]
++           "formatting", "hook", "http", "pyexec", "textgen", "timeformat", "timesince", "urlnorm", "web", "dev_mode",
++           "threaddump"]
+ 
+ 
+ def _setup():
 diff --git a/cloudbot/util/threaddump.py b/cloudbot/util/threaddump.py
 new file mode 100644
 index 0000000..a980ae6
@@ -54,7 +71,7 @@ index 0000000..a980ae6
 +    return web.haste("\n".join(code), ext='txt')
 diff --git a/plugins/profiling.py b/plugins/profiling.py
 new file mode 100644
-index 0000000..e0aea21
+index 0000000..43a1d08
 --- /dev/null
 +++ b/plugins/profiling.py
 @@ -0,0 +1,44 @@
@@ -63,7 +80,7 @@ index 0000000..e0aea21
 +import objgraph
 +from pympler import muppy, summary, tracker
 +
-+from util import hook, threaddump
++from cloudbot import hook, threaddump
 +
 +
 +@hook.command(autohelp=False, permissions=["botcontrol"])

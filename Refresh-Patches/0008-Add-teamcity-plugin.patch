@@ -1,4 +1,4 @@
-From 5c3255437090b6e7c98520829581c92af67873e1 Mon Sep 17 00:00:00 2001
+From b68d7d2a2132995224e309fffedb3985e0a4fdee Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 18 Jan 2014 03:22:17 -0800
 Subject: [PATCH] Add teamcity plugin
@@ -6,7 +6,7 @@ Subject: [PATCH] Add teamcity plugin
 
 diff --git a/plugins/eliralin_teamcity.py b/plugins/eliralin_teamcity.py
 new file mode 100644
-index 0000000..2e5ecf1
+index 0000000..c206042
 --- /dev/null
 +++ b/plugins/eliralin_teamcity.py
 @@ -0,0 +1,158 @@
@@ -18,9 +18,9 @@ index 0000000..2e5ecf1
 +import requests
 +from requests.auth import HTTPBasicAuth
 +
-+from util import hook
++from cloudbot import hook
 +
-+teamcity_url = "http://ci.daboross.net/ci"
++teamcity_url = "http://ci.dabo.guru/ci"
 +
 +
 +class ProjectDatabase:
@@ -124,10 +124,10 @@ index 0000000..2e5ecf1
 +
 +
 +@hook.command(["teamcity", "ci"])
-+def teamcity(inp, bot, reply, message):
++def teamcity(text, bot, reply, message):
 +    """teamcity [project] - Searches for project on teamcity, and displays project URL and download"""
 +    database.ensure_loaded(bot=bot)
-+    search = inp.lower()
++    search = text.lower()
 +    level_found = 0
 +    project_found = None
 +    other_matches = []
@@ -149,7 +149,7 @@ index 0000000..2e5ecf1
 +        if len(other_matches) > 0:
 +            message("(Other matches: {})".format(", ".join(other_matches)))
 +    else:
-+        reply("No projects found matching '{}'".format(inp))
++        reply("No projects found matching '{}'".format(text))
 +    database.after_check()
 +
 +

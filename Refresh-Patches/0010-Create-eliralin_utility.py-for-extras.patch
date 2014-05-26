@@ -1,4 +1,4 @@
-From 474d9eee29c1efe5d320d898c45ada9739fb15f1 Mon Sep 17 00:00:00 2001
+From 3b744c1db42638a21829d15ac35e68970f475fdc Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:19:10 -0800
 Subject: [PATCH] Create eliralin_utility.py for extras
@@ -6,14 +6,14 @@ Subject: [PATCH] Create eliralin_utility.py for extras
 
 diff --git a/plugins/eliralin_utility.py b/plugins/eliralin_utility.py
 new file mode 100644
-index 0000000..6de03eb
+index 0000000..6d054c2
 --- /dev/null
 +++ b/plugins/eliralin_utility.py
-@@ -0,0 +1,118 @@
+@@ -0,0 +1,109 @@
 +from random import random
 +import socket
 +
-+from util import hook
++from cloudbot import hook
 +
 +
 +@hook.command(["josephus", "jose"])
@@ -111,23 +111,14 @@ index 0000000..6de03eb
 +
 +
 +@hook.command
-+def rdns(inp):
++def rdns(text):
 +    """rdns [ip] - Resolves the hostname of an IP"""
 +    try:
 +        socket.setdefaulttimeout(5)
-+        domain = socket.gethostbyaddr(inp)[0]
-+        return "{} resolves to {}".format(inp, domain)
++        domain = socket.gethostbyaddr(text)[0]
++        return "{} resolves to {}".format(text, domain)
 +    except socket.gaierror:
 +        return "Resolve Failed!"
-+
-+
-+@hook.command("unicode")
-+def unicodecommand(inp, reply):
-+    try:
-+        return "'{}'".format(chr(int(inp)))
-+    except ValueError:
-+        reply("Failed")
-+        raise
 -- 
 1.9.3
 
