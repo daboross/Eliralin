@@ -1,0 +1,28 @@
+From 53f82d0ca4c9148f5791913ef9c3f71520bad382 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Wed, 23 Apr 2014 16:39:07 -0700
+Subject: [PATCH] Disable the command limiting system when using qpt
+
+
+diff --git a/plugins/core_sieve.py b/plugins/core_sieve.py
+index 404ffde..ef0d283 100644
+--- a/plugins/core_sieve.py
++++ b/plugins/core_sieve.py
+@@ -1,4 +1,4 @@
+-from cloudbot import bucket, hook
++from cloudbot import bucket, hook, qpt
+ 
+ TOKENS = 10
+ RESTORE_RATE = 2
+@@ -51,6 +51,8 @@ def sieve_suite(bot, event, hook):
+ 
+     # check command spam tokens
+     if hook.type == "command":
++        if qpt.is_enabled():
++            return input  # Don't run tokens when testing plugins - need to do it quickly
+         uid = event.chan
+ 
+         if not uid in buckets:
+-- 
+1.9.3
+

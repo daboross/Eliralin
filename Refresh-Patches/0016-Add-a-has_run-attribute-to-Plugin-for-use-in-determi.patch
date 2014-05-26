@@ -1,0 +1,32 @@
+From 229733bf1cd96c0da2eeb6831a940aee1d3bc2d1 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Wed, 23 Apr 2014 16:42:08 -0700
+Subject: [PATCH] Add a has_run attribute to Plugin for use in determining test
+ completeness
+
+
+diff --git a/cloudbot/core/pluginmanager.py b/cloudbot/core/pluginmanager.py
+index 477e084..8bb8538 100644
+--- a/cloudbot/core/pluginmanager.py
++++ b/cloudbot/core/pluginmanager.py
+@@ -434,6 +434,8 @@ class PluginManager:
+             # Run the plugin with the message, and wait for it to finish
+             result = yield from self._execute_hook(hook, event)
+ 
++        hook.has_run = True
++
+         # Return the result
+         return result
+ 
+@@ -540,6 +542,8 @@ class Hook:
+             logging.getLogger("cloudbot").warning("Ignoring extra args {} from {}:{}".format(
+                 func_hook.kwargs, self.plugin.title, self.function_name))
+ 
++        self.has_run = False
++
+     def __repr__(self):
+         return "type: {}, plugin: {}, ignore_bots: {}, permissions: {}, single_thread: {}, threaded: {}".format(
+             self.type, self.plugin.title, self.ignore_bots, self.permissions, self.single_thread, self.threaded
+-- 
+1.9.3
+
