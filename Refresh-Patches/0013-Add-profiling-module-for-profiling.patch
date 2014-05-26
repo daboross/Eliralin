@@ -1,4 +1,4 @@
-From af3360af0b09dcaf4a198ab5372df86430c0d101 Mon Sep 17 00:00:00 2001
+From 9f9cf225a273eec729781b533e44226b555a6fb0 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 3 May 2014 23:44:11 +0200
 Subject: [PATCH] Add profiling module for profiling
@@ -23,7 +23,7 @@ index 102f2ec..d2ee8b7 100644
  def _setup():
 diff --git a/cloudbot/util/threaddump.py b/cloudbot/util/threaddump.py
 new file mode 100644
-index 0000000..a980ae6
+index 0000000..28ce79c
 --- /dev/null
 +++ b/cloudbot/util/threaddump.py
 @@ -0,0 +1,42 @@
@@ -31,7 +31,7 @@ index 0000000..a980ae6
 +import traceback
 +import sys
 +
-+from util import web
++from cloudbot.util import web
 +
 +
 +def get_name(thread_id):
