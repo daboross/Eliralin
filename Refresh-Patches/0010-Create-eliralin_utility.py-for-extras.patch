@@ -1,14 +1,14 @@
-From 9275b240bfc43bc47a7b5fca359a5ab322b05626 Mon Sep 17 00:00:00 2001
+From 474d9eee29c1efe5d320d898c45ada9739fb15f1 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:19:10 -0800
 Subject: [PATCH] Create eliralin_utility.py for extras
 
 
-diff --git a/modules/eliralin_utility.py b/modules/eliralin_utility.py
+diff --git a/plugins/eliralin_utility.py b/plugins/eliralin_utility.py
 new file mode 100644
 index 0000000..6de03eb
 --- /dev/null
-+++ b/modules/eliralin_utility.py
++++ b/plugins/eliralin_utility.py
 @@ -0,0 +1,118 @@
 +from random import random
 +import socket

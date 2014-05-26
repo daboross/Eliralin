@@ -1,14 +1,14 @@
-From 23d0e25a730aa930486e2e2b64369d4d19202e1a Mon Sep 17 00:00:00 2001
+From 0a82beb781504fa47a7d32bfc67354d87eb8c583 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 29 Apr 2014 02:58:21 -0700
 Subject: [PATCH] Add per-channel command prefixes
 
 
-diff --git a/modules/prefixes.py b/modules/prefixes.py
+diff --git a/plugins/prefixes.py b/plugins/prefixes.py
 new file mode 100644
 index 0000000..ce575fd
 --- /dev/null
-+++ b/modules/prefixes.py
++++ b/plugins/prefixes.py
 @@ -0,0 +1,83 @@
 +import re
 +

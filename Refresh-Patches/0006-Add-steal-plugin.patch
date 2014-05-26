@@ -1,14 +1,14 @@
-From 2d8c374828e84051308c4f189f5cb0986dd31379 Mon Sep 17 00:00:00 2001
+From 3e8a48fc113a3ec3ffc07b2249351f7044737f8d Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:18:52 -0800
-Subject: [PATCH] Add 'steal' command.
+Subject: [PATCH] Add steal plugin.
 
 
-diff --git a/modules/steal.py b/modules/steal.py
+diff --git a/plugins/steal.py b/plugins/steal.py
 new file mode 100644
 index 0000000..21d61bc
 --- /dev/null
-+++ b/modules/steal.py
++++ b/plugins/steal.py
 @@ -0,0 +1,77 @@
 +from random import randint
 +
