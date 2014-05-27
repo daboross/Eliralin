@@ -1,4 +1,4 @@
-From 57bc4fbf31eeb2e113bdb436200922cf25582901 Mon Sep 17 00:00:00 2001
+From 2daea223373297b9beb5a6e7dc2ae6be54e5c139 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 23 Apr 2014 16:42:47 -0700
 Subject: [PATCH] Add a few qpt tests:
@@ -9,10 +9,10 @@ Subject: [PATCH] Add a few qpt tests:
 
 diff --git a/qpt_tests/mass.py b/qpt_tests/mass.py
 new file mode 100644
-index 0000000..e921ce0
+index 0000000..8f6a221
 --- /dev/null
 +++ b/qpt_tests/mass.py
-@@ -0,0 +1,280 @@
+@@ -0,0 +1,304 @@
 +import re
 +
 +from cloudbot.util import qpt
@@ -26,11 +26,11 @@ index 0000000..e921ce0
 +    ),
 +    (
 +        "bf ++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.",
-+        r"PRIVMSG #channel :\(TestUser\) Hello World!"
++        r"PRIVMSG #channel :TestUser, Hello World!"
 +    ),
 +    (
 +        "choose option1, option2 option3     option4",
-+        r"PRIVMSG #channel :\(TestUser\) (option1|option2|option3|option4)"
++        r"PRIVMSG #channel :TestUser, (option1|option2|option3|option4)"
 +    ),
 +    (
 +        "coin",
@@ -74,6 +74,8 @@ index 0000000..e921ce0
 +    "lart itself",
 +    # brainfuck.py - tested above
 +    # choose.py - tested above
++    # coin.py - tested above
++    # core_ctcp, core_misc, core_sieve, core_tracker, correction - empty
 +    # cryptocoins.py
 +    "ltc",
 +    "btc",
@@ -81,6 +83,8 @@ index 0000000..e921ce0
 +    "cypher mypassword mytext",
 +    "decypher mypassword w5rDssOkw4bDq8On",
 +    # dbtest.py - TODO
++    # debug.py
++    "debug",
 +    # dice.py
 +    "roll 2d6",
 +    # dictionary.py
@@ -92,6 +96,17 @@ index 0000000..e921ce0
 +    "drama world",
 +    # eightball.py
 +    "8 ?",
++    # eliralin_teamcity.py
++    "listci",
++    "reloadci",
++    "ci SkyWars",
++    # eliralin_utility.py
++    "colors",
++    "dns qx.lc",
++    "hug TestUser2",
++    "jose 5",
++    "rdns qx.lc",
++    "tree",
 +    # encrypt.py - test_encrypt.py
 +    # fact.py
 +    "fact",
@@ -103,6 +118,10 @@ index 0000000..e921ce0
 +    "bans daboross",
 +    # fmylife.py
 +    "fml",
++    # foods.py
++    "cake TestUser2",
++    "cookie TestUser2",
++    "potato TestUser2",
 +    # fortune.py
 +    "fortune",
 +    # geoip.py
@@ -118,6 +137,7 @@ index 0000000..e921ce0
 +    # help.py
 +    "help",
 +    "help lart",
++    # history.py - TODO
 +    # horoscope.py
 +    "horoscope",
 +    # hulu.py - TODO
@@ -189,8 +209,12 @@ index 0000000..e921ce0
 +    "ping dabo.guru",
 +    # plpaste.py
 +    "plpaste admin",
-+    # potato.py
-+    "potato Dabo",
++    # prefixes.py
++    "addprefix %",
++    "delprefix %",
++    # profiling.py
++    "threaddump",
++    # pympler_* / show_* not included
 +    # python.py
 +    "python print('Hello World!')",
 +    # qrcode.py
@@ -295,7 +319,7 @@ index 0000000..e921ce0
 +    yield from get()
 diff --git a/qpt_tests/test_admin.py b/qpt_tests/test_admin.py
 new file mode 100644
-index 0000000..9d1a2ab
+index 0000000..b1b189e
 --- /dev/null
 +++ b/qpt_tests/test_admin.py
 @@ -0,0 +1,28 @@
@@ -313,23 +337,23 @@ index 0000000..9d1a2ab
 +    conn.bot.config.save_config()
 +    conn.permissions.reload()
 +    yield from run_command("groups")
-+    assert re.match(r"PRIVMSG #channel :\(TestUser\) Valid groups: {('\S+', )+'\S+'}", (yield from get()))
++    assert re.match(r"PRIVMSG #channel :TestUser, Valid groups: {('\S+', )+'\S+'}", (yield from get()))
 +    for group in conn.permissions.get_groups():
 +        yield from run_command("gperms {}".format(group))
 +        assert re.match(
-+            r"PRIVMSG #channel :\(TestUser\) Group \S+ has permissions \[('\S+', )*'\S+'\]|"
-+            r"PRIVMSG #channel :\(TestUser\) Group \S+ exists, but has no permissions",
++            r"PRIVMSG #channel :TestUser, Group \S+ has permissions \[('\S+', )*'\S+'\]|"
++            r"PRIVMSG #channel :TestUser, Group \S+ exists, but has no permissions",
 +            (yield from get())
 +        )
 +        yield from run_command("gusers {}".format(group))
 +        assert re.match(
-+            r"PRIVMSG #channel :\(TestUser\) Group \S+ has members: \[('\S+', )*'\S+'\]|"
-+            r"PRIVMSG #channel :\(TestUser\) Group \S+ exists, but has no members",
++            r"PRIVMSG #channel :TestUser, Group \S+ has members: \[('\S+', )*'\S+'\]|"
++            r"PRIVMSG #channel :TestUser, Group \S+ exists, but has no members",
 +            (yield from get())
 +        )
 diff --git a/qpt_tests/test_encrypt.py b/qpt_tests/test_encrypt.py
 new file mode 100644
-index 0000000..c5446b0
+index 0000000..8642ea7
 --- /dev/null
 +++ b/qpt_tests/test_encrypt.py
 @@ -0,0 +1,13 @@
@@ -341,15 +365,15 @@ index 0000000..c5446b0
 +@qpt.test()
 +def test_encrypt(run_command, get):
 +    yield from run_command("encrypt mypass mytext")
-+    match = re.match(r"PRIVMSG #channel :\(TestUser\) (.+)", (yield from get()))
++    match = re.match(r"PRIVMSG #channel :TestUser, (.+)", (yield from get()))
 +    assert match
 +    assert match.groups()
 +    yield from run_command("decrypt mypass {}".format(match.groups()[0]))
-+    assert re.match(r"PRIVMSG #channel :\(TestUser\) mytext", (yield from get()))
++    assert re.match(r"PRIVMSG #channel :TestUser, mytext", (yield from get()))
 \ No newline at end of file
 diff --git a/qpt_tests/test_factoids.py b/qpt_tests/test_factoids.py
 new file mode 100644
-index 0000000..085a474
+index 0000000..52efcb5
 --- /dev/null
 +++ b/qpt_tests/test_factoids.py
 @@ -0,0 +1,17 @@
@@ -362,7 +386,7 @@ index 0000000..085a474
 +def test_factoids(run_command, send, get):
 +    yield from run_command("r qpttest qpttestcode")
 +    yield from get()
-+    yield from send(":TestUser!~user@example.com PRIVMSG #channel :?qpttest")
++    yield from send(":TestUser!~user@example.com PRIVMSG #channel :^qpttest")
 +    assert re.match(r"PRIVMSG #channel :qpttestcode", (yield from get()))
 +
 +    yield from run_command("f qpttestcode")

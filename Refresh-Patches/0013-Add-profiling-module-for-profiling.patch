@@ -1,4 +1,4 @@
-From 3c3e97648ae9c52ed7902345476081277e74d0f3 Mon Sep 17 00:00:00 2001
+From b6eb7fb1f73d5c013fd32ff061d4a0f3ae2d6e03 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 3 May 2014 23:44:11 +0200
 Subject: [PATCH] Add profiling module for profiling
@@ -71,7 +71,7 @@ index 0000000..28ce79c
 +    return web.haste("\n".join(code), ext='txt')
 diff --git a/plugins/profiling.py b/plugins/profiling.py
 new file mode 100644
-index 0000000..43a1d08
+index 0000000..be201f0
 --- /dev/null
 +++ b/plugins/profiling.py
 @@ -0,0 +1,44 @@
@@ -83,8 +83,8 @@ index 0000000..43a1d08
 +from cloudbot import hook, threaddump
 +
 +
-+@hook.command(autohelp=False, permissions=["botcontrol"])
-+def threaddump(reply):
++@hook.command(threaded=False, autohelp=False, permissions=["botcontrol"])
++def threaddump_command(reply):
 +    reply("Running thread dump")
 +    return "Thread dump located at {}".format(threaddump.get_thread_dump())
 +

@@ -1,0 +1,25 @@
+From ccff56b168f1166ade2d6bcc5432b37372348535 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Tue, 27 May 2014 01:29:42 -0700
+Subject: [PATCH] Update youtime to use text
+
+
+diff --git a/plugins/youtube.py b/plugins/youtube.py
+index f7c9fa2..bf7675d 100644
+--- a/plugins/youtube.py
++++ b/plugins/youtube.py
+@@ -83,9 +83,9 @@ def youtube(text):
+ 
+ 
+ @hook.command(["youtime", "ytime"])
+-def youtime(inp):
++def youtime(text):
+     """youtime <query> -- Gets the total run time of the first YouTube search result for <query>."""
+-    request = http.get_json(search_api_url, q=inp)
++    request = http.get_json(search_api_url, q=text)
+ 
+     if 'error' in request:
+         return 'error performing search'
+-- 
+1.9.3
+
