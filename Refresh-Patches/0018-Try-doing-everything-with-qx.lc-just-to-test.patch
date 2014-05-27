@@ -1,4 +1,4 @@
-From 98c579a658fbb9ed277e279647e6e2c1ef5e5f7f Mon Sep 17 00:00:00 2001
+From 108c781c57b3ea826176c1dd7c3a602d666d3cce Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 27 May 2014 11:01:39 -0700
 Subject: [PATCH] Try doing everything with qx.lc - just to test
@@ -100,10 +100,10 @@ index b88a297..16d486d 100644
 -        return web.isgd("http://imgur.com/" + ','.join(items))
 +        return web.try_shorten_qxlc("http://imgur.com/" + ','.join(items))
 diff --git a/plugins/lmgtfy.py b/plugins/lmgtfy.py
-index 926c6cc..fca8a2c 100644
+index de03830..f41acdc 100644
 --- a/plugins/lmgtfy.py
 +++ b/plugins/lmgtfy.py
-@@ -8,7 +8,4 @@ def lmgtfy(text):
+@@ -7,7 +7,4 @@ def lmgtfy(text):
  
      link = "http://lmgtfy.com/?q={}".format(http.quote_plus(text))
  
