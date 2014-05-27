@@ -1,4 +1,4 @@
-From b170da2aaffcdb6c19d053fb8e8b339b1299defd Mon Sep 17 00:00:00 2001
+From ba16939301b3c3373eb8aee3900d39ae05a20572 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 29 Apr 2014 02:58:21 -0700
 Subject: [PATCH] Add per-channel command prefixes
@@ -6,17 +6,16 @@ Subject: [PATCH] Add per-channel command prefixes
 
 diff --git a/plugins/prefixes.py b/plugins/prefixes.py
 new file mode 100644
-index 0000000..ce575fd
+index 0000000..52550b3
 --- /dev/null
 +++ b/plugins/prefixes.py
-@@ -0,0 +1,83 @@
+@@ -0,0 +1,88 @@
 +import re
 +
 +from sqlalchemy import Table, Column, String, UniqueConstraint
 +
-+from core import main
-+
-+from util import hook, botvars
++from cloudbot import hook, botvars
++from cloudbot.core.events import CommandEvent
 +
 +table = Table(
 +    "prefixes",
@@ -80,19 +79,25 @@ index 0000000..ce575fd
 +
 +
 +@hook.event("PRIVMSG", threaded=False)
-+def run_extra_prefix(input, bot, conn, chan, lastparam):
++def run_extra_prefix(event, bot, conn, chan, irc_message):
++    """
++    :type event: cloudbot.core.events.BaseEvent
++    :type bot: cloudbot.core.bot.CloudBot
++    :type conn: cloudbot.core.connection.BotConnection
++    :type chan: str
++    :type irc_message: str
++    """
 +    key = (conn.name, chan)
 +    if key in chan_re:
-+        match = chan_re[key].match(lastparam)
++        match = chan_re[key].match(irc_message)
 +        if match:
 +            command = match.group(2).lower()
 +            if command in bot.plugin_manager.commands:
-+                plugin = bot.plugin_manager.commands[command]
-+                # this input is a one-use input, so we can just modify it and send it to the plugin
-+                input.trigger = command
-+                input.text = match.group(3).strip()
-+                input.inp = input.text  # re-set inp as well, for compatibilty
-+                yield from main.dispatch(bot, input, plugin)
++                command_hook = bot.plugin_manager.commands[command]
++                # this event is a one-use event, so we can just modify it and send it to the plugin
++                event = CommandEvent(triggered_command=command, hook=command_hook, text=match.group(3).strip(),
++                                     base_event=event)
++                yield from bot.plugin_manager.launch(command_hook, event)
 -- 
 1.9.3
 
