@@ -1,0 +1,362 @@
+From 98c579a658fbb9ed277e279647e6e2c1ef5e5f7f Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Tue, 27 May 2014 11:01:39 -0700
+Subject: [PATCH] Try doing everything with qx.lc - just to test
+
+
+diff --git a/cloudbot/util/pyexec.py b/cloudbot/util/pyexec.py
+index caedfc1..424d94f 100644
+--- a/cloudbot/util/pyexec.py
++++ b/cloudbot/util/pyexec.py
+@@ -25,6 +25,6 @@ def eval_py(code, paste_multiline=True):
+         status = "Code executed sucessfully: "
+ 
+     if "\n" in output and paste_multiline:
+-        return status + web.haste(output)
++        return status + web.paste_qxlc(output)
+     else:
+         return output
+diff --git a/cloudbot/util/web.py b/cloudbot/util/web.py
+index bc87c64..d6a7b63 100644
+--- a/cloudbot/util/web.py
++++ b/cloudbot/util/web.py
+@@ -5,6 +5,8 @@ import urllib.request
+ import urllib.parse
+ import urllib.error
+ 
++import requests
++
+ from cloudbot.util import urlnorm, http
+ 
+ short_url = "http://is.gd/create.php"
+@@ -61,3 +63,43 @@ def haste(text, ext='txt'):
+     page = http.get(paste_url + "/documents", post_data=text)
+     data = json.loads(page)
+     return "{}/{}.{}".format(paste_url, data['key'], ext)
++
++
++def shorten_qxlc(url):
++    """
++    Shortens a URL with the qx.lc API.
++    :type url: str
++    :rtype: str
++    """
++    r = requests.post("http://qx.lc/api/shorten", data={"url": url})
++    if r.status_code == "200":
++        return r.text
++    else:
++        raise ShortenError(r.status_code, r.text)
++
++
++def try_shorten_qxlc(url):
++    """
++    Attempts to shortens a URL with the qx.lc API, or returns the original URL if shortening failed.
++    :type url: str
++    :rtype: str
++    """
++    try:
++        return shorten_qxlc(url)
++    except ShortenError:
++        return url
++
++
++def paste_qxlc(text, ext=None):
++    """
++    Pastes text to a qx.lc
++    :type text: str
++    :type ext: str
++    :rtype: str
++    """
++    r = requests.post("http://qx.lc/api/paste", data={"paste": text})
++    r.raise_for_status()
++    if ext:
++        return "{}.{}".format(r.text, ext)
++    else:
++        return r.text
+\ No newline at end of file
+diff --git a/plugins/fact.py b/plugins/fact.py
+index 9594c10..12d9a5f 100644
+--- a/plugins/fact.py
++++ b/plugins/fact.py
+@@ -32,6 +32,6 @@ def fact():
+                 attempts += 1
+                 continue
+ 
+-    url = web.try_isgd(link)
++    url = web.try_shorten_qxlc(link)
+ 
+     return "{} - {}".format(fact_data, url)
+diff --git a/plugins/imgur.py b/plugins/imgur.py
+index b88a297..16d486d 100644
+--- a/plugins/imgur.py
++++ b/plugins/imgur.py
+@@ -76,6 +76,6 @@ def imgur(text):
+         return "No images found (use .imgur <subreddit> nsfw to show explicit content)"
+ 
+     if show_nsfw:
+-        return "{} \x02NSFW\x02".format(web.isgd("http://imgur.com/" + ','.join(items)))
++        return "{} \x02NSFW\x02".format(web.try_shorten_qxlc("http://imgur.com/" + ','.join(items)))
+     else:
+-        return web.isgd("http://imgur.com/" + ','.join(items))
++        return web.try_shorten_qxlc("http://imgur.com/" + ','.join(items))
+diff --git a/plugins/lmgtfy.py b/plugins/lmgtfy.py
+index 926c6cc..fca8a2c 100644
+--- a/plugins/lmgtfy.py
++++ b/plugins/lmgtfy.py
+@@ -8,7 +8,4 @@ def lmgtfy(text):
+ 
+     link = "http://lmgtfy.com/?q={}".format(http.quote_plus(text))
+ 
+-    try:
+-        return web.isgd(link)
+-    except (web.ShortenError, http.HTTPError):
+-        return link
++    return web.try_shorten_qxlc(link)
+diff --git a/plugins/lyrics.py b/plugins/lyrics.py
+index da35e35..4e069f3 100644
+--- a/plugins/lyrics.py
++++ b/plugins/lyrics.py
+@@ -26,7 +26,7 @@ def lyrics(inp):
+             newsoup = http.get_soup(link)
+             try:
+                 lyrics = newsoup.find('div', {'style': 'margin-left:10px;margin-right:10px;'}).text.strip()
+-                pasteurl = " " + web.haste(lyrics)
++                pasteurl = " " + web.paste_qxlc(lyrics)
+             except Exception as e:
+                 pasteurl = " (\x02Unable to paste lyrics\x02 [{}])".format(str(e))
+         else:
+@@ -37,7 +37,7 @@ def lyrics(inp):
+             lyricsum = " / ".join(lyricsum.strip().split("\r\n")[0:4])  # truncate, format
+         else:
+             lyricsum = " / ".join(lyricsum.strip().split("\n")[0:4])  # truncate, format
+-        return "\x02{}\x02 by \x02{}\x02 {}{} - {}".format(title, artist, web.try_isgd(link), pasteurl,
++        return "\x02{}\x02 by \x02{}\x02 {}{} - {}".format(title, artist, web.try_shorten_qxlc(link), pasteurl,
+                                                            lyricsum[:-3])
+     else:
+         return "No song results. " + url + inp.replace(" ", "+")
+diff --git a/plugins/minecraft_bukget.py b/plugins/minecraft_bukget.py
+index b32f88c..764881e 100644
+--- a/plugins/minecraft_bukget.py
++++ b/plugins/minecraft_bukget.py
+@@ -99,7 +99,7 @@ def format_output(data):
+     version_number = data['versions'][0]['version']
+ 
+     bukkit_versions = ", ".join(current_version['game_versions'])
+-    link = web.try_isgd(current_version['link'])
++    link = web.try_shorten_qxlc(current_version['link'])
+ 
+     if description:
+         line_a = "\x02{}\x02, by \x02{}\x02 - {} - ({}) \x02{}".format(name, authors, description, stage, url)
+diff --git a/plugins/newegg.py b/plugins/newegg.py
+index c78816c..d50a7c7 100644
+--- a/plugins/newegg.py
++++ b/plugins/newegg.py
+@@ -53,7 +53,7 @@ def format_item(item, show_url=True):
+ 
+     if show_url:
+         # create the item URL and shorten it
+-        url = web.try_isgd(ITEM_URL.format(item["NeweggItemNumber"]))
++        url = web.try_shorten_qxlc(ITEM_URL.format(item["NeweggItemNumber"]))
+         return "\x02{}\x02 ({}) - {} - {} - {}".format(title, price, rating,
+                                                        tag_text, url)
+     else:
+diff --git a/plugins/osrc.py b/plugins/osrc.py
+index 8468bec..26b3a15 100644
+--- a/plugins/osrc.py
++++ b/plugins/osrc.py
+@@ -22,6 +22,6 @@ def osrc(text):
+     # string to remove the trailing full stop.
+     report = " ".join(report.split())[:-1]
+ 
+-    short_url = web.try_isgd(url)
++    short_url = web.try_shorten_qxlc(url)
+ 
+     return "{} - {}".format(report, short_url)
+diff --git a/plugins/plpaste.py b/plugins/plpaste.py
+index 2cd984a..f4c2578 100644
+--- a/plugins/plpaste.py
++++ b/plugins/plpaste.py
+@@ -12,9 +12,9 @@ def plpaste(text, bot):
+     if text in bot.plugin_manager.commands:
+         file_path = bot.plugin_manager.commands[text].plugin.file_path
+         with open(file_path) as f:
+-            return web.haste(f.read(), ext='py')
++            return web.paste_qxlc(f.read(), ext='py')
+     elif text + ".py" in listdir('plugins/'):
+         with open('plugins/{}.py'.format(text)) as f:
+-            return web.haste(f.read(), ext='py')
++            return web.paste_qxlc(f.read(), ext='py')
+     else:
+         return "Could not find specified plugin."
+diff --git a/plugins/qrcode.py b/plugins/qrcode.py
+index 4c31144..ea6e465 100644
+--- a/plugins/qrcode.py
++++ b/plugins/qrcode.py
+@@ -2,8 +2,7 @@
+ from cloudbot import hook, web, http
+ 
+ 
+-@hook.command('qr')
+-@hook.command
++@hook.command(["qrcode", "qr"])
+ def qrcode(text):
+     """qrcode [link] returns a link for a QR code."""
+ 
+@@ -15,4 +14,4 @@ def qrcode(text):
+ 
+     link = http.prepare_url("http://chart.googleapis.com/chart", args)
+ 
+-    return web.try_isgd(link)
++    return web.try_shorten_qxlc(link)
+diff --git a/plugins/recipe.py b/plugins/recipe.py
+index 12c6ae0..73d748c 100644
+--- a/plugins/recipe.py
++++ b/plugins/recipe.py
+@@ -85,7 +85,7 @@ def recipe(text):
+         return "Could not parse recipe: {}".format(e)
+ 
+     name = data["name"].strip()
+-    return "Try eating \x02{}!\x02 - {}".format(name, web.try_isgd(url))
++    return "Try eating \x02{}!\x02 - {}".format(name, web.try_shorten_qxlc(url))
+ 
+ 
+ @hook.command(autohelp=False)
+@@ -108,4 +108,4 @@ def dinner():
+     if censor:
+         text = text.replace("FUCK", "F**K")
+ 
+-    return "{} - {}".format(text, web.try_isgd(url))
++    return "{} - {}".format(text, web.try_shorten_qxlc(url))
+diff --git a/plugins/rss.py b/plugins/rss.py
+index 663a997..9a1155a 100644
+--- a/plugins/rss.py
++++ b/plugins/rss.py
+@@ -27,10 +27,7 @@ def rss(text, message):
+ 
+     for row in result.rows:
+         title = formatting.truncate_str(row["title"], 100)
+-        try:
+-            link = web.isgd(row["link"])
+-        except (web.ShortenError, http.HTTPError, http.URLError):
+-            link = row["link"]
++        link = web.try_shorten_qxlc(row["link"])
+         message("{} - {}".format(title, link))
+ 
+ 
+diff --git a/plugins/shorten.py b/plugins/shorten.py
+index ebd7769..78b6e80 100644
+--- a/plugins/shorten.py
++++ b/plugins/shorten.py
+@@ -6,6 +6,6 @@ def shorten(text):
+     """shorten <url> - Makes an is.gd shortlink to the url provided."""
+ 
+     try:
+-        return web.isgd(text)
+-    except (web.ShortenError, http.HTTPError) as error:
++        return web.shorten_qxlc(text)
++    except web.ShortenError as error:
+         return error
+diff --git a/plugins/soundcloud.py b/plugins/soundcloud.py
+index bd13391..54e9a53 100644
+--- a/plugins/soundcloud.py
++++ b/plugins/soundcloud.py
+@@ -21,7 +21,7 @@ def soundcloud(url, api_key):
+     else:
+         genre = ""
+ 
+-    url = web.try_isgd(data['permalink_url'])
++    url = web.try_shorten_qxlc(data['permalink_url'])
+ 
+     return "SoundCloud track: \x02{}\x02 by \x02{}\x02 {}{}- {} plays, {} downloads, {} comments - {}".format(
+         data['title'], data['user']['username'], desc, genre, data['playback_count'], data['download_count'],
+diff --git a/plugins/spotify.py b/plugins/spotify.py
+index dcac6e5..64e1c73 100644
+--- a/plugins/spotify.py
++++ b/plugins/spotify.py
+@@ -28,7 +28,7 @@ def sptfy(inp, sptfy=False):
+                 'class': 'messagebox_text'}).find('p').text.split("<br/>")[0])
+             return message
+     else:
+-        return web.try_isgd(inp)
++        return web.try_shorten_qxlc(inp)
+ 
+ 
+ @hook.command('sptrack')
+diff --git a/plugins/steam.py b/plugins/steam.py
+index 7594134..180dbef 100644
+--- a/plugins/steam.py
++++ b/plugins/steam.py
+@@ -69,4 +69,4 @@ def steam(inp):
+     page = http.get("http://store.steampowered.com/search/?term=" + inp)
+     soup = BeautifulSoup(page, 'lxml', from_encoding="utf-8")
+     result = soup.find('a', {'class': 'search_result_row'})
+-    return get_steam_info(result['href']) + " - " + web.isgd(result['href'])
++    return get_steam_info(result['href']) + " - " + web.try_shorten_qxlc(result['href'])
+diff --git a/plugins/update.py b/plugins/update.py
+index aae5258..fd4d11a 100644
+--- a/plugins/update.py
++++ b/plugins/update.py
+@@ -12,7 +12,7 @@ def update():
+     except Exception as e:
+         return e
+     if "\n" in pull:
+-        return web.haste(pull)
++        return web.paste_qxlc(pull)
+     else:
+         return pull
+ 
+diff --git a/plugins/valvesounds.py b/plugins/valvesounds.py
+index 9207350..f1b4e88 100644
+--- a/plugins/valvesounds.py
++++ b/plugins/valvesounds.py
+@@ -29,7 +29,7 @@ def get_sound_info(game, search):
+     if len(items) == 1:
+         return items[0]
+     else:
+-        return "{} (and {} others: {})".format(items[0], len(items) - 1, web.haste("\n".join(items)))
++        return "{} (and {} others: {})".format(items[0], len(items) - 1, web.paste_qxlc("\n".join(items)))
+ 
+ 
+ @hook.command
+diff --git a/plugins/weather.py b/plugins/weather.py
+index e71dd2c..cbece04 100644
+--- a/plugins/weather.py
++++ b/plugins/weather.py
+@@ -85,7 +85,7 @@ def weather(text, reply, db, nick, bot, notice):
+         "tomorrow_high_c": forecast_tomorrow['high']['celsius'],
+         "tomorrow_low_f": forecast_tomorrow['low']['fahrenheit'],
+         "tomorrow_low_c": forecast_tomorrow['low']['celsius'],
+-        "url": web.isgd(response["current_observation"]['forecast_url'] + "?apiref=e535207ff4757b18")
++        "url": web.try_shorten_qxlc(response["current_observation"]['forecast_url'] + "?apiref=e535207ff4757b18")
+     }
+ 
+     reply("{place} - \x02Current:\x02 {conditions}, {temp_f}F/{temp_c}C, {humidity}, "
+diff --git a/plugins/wolframalpha.py b/plugins/wolframalpha.py
+index 303406f..fc7c2f9 100644
+--- a/plugins/wolframalpha.py
++++ b/plugins/wolframalpha.py
+@@ -18,7 +18,7 @@ def wolframalpha(text, bot):
+     # get the URL for a user to view this query in a browser
+     query_url = "http://www.wolframalpha.com/input/?i=" + \
+                 http.quote_plus(text.encode('utf-8'))
+-    short_url = web.try_isgd(query_url)
++    short_url = web.try_shorten_qxlc(query_url)
+ 
+     pod_texts = []
+     for pod in result.xpath("//pod[@primary='true']"):
+diff --git a/plugins/yahooanswers.py b/plugins/yahooanswers.py
+index b68ff0a..c13a672 100644
+--- a/plugins/yahooanswers.py
++++ b/plugins/yahooanswers.py
+@@ -8,7 +8,7 @@ def answer(text):
+     query = "SELECT Subject, ChosenAnswer, Link FROM answers.search WHERE query=@query LIMIT 1"
+     result = web.query(query, {"query": text.strip()}).one()
+ 
+-    short_url = web.try_isgd(result["Link"])
++    short_url = web.try_shorten_qxlc(result["Link"])
+ 
+     # we split the answer and .join() it to remove newlines/extra spaces
+     answer_text = formatting.truncate_str(' '.join(result["ChosenAnswer"].split()), 80)
+-- 
+1.9.3
+
