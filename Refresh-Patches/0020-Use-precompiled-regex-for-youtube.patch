@@ -1,0 +1,32 @@
+From cb84a03c44463086f243303397d88e8602411f0f Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Thu, 29 May 2014 21:53:34 -0700
+Subject: [PATCH] Use precompiled regex for youtube
+
+
+diff --git a/plugins/youtube.py b/plugins/youtube.py
+index bf7675d..38903af 100644
+--- a/plugins/youtube.py
++++ b/plugins/youtube.py
+@@ -3,8 +3,7 @@ import time
+ 
+ from cloudbot import hook, http, timeformat
+ 
+-youtube_re = (r'(?:youtube.*?(?:v=|/v/)|youtu\.be/|yooouuutuuube.*?id=)'
+-              '([-_a-zA-Z0-9]+)', re.I)
++youtube_re = re.compile(r'(?:youtube.*?(?:v=|/v/)|youtu\.be/|yooouuutuuube.*?id=)([-_a-zA-Z0-9]+)', re.I)
+ 
+ base_url = 'http://gdata.youtube.com/feeds/api/'
+ api_url = base_url + 'videos/{}?v=2&alt=jsonc'
+@@ -61,7 +60,7 @@ def get_video_description(video_id):
+     return out
+ 
+ 
+-@hook.regex(*youtube_re)
++@hook.regex(youtube_re)
+ def youtube_url(match):
+     return get_video_description(match.group(1))
+ 
+-- 
+1.9.3
+

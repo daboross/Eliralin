@@ -1,0 +1,20 @@
+From 2c17818ca3f5f78c0a68c19b39d634fb203e4219 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Thu, 29 May 2014 21:53:55 -0700
+Subject: [PATCH] Catch socket.error as well for rdns
+
+
+diff --git a/plugins/eliralin_utility.py b/plugins/eliralin_utility.py
+index 6d054c2..4eba97f 100644
+--- a/plugins/eliralin_utility.py
++++ b/plugins/eliralin_utility.py
+@@ -105,5 +105,5 @@ def rdns(text):
+         socket.setdefaulttimeout(5)
+         domain = socket.gethostbyaddr(text)[0]
+         return "{} resolves to {}".format(text, domain)
+-    except socket.gaierror:
++    except (socket.gaierror, socket.error):
+         return "Resolve Failed!"
+-- 
+1.9.3
+
