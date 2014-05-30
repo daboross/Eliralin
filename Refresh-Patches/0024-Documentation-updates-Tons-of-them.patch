@@ -1,0 +1,937 @@
+From a2c02687ec7542529823667060a16d13af05f726 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Thu, 29 May 2014 23:20:24 -0700
+Subject: [PATCH] Documentation updates! Tons of them!
+
+
+diff --git a/plugins/admin.py b/plugins/admin.py
+index dd288e5..31a2829 100644
+--- a/plugins/admin.py
++++ b/plugins/admin.py
+@@ -5,17 +5,17 @@ from cloudbot import hook
+ 
+ @hook.command(["groups", "listgroups", "permgroups"], permissions=["permissions_users"], autohelp=False)
+ def get_permission_groups(conn):
+-    """groups -- lists all valid groups
+-    :type conn: core.irc.BotConnection
++    """- lists all valid groups
++    :type conn: cloudbot.core.connection.BotConnection
+     """
+     return "Valid groups: {}".format(conn.permissions.get_groups())
+ 
+ 
+ @hook.command("gperms", permissions=["permissions_users"])
+ def get_group_permissions(text, conn, notice):
+-    """gperms <group> -- lists permissions of a group
++    """<group> - lists permissions given to <group>
+     :type text: str
+-    :type conn: core.irc.BotConnection
++    :type conn: cloudbot.core.connection.BotConnection
+     """
+     group = text.strip().lower()
+     permission_manager = conn.permissions
+@@ -31,9 +31,9 @@ def get_group_permissions(text, conn, notice):
+ 
+ @hook.command("gusers", permissions=["permissions_users"])
+ def get_group_users(text, conn, notice):
+-    """gusers <group> -- lists users in a group
++    """<group> - lists users in <group>
+     :type text: str
+-    :type conn: core.irc.BotConnection
++    :type conn: cloudbot.core.connection.BotConnection
+     """
+     group = text.strip().lower()
+     permission_manager = conn.permissions
+@@ -49,9 +49,9 @@ def get_group_users(text, conn, notice):
+ 
+ @hook.command("uperms", autohelp=False)
+ def get_user_permissions(text, conn, mask, has_permission, notice):
+-    """uperms [user] -- lists all permissions given to a user, or the current user if none is given
++    """[user] - lists all permissions given to [user], or the caller if no user is specified
+     :type text: str
+-    :type conn: core.irc.BotConnection
++    :type conn: cloudbot.core.connection.BotConnection
+     :type mask: str
+     """
+     if text:
+@@ -73,9 +73,9 @@ def get_user_permissions(text, conn, mask, has_permission, notice):
+ 
+ @hook.command("ugroups", autohelp=False)
+ def get_user_groups(text, conn, mask, has_permission, notice):
+-    """uperms [user] -- lists all permissions given to a user, or the current user if none is given
++    """[user] - lists all permissions given to [user], or the caller if no user is specified
+     :type text: str
+-    :type conn: core.irc.BotConnection
++    :type conn: cloudbot.core.connection.BotConnection
+     :type mask: str
+     """
+     if text:
+@@ -97,10 +97,10 @@ def get_user_groups(text, conn, mask, has_permission, notice):
+ 
+ @hook.command("deluser", permissions=["permissions_users"])
+ def remove_permission_user(text, bot, conn, notice, reply):
+-    """deluser <user> [group] -- Removes a user from a permission group, or all permission groups if none is specified
++    """<user> [group] - removes <user> from [group], or from all groups if no group is specified
+     :type text: str
+-    :type bot: core.bot.CloudBot
+-    :type conn: core.irc.BotConnection
++    :type bot: cloudbot.core.bot.CloudBot
++    :type conn: cloudbot.core.connection.BotConnection
+     """
+     split = text.split()
+     if len(split) > 2:
+@@ -152,10 +152,10 @@ def remove_permission_user(text, bot, conn, notice, reply):
+ 
+ @hook.command("adduser", permissions=["permissions_users"])
+ def add_permissions_user(text, conn, bot, notice, reply):
+-    """adduser <user> <group> -- Adds a user to a permission group
++    """<user> <group> - adds <user> to <group>
+     :type text: str
+-    :type conn: core.irc.BotConnection
+-    :type bot: core.bot.CloudBot
++    :type conn: cloudbot.core.connection.BotConnection
++    :type bot: cloudbot.core.bot.CloudBot
+     """
+     split = text.split()
+     if len(split) > 2:
+@@ -193,7 +193,7 @@ def add_permissions_user(text, conn, bot, notice, reply):
+ 
+ @hook.command(["stop", "quit"], permissions=["botcontrol"], autohelp=False)
+ def stop(text, bot):
+-    """stop [reason] -- Stops the bot with [reason] as its quit message.
++    """[reason] - stops me with [reason] as its quit message.
+     :type text: str
+     :type bot: core.bot.CloudBot
+     """
+@@ -205,7 +205,7 @@ def stop(text, bot):
+ 
+ @hook.command(permissions=["botcontrol"], autohelp=False)
+ def restart(text, bot):
+-    """restart [reason] -- Restarts the bot with [reason] as its quit message.
++    """[reason] - restarts me with [reason] as its quit message.
+     :type text: str
+     :type bot: core.bot.CloudBot
+     """
+@@ -217,9 +217,9 @@ def restart(text, bot):
+ 
+ @hook.command(permissions=["botcontrol"])
+ def join(text, conn, notice):
+-    """join <channel> -- Joins a given channel
++    """<channel> - joins <channel>
+     :type text: str
+-    :type conn: core.irc.BotConnection
++    :type conn: cloudbot.core.connection.BotConnection
+     """
+     for target in text.split():
+         if not target.startswith("#"):
+@@ -230,9 +230,9 @@ def join(text, conn, notice):
+ 
+ @hook.command(permissions=["botcontrol"], autohelp=False)
+ def part(text, conn, chan, notice):
+-    """part [channel] -- Leaves a given channel, or the current one if no channel is specified
++    """[#channel] - parts [#channel], or the caller's channel if no channel is specified
+     :type text: str
+-    :type conn: core.irc.BotConnection
++    :type conn: cloudbot.core.connection.BotConnection
+     :type chan: str
+     """
+     if text:
+@@ -248,9 +248,9 @@ def part(text, conn, chan, notice):
+ 
+ @hook.command(autohelp=False, permissions=["botcontrol"])
+ def cycle(text, conn, chan, notice):
+-    """cycle <channel> -- Cycles a given channel, or the current one if no channel is specified
++    """[#channel] - cycles [#channel], or the caller's channel if no channel is specified
+     :type text: str
+-    :type conn: core.irc.BotConnection
++    :type conn: cloudbot.core.connection.BotConnection
+     :type chan: str
+     """
+     if text:
+@@ -267,9 +267,9 @@ def cycle(text, conn, chan, notice):
+ 
+ @hook.command(permissions=["botcontrol"])
+ def nick(text, conn, notice):
+-    """nick <nick> -- Changes the bot's nickname
++    """<nick> - changes my nickname to <nick>
+     :type text: str
+-    :type conn: core.irc.BotConnection
++    :type conn: cloudbot.core.connection.BotConnection
+     """
+     if not re.match("^[a-z0-9_|.-\]\[]*$", text.lower()):
+         notice("Invalid username '{}'".format(text))
+@@ -280,9 +280,9 @@ def nick(text, conn, notice):
+ 
+ @hook.command(permissions=["botcontrol"])
+ def raw(text, conn, notice):
+-    """raw <command> -- Sends a irc_raw IRC command
++    """<command> - sends <command> as a raw IRC command
+     :type text: str
+-    :type conn: core.irc.BotConnection
++    :type conn: cloudbot.core.connection.BotConnection
+     """
+     notice("Raw command sent.")
+     conn.send(text)
+@@ -290,9 +290,9 @@ def raw(text, conn, notice):
+ 
+ @hook.command(permissions=["botcontrol"])
+ def say(text, conn, chan):
+-    """say [channel] <message> -- Makes the bot say <message> in [channel], or the current channel if none is specified
++    """[#channel] <message> - says <message> to [#channel], or to the caller's channel if no channel is specified
+     :type text: str
+-    :type conn: core.irc.BotConnection
++    :type conn: cloudbot.core.connection.BotConnection
+     :type chan: str
+     """
+     text = text.strip()
+@@ -306,11 +306,11 @@ def say(text, conn, chan):
+     conn.msg(channel, text)
+ 
+ 
+-@hook.command(permissions=["botcontrol"])
++@hook.command(["message", "sayto"], permissions=["botcontrol"])
+ def message(text, conn):
+-    """message <name> <message> -- Makes the bot say <message> to <name>, <name> may be a #channel or a nickname
++    """<name> <message> - says <message> to <name>
+     :type text: str
+-    :type conn: core.irc.BotConnection
++    :type conn: cloudbot.core.connection.BotConnection
+     """
+     split = text.split(None, 1)
+     channel = split[0]
+@@ -321,9 +321,9 @@ def message(text, conn):
+ @hook.command("act", permissions=["botcontrol"])
+ @hook.command(permissions=["botcontrol"])
+ def me(text, conn, chan):
+-    """me [channel] <action> -- Makes the bot act out <action> in a [channel], or the current channel if none is given
++    """[#channel] <action> - acts out <action> in a [#channel], or in the current channel of none is specified
+     :type text: str
+-    :type conn: core.irc.BotConnection
++    :type conn: cloudbot.core.connection.BotConnection
+     :type chan: str
+     """
+     text = text.strip()
+diff --git a/plugins/attacks.py b/plugins/attacks.py
+index f4967d6..bf257bf 100644
+--- a/plugins/attacks.py
++++ b/plugins/attacks.py
+@@ -1,24 +1,36 @@
++import codecs
++import json
++import os
+ import random
+ import re
+ 
+ from cloudbot import hook
++from cloudbot.util import textgen
+ 
+-with open("data/larts.txt") as f:
+-    larts = [line.strip() for line in f.readlines()
+-             if not line.startswith("//")]
+ 
+-with open("data/insults.txt") as f:
+-    insults = [line.strip() for line in f.readlines()
+-               if not line.startswith("//")]
++@hook.onload()
++def load_attacks(bot):
++    """
++    :type bot: cloudbot.core.bot.CloudBot
++    """
++    global larts, insults, flirts, kills
++
++    with codecs.open(os.path.join(bot.data_dir, "larts.txt"), encoding="utf-8") as f:
++        larts = [line.strip() for line in f.readlines() if not line.startswith("//")]
+ 
+-with open("data/flirts.txt") as f:
+-    flirts = [line.strip() for line in f.readlines()
+-              if not line.startswith("//")]
++    with codecs.open(os.path.join(bot.data_dir, "insults.txt"), encoding="utf-8") as f:
++        insults = [line.strip() for line in f.readlines() if not line.startswith("//")]
++
++    with codecs.open(os.path.join(bot.data_dir, "flirts.txt"), encoding="utf-8") as f:
++        flirts = [line.strip() for line in f.readlines() if not line.startswith("//")]
++
++    with codecs.open(os.path.join(bot.data_dir, "kills.json"), encoding="utf-8") as f:
++        kills = json.load(f)
+ 
+ 
+ def is_self(conn, target):
+     """
+-    :type conn: core.irc.BotConnection
++    :type conn: cloudbot.core.connection.BotConnection
+     :type target: str
+     """
+     if re.search("(^..?.?.?self|{})".format(re.escape(conn.nick.lower())), target.lower()):
+@@ -29,9 +41,9 @@ def is_self(conn, target):
+ 
+ @hook.command
+ def lart(text, conn, nick, notice, action):
+-    """lart <user> -- LARTs <user>.
++    """<user> - LARTs <user>
+     :type text: str
+-    :type conn: core.irc.BotConnection
++    :type conn: cloudbot.core.irc.BotConnection
+     :type nick: str
+     """
+     target = text.strip()
+@@ -52,7 +64,7 @@ def lart(text, conn, nick, notice, action):
+ 
+ @hook.command
+ def insult(text, conn, nick, notice, message):
+-    """insult <user> -- Makes the bot insult <user>.
++    """<user> - insults <user>
+     :type text: str
+     :type conn: core.irc.BotConnection
+     :type nick: str
+@@ -72,7 +84,7 @@ def insult(text, conn, nick, notice, message):
+ 
+ @hook.command
+ def flirt(text, conn, nick, notice, message):
+-    """flirt <user> -- Makes the bot flirt with <user>.
++    """<user> - flirts with <user>
+     :type text: str
+     :type conn: core.irc.BotConnection
+     :type nick: str
+@@ -88,3 +100,26 @@ def flirt(text, conn, nick, notice, message):
+         target = nick
+ 
+     message('{}, {}'.format(target, random.choice(flirts)))
++
++
++@hook.command()
++def kill(text, conn, nick, notice, action):
++    """kill <user> - kills <user>
++    :type text: str
++    :type conn: core.irc.BotConnection
++    :type nick: str
++    """
++    target = text.strip()
++
++    if " " in target:
++        notice("Invalid username!")
++        return
++
++    # if the user is trying to make the bot kill itself, kill them
++    if is_self(conn, target):
++        target = nick
++
++    generator = textgen.TextGenerator(kills["templates"], kills["parts"], variables={"user": target})
++
++    # act out the message
++    action(generator.generate_string())
+diff --git a/plugins/brainfuck.py b/plugins/brainfuck.py
+index 428f8b0..90b455d 100644
+--- a/plugins/brainfuck.py
++++ b/plugins/brainfuck.py
+@@ -12,7 +12,7 @@ MAX_STEPS = 1000000
+ 
+ @hook.command(["brainfuck", "bf"])
+ def bf(text):
+-    """bf <prog> -- Executes <prog> as Brainfuck code.
++    """<prog> - executes <prog> as Brainfuck code
+     :type text: str
+     """
+ 
+diff --git a/plugins/choose.py b/plugins/choose.py
+index 06f0f70..8900374 100644
+--- a/plugins/choose.py
++++ b/plugins/choose.py
+@@ -6,7 +6,7 @@ from cloudbot import hook
+ 
+ @hook.command
+ def choose(text, notice):
+-    """choose <choice1>, [choice2], [choice3], etc. -- Randomly picks one of the given choices.
++    """<choice1>, [choice2], [choice3], etc. - randomly picks one of the given choices
+     :type text: str
+     """
+     choices = re.findall(r'([^,\s]+)', text)
+diff --git a/plugins/coin.py b/plugins/coin.py
+index cfbf144..3f8fbe9 100644
+--- a/plugins/coin.py
++++ b/plugins/coin.py
+@@ -5,7 +5,7 @@ from cloudbot import hook
+ 
+ @hook.command(autohelp=False)
+ def coin(text, notice, action):
+-    """coin [amount] -- Flips [amount] of coins.
++    """[amount] - flips [amount] coins
+     :type text: str
+     """
+ 
+diff --git a/plugins/core_sieve.py b/plugins/core_sieve.py
+index a5f1881..760485d 100644
+--- a/plugins/core_sieve.py
++++ b/plugins/core_sieve.py
+@@ -8,18 +8,19 @@ buckets = {}
+ 
+ 
+ @hook.sieve
+-def sieve_suite(bot, event, hook):
++def sieve_suite(bot, event, _hook):
+     """
+     :type bot: cloudbot.core.bot.CloudBot
+     :type event: cloudbot.core.events.BaseEvent
++    :type _hook: cloudbot.core.pluginmanager.Hook
+     """
+     conn = event.conn
+     # check ignore bots
+-    if event.irc_command == 'PRIVMSG' and event.nick.endswith('bot') and hook.ignore_bots:
++    if event.irc_command == 'PRIVMSG' and event.nick.endswith('bot') and _hook.ignore_bots:
+         return None
+ 
+     # check acls
+-    acl = conn.config.get('acls', {}).get(hook.function_name)
++    acl = conn.config.get('acls', {}).get(_hook.function_name)
+     if acl:
+         if 'deny-except' in acl:
+             allowed_channels = list(map(str.lower, acl['deny-except']))
+@@ -31,13 +32,13 @@ def sieve_suite(bot, event, hook):
+                 return None
+ 
+     # check disabled_commands
+-    if hook.type == "command":
++    if _hook.type == "command":
+         disabled_commands = conn.config.get('disabled_commands', [])
+         if event.triggered_command in disabled_commands:
+             return None
+ 
+     # check permissions
+-    allowed_permissions = hook.permissions
++    allowed_permissions = _hook.permissions
+     if allowed_permissions:
+         allowed = False
+         for perm in allowed_permissions:
+@@ -50,7 +51,7 @@ def sieve_suite(bot, event, hook):
+             return None
+ 
+     # check command spam tokens
+-    if hook.type == "command":
++    if _hook.type == "command":
+         if qpt.is_enabled():
+             return event  # Don't run tokens when testing plugins - need to do it quickly
+         uid = event.chan
+diff --git a/plugins/cryptocoins.py b/plugins/cryptocoins.py
+index c087ebc..4f9b4c6 100644
+--- a/plugins/cryptocoins.py
++++ b/plugins/cryptocoins.py
+@@ -31,8 +31,7 @@ exchanges = {
+ 
+ @hook.command(["btc", "bitcoin"], autohelp=False)
+ def bitcoin(text, notice):
+-    """bitcoin <exchange> -- Gets current exchange rate for bitcoins from several exchanges, default is Blockchain.
+-    Supports MtGox, Bitpay, Coinbase and BitStamp.
++    """[mtgox|bitpay|coinbase|bitstamp] - gets bitcoin exchange rate using <exchange>, defaulting to blockchain
+     :type text: str
+     """
+     text = text.lower()
+@@ -55,7 +54,7 @@ def bitcoin(text, notice):
+ 
+ @hook.command(["ltc", "litecoin"], autohelp=False)
+ def litecoin(message):
+-    """litecoin -- gets current exchange rate for litecoins from BTC-E"""
++    """- gets litecoin exchange rate from BTC-E"""
+     data = http.get_json("https://btc-e.com/api/2/ltc_usd/ticker")
+     ticker = data['ticker']
+     message("Current: \x0307${:,.2f}\x0f - High: \x0307${:,.2f}\x0f"
+diff --git a/plugins/cypher.py b/plugins/cypher.py
+index 3c45b5e..af01e8d 100644
+--- a/plugins/cypher.py
++++ b/plugins/cypher.py
+@@ -37,7 +37,7 @@ def decode(password, encoded, notice):
+ 
+ @hook.command
+ def cypher(text, notice):
+-    """cypher <pass> <string> -- Cyphers <string> with <password>.
++    """<pass> <string> - cyphers <string> with <password>
+     :type text: str
+     """
+     split = text.split(None, 1)
+@@ -51,7 +51,7 @@ def cypher(text, notice):
+ 
+ @hook.command
+ def decypher(text, notice):
+-    """decypher <pass> <string> -- Decyphers <string> with <password>.
++    """<pass> <string> - decyphers <string> with <password>
+     :type text: str
+     """
+     split = text.split(None, 1)
+diff --git a/plugins/debug.py b/plugins/debug.py
+index 9896f08..782079a 100644
+--- a/plugins/debug.py
++++ b/plugins/debug.py
+@@ -3,7 +3,7 @@ import psutil
+ 
+ from cloudbot import hook
+ 
+-@hook.command
++@hook.command(autohelp=False)
+ def debug():
+     # get a Process object for the bot using psutil
+     process = psutil.Process(os.getpid())
+diff --git a/plugins/dice.py b/plugins/dice.py
+index e12c218..0bd12ad 100644
+--- a/plugins/dice.py
++++ b/plugins/dice.py
+@@ -36,7 +36,7 @@ def n_rolls(count, n):
+ #@hook.regex(valid_diceroll, re.I)
+ @hook.command(["roll", "dice"])
+ def dice(text, notice):
+-    """dice <dice roll> -- Simulates dice rolls. Example: 'dice 2d20-d5+4 roll 2': D20s, subtract 1D5, add 4
++    """<dice roll> - simulates dice rolls. Example: 'dice 2d20-d5+4 roll 2': D20s, subtract 1D5, add 4
+     :type text: str
+     """
+ 
+diff --git a/plugins/dictionary.py b/plugins/dictionary.py
+index 23691d2..fa1f9e1 100644
+--- a/plugins/dictionary.py
++++ b/plugins/dictionary.py
+@@ -44,7 +44,7 @@ def format_output(h, definition, show_examples):
+ 
+ @hook.command(["dictionary", "define"])
+ def define(text):
+-    """define <word> -- Fetches definition of <word>.
++    """<word> - fetches definition of <word>
+     :type text: str
+     """
+ 
+@@ -72,7 +72,7 @@ def define(text):
+ 
+ @hook.command(["e", "etymology"])
+ def etymology(text):
+-    """etymology <word> -- Retrieves the etymology of <word>.
++    """<word> - retrieves the etymology of <word>
+     :type text: str
+     """
+ 
+diff --git a/plugins/domainr.py b/plugins/domainr.py
+index f24109e..37b62ee 100644
+--- a/plugins/domainr.py
++++ b/plugins/domainr.py
+@@ -20,7 +20,7 @@ def format_domain(domain):
+ 
+ @hook.command(["domain", "domainr"])
+ def domainr(text):
+-    """domainr <domain> - Use domain.nr's API to search for a domain, and similar domains.
++    """<domain> - uses domain.nr's API to search for a domain, and similar domains
+     :type text: str
+     """
+     try:
+diff --git a/plugins/drama.py b/plugins/drama.py
+index 76ee990..5273c51 100644
+--- a/plugins/drama.py
++++ b/plugins/drama.py
+@@ -9,8 +9,7 @@ ed_url = "http://encyclopediadramatica.se/"
+ 
+ @hook.command
+ def drama(text):
+-    """drama <phrase> -- Gets the first paragraph of
+-    the Encyclopedia Dramatica article on <phrase>."""
++    """<phrase> - gets the first paragraph of the Encyclopedia Dramatica article on <phrase>"""
+ 
+     data = http.get_json(api_url, search=text)
+ 
+diff --git a/plugins/eightball.py b/plugins/eightball.py
+index d4b1062..51fb302 100644
+--- a/plugins/eightball.py
++++ b/plugins/eightball.py
+@@ -21,7 +21,7 @@ def load_responses(bot):
+ 
+ @hook.command(["8ball", "8", "eightball"])
+ def eightball(action):
+-    """8ball <question> -- The all knowing magic eight ball, in electronic form. Ask and it shall be answered!"""
++    """<question> - asks the all knowing magic electronic eight ball <question>"""
+ 
+     magic = formatting.multiword_replace(random.choice(responses), color_codes)
+     action("shakes the magic 8 ball... {}".format(magic))
+diff --git a/plugins/eliralin_teamcity.py b/plugins/eliralin_teamcity.py
+index c206042..0a52aa3 100644
+--- a/plugins/eliralin_teamcity.py
++++ b/plugins/eliralin_teamcity.py
+@@ -113,7 +113,7 @@ database = ProjectDatabase()
+ 
+ @hook.command(["teamcity", "ci"])
+ def teamcity(text, bot, reply, message):
+-    """teamcity [project] - Searches for project on teamcity, and displays project URL and download"""
++    """[project] - searches for project on teamcity, and displays project URL and download"""
+     database.ensure_loaded(bot=bot)
+     search = text.lower()
+     level_found = 0
+@@ -143,7 +143,7 @@ def teamcity(text, bot, reply, message):
+ 
+ @hook.command(["reloadci", "reload_teamcity"], permissions=["botcontrol"], autohelp=False)
+ def reload_teamcity(bot, reply):
+-    """reloadci - Reloads teamcity database manually"""
++    """- Reloads teamcity database manually"""
+     database.load_key(bot)
+     database.reload_database()
+     reply("Reloaded teamcity, found {} projects.".format(len(database.projects)))
+@@ -152,7 +152,7 @@ def reload_teamcity(bot, reply):
+ 
+ @hook.command(["listci", "list_teamcity"], permissions=["botcontrol"], autohelp=False)
+ def list_teamcity(bot, reply):
+-    """listci - Lists all projects loaded into database from teamcity"""
++    """- lists all projects loaded into database from teamcity"""
+     database.ensure_loaded(bot=bot)
+     reply("Projects: {}".format(", ".join([project.name for project in database.projects])))
+     database.after_check()
+diff --git a/plugins/eliralin_utility.py b/plugins/eliralin_utility.py
+index 4eba97f..bb3e2e9 100644
+--- a/plugins/eliralin_utility.py
++++ b/plugins/eliralin_utility.py
+@@ -6,7 +6,7 @@ from cloudbot import hook
+ 
+ @hook.command(["josephus", "jose"])
+ def josephus(text):
+-    """jose [size] [every x] [starting person] - Calculates who dies last """
++    """[size] [every x] [starting person] - calculates who dies last"""
+     split = text.split()
+     if len(split) != 3:
+         return "Not enough / too many arguments. {}".format(len(split))
+@@ -34,6 +34,7 @@ def pet(action, nick):
+ 
+ @hook.command(["hug", "huggle"])
+ def huggle(text, action, nick):
++    """<user> - huggles <user>"""
+     if text:
+         action("huggles {}".format(text))
+     else:
+@@ -42,6 +43,7 @@ def huggle(text, action, nick):
+ 
+ @hook.command()
+ def colors(text):
++    """[number] - shows all mIRC colors up to [number], defaulting to 30"""
+     if text:
+         intinp = int(text)
+         if intinp > 70:
+@@ -57,7 +59,7 @@ def colors(text):
+ 
+ @hook.command(permissions=["adminonly"])
+ def tree(text, message, notice):
+-    """tree [type] [text] - Tree text"""
++    """<type> <text> - tree!"""
+     type_input = text.split(None, 1)
+     if len(type_input) < 2:
+         notice("tree [type] [text] - Tree text")
+@@ -83,7 +85,7 @@ def tree(text, message, notice):
+ 
+ @hook.command
+ def dns(text):
+-    """dns [domain] - Resolves the IP of a domain"""
++    """<domain> - resolves the IP of <domain>"""
+     try:
+         socket.setdefaulttimeout(5)
+         ip = None
+@@ -100,7 +102,7 @@ def dns(text):
+ 
+ @hook.command
+ def rdns(text):
+-    """rdns [ip] - Resolves the hostname of an IP"""
++    """<ip> - resolves the rdns hostname of <ip>"""
+     try:
+         socket.setdefaulttimeout(5)
+         domain = socket.gethostbyaddr(text)[0]
+diff --git a/plugins/encrypt.py b/plugins/encrypt.py
+index 21a9d45..7fe86c9 100644
+--- a/plugins/encrypt.py
++++ b/plugins/encrypt.py
+@@ -62,7 +62,7 @@ def get_salt(bot):
+ 
+ @hook.command
+ def encrypt(text, bot, db, notice):
+-    """encrypt <pass> <string> -- Encrypts <string> with <pass>. (<string> can only be decrypted using this bot)
++    """<pass> <string> - encrypts <string> with <pass>. (<string> can only be decrypted using this bot)
+     :type text: str
+     :type bot: core.bot.CloudBot
+     :type db: sqlalchemy.orm.session.Session
+@@ -100,8 +100,8 @@ def encrypt(text, bot, db, notice):
+ 
+ @hook.command
+ def decrypt(text, bot, db, notice):
+-    """decrypt <pass> <string> -- Decrypts <string> with <pass>. (can only decrypt strings encrypted on this bot)
+-    :type bot: core.bot.CloudBot
++    """<pass> <string> - decrypts <string> with <pass>. (can only decrypt strings encrypted on this bot)
++    :type bot: cloudbot.core.bot.CloudBot
+     :type db: sqlalchemy.orm.session.Session
+     """
+ 
+diff --git a/plugins/fact.py b/plugins/fact.py
+index 12d9a5f..b13a57b 100644
+--- a/plugins/fact.py
++++ b/plugins/fact.py
+@@ -3,7 +3,7 @@ from cloudbot import hook, http, web
+ 
+ @hook.command(autohelp=False)
+ def fact():
+-    """fact -- Gets a random fact from OMGFACTS."""
++    """- gets a random fact from OMGFACTS"""
+ 
+     attempts = 0
+ 
+diff --git a/plugins/factoids.py b/plugins/factoids.py
+index a7cfe07..8bf0221 100644
+--- a/plugins/factoids.py
++++ b/plugins/factoids.py
+@@ -70,7 +70,7 @@ def del_factoid(db, word):
+ 
+ @hook.command(["r", "remember"], permissions=["addfactoid"])
+ def remember(text, nick, db, notice):
+-    """remember <word> [+]<data> -- Remembers <data> with <word>. Add + to <data> to append."""
++    """<word> [+]<data> - remembers <data> with <word> - add + to <data> to append"""
+ 
+     append = False
+ 
+@@ -105,7 +105,7 @@ def remember(text, nick, db, notice):
+ 
+ @hook.command(["f", "forget"], permissions=["delfactoid"])
+ def forget(text, db, notice):
+-    """forget <word> -- Forgets a remembered <word>."""
++    """<word> - forgets previously remembered <word>"""
+ 
+     data = factoid_cache.get(text)
+ 
+@@ -120,7 +120,7 @@ def forget(text, db, notice):
+ 
+ @hook.command
+ def info(text, notice):
+-    """info <factoid> -- Shows the source of a factoid."""
++    """<factoid> - shows the source of a factoid"""
+ 
+     text = text.strip()
+ 
+@@ -131,8 +131,8 @@ def info(text, notice):
+ 
+ 
+ @hook.regex(r'^\^ ?(.+)')
+-def factoid(inp, input, db, message, action):
+-    """?<word> -- Shows what data is associated with <word>."""
++def factoid(inp, event, db, message, action):
++    """<word> - shows what data is associated with <word>"""
+ 
+     # split up the input
+     split = inp.group(1).strip().split(" ")
+@@ -149,8 +149,8 @@ def factoid(inp, input, db, message, action):
+         if data.startswith("<py>"):
+             code = data[4:].strip()
+             variables = 'input="""{}"""; nick="{}"; chan="{}"; bot_nick="{}";'.format(arguments.replace('"', '\\"'),
+-                                                                                      input.nick, input.chan,
+-                                                                                      input.conn.nick)
++                                                                                      event.nick, event.chan,
++                                                                                      event.conn.nick)
+             result = pyexec.eval_py(variables + code)
+         else:
+             result = data
+@@ -172,16 +172,17 @@ def factoid(inp, input, db, message, action):
+ 
+ 
+ @hook.command(autohelp=False, permissions=["listfactoids"])
+-def listfactoids(reply):
++def listfactoids(notice):
++    """- lists all available factoids"""
+     reply_text = []
+     reply_text_length = 0
+     for word in factoid_cache.keys():
+         added_length = len(word) + 2
+         if reply_text_length + added_length > 400:
+-            reply(", ".join(reply_text))
++            notice(", ".join(reply_text))
+             reply_text = []
+             reply_text_length = 0
+         else:
+             reply_text.append(word)
+             reply_text_length += added_length
+-    return ", ".join(reply_text)
++    notice(", ".join(reply_text))
+diff --git a/plugins/fishbans.py b/plugins/fishbans.py
+index 24d626c..6c189e2 100644
+--- a/plugins/fishbans.py
++++ b/plugins/fishbans.py
+@@ -12,7 +12,7 @@ api_url = "http://api.fishbans.com/stats/{}/"
+ @hook.command(["bans", "fishbans"], async=True)
+ @asyncio.coroutine
+ def fishbans(text, loop):
+-    """fishbans <user> -- Gets information on <user>s minecraft bans from fishbans"""
++    """<user> - gets information on <user>'s minecraft bans from fishbans"""
+     user = text.strip()
+ 
+     try:
+@@ -43,7 +43,7 @@ def fishbans(text, loop):
+ @hook.command(async=True)
+ @asyncio.coroutine
+ def bancount(text, loop):
+-    """bancount <user> -- Gets a count of <user>s minecraft bans from fishbans"""
++    """<user> - gets a count of <user>'s minecraft bans from fishbans"""
+     user = text.strip()
+ 
+     try:
+diff --git a/plugins/fmylife.py b/plugins/fmylife.py
+index 34e4e86..c572227 100644
+--- a/plugins/fmylife.py
++++ b/plugins/fmylife.py
+@@ -1,3 +1,4 @@
++import asyncio
+ from bs4 import BeautifulSoup
+ import requests
+ 
+@@ -6,10 +7,10 @@ from cloudbot import hook
+ 
+ fml_cache = []
+ 
+-
+-def refresh_cache():
++@asyncio.coroutine
++def refresh_cache(loop):
+     """ gets a page of random FMLs and puts them into a dictionary """
+-    response = requests.get('http://www.fmylife.com/random/')
++    response = yield from loop.run_in_executor(None, requests.get, 'http://www.fmylife.com/random/')
+     soup = BeautifulSoup(response.text)
+ 
+     for e in soup.find_all('div', {'class': 'post article'}):
+@@ -18,16 +19,15 @@ def refresh_cache():
+         fml_cache.append((fml_id, text))
+ 
+ 
+-@hook.onload()
+-def initial_refresh():
++@hook.onload(threaded=False)
++def initial_refresh(loop):
+     # do an initial refresh of the cache
+-    refresh_cache()
++    yield from refresh_cache(loop)
+ 
+ 
+-@hook.async
+-@hook.command(autohelp=False)
++@hook.command(threaded=False, autohelp=False)
+ def fml(reply, loop):
+-    """fml -- Gets a random quote from fmyfife.com."""
++    """- gets a random quote from fmyfife.com"""
+ 
+     # grab the last item in the fml cache and remove it
+     fml_id, text = fml_cache.pop()
+@@ -35,4 +35,4 @@ def fml(reply, loop):
+     reply('(#{}) {}'.format(fml_id, text))
+     # refresh fml cache if its getting empty
+     if len(fml_cache) < 3:
+-        yield from loop.run_in_executor(None, refresh_cache)
++        yield from refresh_cache(loop)
+diff --git a/plugins/foods.py b/plugins/foods.py
+index 73a8035..c3ebfd3 100644
+--- a/plugins/foods.py
++++ b/plugins/foods.py
+@@ -46,9 +46,9 @@ potatoes = ['AC Belmont', 'AC Blue Pride', 'AC Brador', 'AC Chaleur', 'AC Domino
+             'Yukon Gold']
+ 
+ 
+-@hook.command
+-def potato(text, action=None):
+-    """potato <user> - Makes <user> a tasty little potato."""
++@hook.command(threaded=False)
++def potato(text, action):
++    """<user> - makes <user> a tasty little potato"""
+     text = text.strip()
+ 
+     if not re.match("^[A-Za-z0-9_|.-\]\[]*$", text.lower()):
+@@ -63,9 +63,9 @@ def potato(text, action=None):
+     action("{} a {} {} {} potato for {} and serves it with a small {}!".format(method, flavor, size, potato_type, text,
+                                                                                side_dish))
+ 
+-@hook.command
++@hook.command(threaded=False)
+ def cake(text, action):
+-    """cake <user> - Gives <user> an awesome cake."""
++    """<user> - gives <user> an awesome cake"""
+     text = text.strip()
+ 
+     if not re.match("^[A-Za-z0-9_|.-\]\[]*$", text.lower()):
+@@ -82,9 +82,9 @@ def cake(text, action):
+                                                                          side_dish))
+ 
+ 
+-@hook.command
++@hook.command(threaded=False)
+ def cookie(text, action):
+-    """cookie <user> - Gives <user> a cookie"""
++    """<user> - gives <user> a cookie"""
+     text = text.strip()
+ 
+     if not re.match("^[A-Za-z0-9_|.-\]\[]*$", text.lower()):
+diff --git a/plugins/fortune.py b/plugins/fortune.py
+index 1415d1d..2bf01e6 100644
+--- a/plugins/fortune.py
++++ b/plugins/fortune.py
+@@ -10,12 +10,11 @@ def load_fortunes(bot):
+     path = os.path.join(bot.data_dir, "fortunes.txt")
+     global fortunes
+     with open(path) as f:
+-        fortunes = [line.strip() for line in f.readlines()
+-                    if not line.startswith("//")]
++        fortunes = [line.strip() for line in f.readlines() if not line.startswith("//")]
+ 
+ 
+ @hook.command(autohelp=False, threaded=False)
+ @asyncio.coroutine
+ def fortune():
+-    """fortune -- Fortune cookies on demand."""
++    """- hands out a fortune cookie"""
+     return random.choice(fortunes)
+diff --git a/plugins/geoip.py b/plugins/geoip.py
+index 7156d52..8f2c46d 100644
+--- a/plugins/geoip.py
++++ b/plugins/geoip.py
+@@ -34,7 +34,7 @@ def load_regions(bot):
+ 
+ @hook.command
+ def geoip(text):
+-    """geoip <host/ip> -- Gets the location of <host/ip>"""
++    """<host/ip> - gets the location of <host/ip>"""
+ 
+     try:
+         record = geo.record_by_name(text)
+@@ -56,4 +56,5 @@ def geoip(text):
+     data["cc"] = record["country_code"] or "N/A"
+     data["country"] = record["country_name"] or "Unknown"
+     data["city"] = record["city"] or "Unknown"
++
+     return "\x02Country:\x02 {country} ({cc}), \x02City:\x02 {city}{region}".format(**data)
+diff --git a/plugins/kill.py b/plugins/kill.py
+deleted file mode 100644
+index d418efd..0000000
+--- a/plugins/kill.py
++++ /dev/null
+@@ -1,33 +0,0 @@
+-import json
+-
+-from cloudbot import hook, textgen
+-
+-
+-def get_generator(_json, variables):
+-    data = json.loads(_json)
+-    return textgen.TextGenerator(data["templates"],
+-                                 data["parts"], variables=variables)
+-
+-
+-@hook.command
+-def kill(text, action=None, nick=None, conn=None, notice=None):
+-    """kill <user> -- Makes the bot kill <user>."""
+-    target = text.strip()
+-
+-    if " " in target:
+-        notice("Invalid username!")
+-        return
+-
+-    # if the user is trying to make the bot kill itself, kill them
+-    if target.lower() == conn.nick.lower() or target.lower() == "itself":
+-        target = nick
+-
+-    variables = {
+-        "user": target
+-    }
+-
+-    with open("./data/kills.json") as f:
+-        generator = get_generator(f.read(), variables)
+-
+-    # act out the message
+-    action(generator.generate_string())
+-- 
+1.9.3
+
