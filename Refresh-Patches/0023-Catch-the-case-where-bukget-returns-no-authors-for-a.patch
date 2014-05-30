@@ -1,0 +1,41 @@
+From b499eccf4a88088de30f229d782f42943bd55d21 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Thu, 29 May 2014 22:01:16 -0700
+Subject: [PATCH] Catch the case where bukget returns no authors for a given
+ plugin
+
+
+diff --git a/plugins/minecraft_bukget.py b/plugins/minecraft_bukget.py
+index 764881e..4b9b023 100644
+--- a/plugins/minecraft_bukget.py
++++ b/plugins/minecraft_bukget.py
+@@ -1,3 +1,4 @@
++import json
+ import time
+ import random
+ 
+@@ -88,8 +89,12 @@ def format_output(data):
+     name = data["plugin_name"]
+     description = formatting.truncate_str(data['description'], 30)
+     url = data['website']
+-    authors = data['authors'][0]
+-    authors = authors[0] + "\u200b" + authors[1:]
++    if data['authors']:
++        authors = data['authors'][0]
++        authors = authors[0] + "\u200b" + authors[1:]
++    else:
++        authors = "Unknown"
++
+     stage = data['stage']
+ 
+     current_version = data['versions'][0]
+@@ -156,4 +161,4 @@ def randomplugin(reply, message):
+     line_a, line_b = format_output(data)
+ 
+     reply(line_a)
+-    message(line_b)
+\ No newline at end of file
++    message(line_b)
+-- 
+1.9.3
+
