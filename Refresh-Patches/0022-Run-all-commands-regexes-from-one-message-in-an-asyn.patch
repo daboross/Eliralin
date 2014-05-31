@@ -1,4 +1,4 @@
-From 3e001314df289e2a7a850aea7e3b636d5439a4fe Mon Sep 17 00:00:00 2001
+From fc54ab10b6d7cfcd08fbe01535842caa6f2bed0e Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Thu, 29 May 2014 21:58:08 -0700
 Subject: [PATCH] Run all commands/regexes from one message in an

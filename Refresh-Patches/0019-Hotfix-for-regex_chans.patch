@@ -1,4 +1,4 @@
-From f8822b6da1b328f00a2682a6e41f80a9e9b5d7cc Mon Sep 17 00:00:00 2001
+From 60d31eec975d0ebd189c6e45ade8441fbf43f1f5 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Thu, 29 May 2014 14:22:15 -0700
 Subject: [PATCH] Hotfix for regex_chans

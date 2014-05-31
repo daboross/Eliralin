@@ -1,4 +1,4 @@
-From 2884f23f7a153e6c8013d249acc43a32207615ef Mon Sep 17 00:00:00 2001
+From 180c76248bce1c1cc0c5c2ccd7cf59c979e56c4a Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Thu, 29 May 2014 23:28:01 -0700
 Subject: [PATCH] Add threaded argument to a ton of plugins (modified for

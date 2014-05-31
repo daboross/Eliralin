@@ -1,16 +1,16 @@
-From a2c02687ec7542529823667060a16d13af05f726 Mon Sep 17 00:00:00 2001
+From b9ff55b04e071069e16f6354550489fd3fc95c79 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Thu, 29 May 2014 23:20:24 -0700
 Subject: [PATCH] Documentation updates! Tons of them!
 
 
 diff --git a/plugins/admin.py b/plugins/admin.py
-index dd288e5..31a2829 100644
+index f09b1c9..ca4f38a 100644
 --- a/plugins/admin.py
 +++ b/plugins/admin.py
 @@ -5,17 +5,17 @@ from cloudbot import hook
  
- @hook.command(["groups", "listgroups", "permgroups"], permissions=["permissions_users"], autohelp=False)
+ @hook.command(["groups", "listgroups", "permgroups"], threaded=False, permissions=["permissions_users"], autohelp=False)
  def get_permission_groups(conn):
 -    """groups -- lists all valid groups
 -    :type conn: core.irc.BotConnection
@@ -20,7 +20,7 @@ index dd288e5..31a2829 100644
      return "Valid groups: {}".format(conn.permissions.get_groups())
  
  
- @hook.command("gperms", permissions=["permissions_users"])
+ @hook.command("gperms", threaded=False, permissions=["permissions_users"])
  def get_group_permissions(text, conn, notice):
 -    """gperms <group> -- lists permissions of a group
 +    """<group> - lists permissions given to <group>
@@ -32,7 +32,7 @@ index dd288e5..31a2829 100644
      permission_manager = conn.permissions
 @@ -31,9 +31,9 @@ def get_group_permissions(text, conn, notice):
  
- @hook.command("gusers", permissions=["permissions_users"])
+ @hook.command("gusers", threaded=False, permissions=["permissions_users"])
  def get_group_users(text, conn, notice):
 -    """gusers <group> -- lists users in a group
 +    """<group> - lists users in <group>
@@ -44,7 +44,7 @@ index dd288e5..31a2829 100644
      permission_manager = conn.permissions
 @@ -49,9 +49,9 @@ def get_group_users(text, conn, notice):
  
- @hook.command("uperms", autohelp=False)
+ @hook.command("uperms", threaded=False, autohelp=False)
  def get_user_permissions(text, conn, mask, has_permission, notice):
 -    """uperms [user] -- lists all permissions given to a user, or the current user if none is given
 +    """[user] - lists all permissions given to [user], or the caller if no user is specified
@@ -56,7 +56,7 @@ index dd288e5..31a2829 100644
      if text:
 @@ -73,9 +73,9 @@ def get_user_permissions(text, conn, mask, has_permission, notice):
  
- @hook.command("ugroups", autohelp=False)
+ @hook.command("ugroups", threaded=False, autohelp=False)
  def get_user_groups(text, conn, mask, has_permission, notice):
 -    """uperms [user] -- lists all permissions given to a user, or the current user if none is given
 +    """[user] - lists all permissions given to [user], or the caller if no user is specified
@@ -68,7 +68,7 @@ index dd288e5..31a2829 100644
      if text:
 @@ -97,10 +97,10 @@ def get_user_groups(text, conn, mask, has_permission, notice):
  
- @hook.command("deluser", permissions=["permissions_users"])
+ @hook.command("deluser", threaded=False, permissions=["permissions_users"])
  def remove_permission_user(text, bot, conn, notice, reply):
 -    """deluser <user> [group] -- Removes a user from a permission group, or all permission groups if none is specified
 +    """<user> [group] - removes <user> from [group], or from all groups if no group is specified
@@ -82,7 +82,7 @@ index dd288e5..31a2829 100644
      if len(split) > 2:
 @@ -152,10 +152,10 @@ def remove_permission_user(text, bot, conn, notice, reply):
  
- @hook.command("adduser", permissions=["permissions_users"])
+ @hook.command("adduser", threaded=False, permissions=["permissions_users"])
  def add_permissions_user(text, conn, bot, notice, reply):
 -    """adduser <user> <group> -- Adds a user to a permission group
 +    """<user> <group> - adds <user> to <group>
@@ -114,7 +114,7 @@ index dd288e5..31a2829 100644
      """
 @@ -217,9 +217,9 @@ def restart(text, bot):
  
- @hook.command(permissions=["botcontrol"])
+ @hook.command(threaded=False, permissions=["botcontrol"])
  def join(text, conn, notice):
 -    """join <channel> -- Joins a given channel
 +    """<channel> - joins <channel>
@@ -126,7 +126,7 @@ index dd288e5..31a2829 100644
          if not target.startswith("#"):
 @@ -230,9 +230,9 @@ def join(text, conn, notice):
  
- @hook.command(permissions=["botcontrol"], autohelp=False)
+ @hook.command(threaded=False, permissions=["botcontrol"], autohelp=False)
  def part(text, conn, chan, notice):
 -    """part [channel] -- Leaves a given channel, or the current one if no channel is specified
 +    """[#channel] - parts [#channel], or the caller's channel if no channel is specified
@@ -138,7 +138,7 @@ index dd288e5..31a2829 100644
      if text:
 @@ -248,9 +248,9 @@ def part(text, conn, chan, notice):
  
- @hook.command(autohelp=False, permissions=["botcontrol"])
+ @hook.command(threaded=False, autohelp=False, permissions=["botcontrol"])
  def cycle(text, conn, chan, notice):
 -    """cycle <channel> -- Cycles a given channel, or the current one if no channel is specified
 +    """[#channel] - cycles [#channel], or the caller's channel if no channel is specified
@@ -150,7 +150,7 @@ index dd288e5..31a2829 100644
      if text:
 @@ -267,9 +267,9 @@ def cycle(text, conn, chan, notice):
  
- @hook.command(permissions=["botcontrol"])
+ @hook.command(threaded=False, permissions=["botcontrol"])
  def nick(text, conn, notice):
 -    """nick <nick> -- Changes the bot's nickname
 +    """<nick> - changes my nickname to <nick>
@@ -162,7 +162,7 @@ index dd288e5..31a2829 100644
          notice("Invalid username '{}'".format(text))
 @@ -280,9 +280,9 @@ def nick(text, conn, notice):
  
- @hook.command(permissions=["botcontrol"])
+ @hook.command(threaded=False, permissions=["botcontrol"])
  def raw(text, conn, notice):
 -    """raw <command> -- Sends a irc_raw IRC command
 +    """<command> - sends <command> as a raw IRC command
@@ -174,7 +174,7 @@ index dd288e5..31a2829 100644
      conn.send(text)
 @@ -290,9 +290,9 @@ def raw(text, conn, notice):
  
- @hook.command(permissions=["botcontrol"])
+ @hook.command(threaded=False, permissions=["botcontrol"])
  def say(text, conn, chan):
 -    """say [channel] <message> -- Makes the bot say <message> in [channel], or the current channel if none is specified
 +    """[#channel] <message> - says <message> to [#channel], or to the caller's channel if no channel is specified
@@ -188,8 +188,8 @@ index dd288e5..31a2829 100644
      conn.msg(channel, text)
  
  
--@hook.command(permissions=["botcontrol"])
-+@hook.command(["message", "sayto"], permissions=["botcontrol"])
+-@hook.command(threaded=False, permissions=["botcontrol"])
++@hook.command(["message", "sayto"], threaded=False, permissions=["botcontrol"])
  def message(text, conn):
 -    """message <name> <message> -- Makes the bot say <message> to <name>, <name> may be a #channel or a nickname
 +    """<name> <message> - says <message> to <name>
@@ -199,9 +199,9 @@ index dd288e5..31a2829 100644
      """
      split = text.split(None, 1)
      channel = split[0]
-@@ -321,9 +321,9 @@ def message(text, conn):
- @hook.command("act", permissions=["botcontrol"])
- @hook.command(permissions=["botcontrol"])
+@@ -320,9 +320,9 @@ def message(text, conn):
+ 
+ @hook.command(["me", "act"], threaded=False, permissions=["botcontrol"])
  def me(text, conn, chan):
 -    """me [channel] <action> -- Makes the bot act out <action> in a [channel], or the current channel if none is given
 +    """[#channel] <action> - acts out <action> in a [#channel], or in the current channel of none is specified
@@ -212,7 +212,7 @@ index dd288e5..31a2829 100644
      """
      text = text.strip()
 diff --git a/plugins/attacks.py b/plugins/attacks.py
-index f4967d6..bf257bf 100644
+index 6473693..18a51fa 100644
 --- a/plugins/attacks.py
 +++ b/plugins/attacks.py
 @@ -1,24 +1,36 @@
@@ -241,13 +241,13 @@ index f4967d6..bf257bf 100644
 +
 +    with codecs.open(os.path.join(bot.data_dir, "larts.txt"), encoding="utf-8") as f:
 +        larts = [line.strip() for line in f.readlines() if not line.startswith("//")]
++
++    with codecs.open(os.path.join(bot.data_dir, "insults.txt"), encoding="utf-8") as f:
++        insults = [line.strip() for line in f.readlines() if not line.startswith("//")]
  
 -with open("data/flirts.txt") as f:
 -    flirts = [line.strip() for line in f.readlines()
 -              if not line.startswith("//")]
-+    with codecs.open(os.path.join(bot.data_dir, "insults.txt"), encoding="utf-8") as f:
-+        insults = [line.strip() for line in f.readlines() if not line.startswith("//")]
-+
 +    with codecs.open(os.path.join(bot.data_dir, "flirts.txt"), encoding="utf-8") as f:
 +        flirts = [line.strip() for line in f.readlines() if not line.startswith("//")]
 +
@@ -264,7 +264,7 @@ index f4967d6..bf257bf 100644
      if re.search("(^..?.?.?self|{})".format(re.escape(conn.nick.lower())), target.lower()):
 @@ -29,9 +41,9 @@ def is_self(conn, target):
  
- @hook.command
+ @hook.command(threaded=False)
  def lart(text, conn, nick, notice, action):
 -    """lart <user> -- LARTs <user>.
 +    """<user> - LARTs <user>
@@ -276,7 +276,7 @@ index f4967d6..bf257bf 100644
      target = text.strip()
 @@ -52,7 +64,7 @@ def lart(text, conn, nick, notice, action):
  
- @hook.command
+ @hook.command(threaded=False)
  def insult(text, conn, nick, notice, message):
 -    """insult <user> -- Makes the bot insult <user>.
 +    """<user> - insults <user>
@@ -285,7 +285,7 @@ index f4967d6..bf257bf 100644
      :type nick: str
 @@ -72,7 +84,7 @@ def insult(text, conn, nick, notice, message):
  
- @hook.command
+ @hook.command(threaded=False)
  def flirt(text, conn, nick, notice, message):
 -    """flirt <user> -- Makes the bot flirt with <user>.
 +    """<user> - flirts with <user>
@@ -298,9 +298,9 @@ index f4967d6..bf257bf 100644
      message('{}, {}'.format(target, random.choice(flirts)))
 +
 +
-+@hook.command()
++@hook.command(threaded=False)
 +def kill(text, conn, nick, notice, action):
-+    """kill <user> - kills <user>
++    """<user> - kills <user>
 +    :type text: str
 +    :type conn: core.irc.BotConnection
 +    :type nick: str
@@ -320,12 +320,12 @@ index f4967d6..bf257bf 100644
 +    # act out the message
 +    action(generator.generate_string())
 diff --git a/plugins/brainfuck.py b/plugins/brainfuck.py
-index 428f8b0..90b455d 100644
+index 4d2750f..7d5fdbf 100644
 --- a/plugins/brainfuck.py
 +++ b/plugins/brainfuck.py
 @@ -12,7 +12,7 @@ MAX_STEPS = 1000000
  
- @hook.command(["brainfuck", "bf"])
+ @hook.command(["brainfuck", "bf"], threaded=False)
  def bf(text):
 -    """bf <prog> -- Executes <prog> as Brainfuck code.
 +    """<prog> - executes <prog> as Brainfuck code
@@ -333,12 +333,12 @@ index 428f8b0..90b455d 100644
      """
  
 diff --git a/plugins/choose.py b/plugins/choose.py
-index 06f0f70..8900374 100644
+index b5e504a..1faf2e5 100644
 --- a/plugins/choose.py
 +++ b/plugins/choose.py
 @@ -6,7 +6,7 @@ from cloudbot import hook
  
- @hook.command
+ @hook.command(threaded=False)
  def choose(text, notice):
 -    """choose <choice1>, [choice2], [choice3], etc. -- Randomly picks one of the given choices.
 +    """<choice1>, [choice2], [choice3], etc. - randomly picks one of the given choices
@@ -346,12 +346,12 @@ index 06f0f70..8900374 100644
      """
      choices = re.findall(r'([^,\s]+)', text)
 diff --git a/plugins/coin.py b/plugins/coin.py
-index cfbf144..3f8fbe9 100644
+index 7f032ba..86bf87c 100644
 --- a/plugins/coin.py
 +++ b/plugins/coin.py
 @@ -5,7 +5,7 @@ from cloudbot import hook
  
- @hook.command(autohelp=False)
+ @hook.command(threaded=False, autohelp=False)
  def coin(text, notice, action):
 -    """coin [amount] -- Flips [amount] of coins.
 +    """[amount] - flips [amount] coins
@@ -434,12 +434,12 @@ index c087ebc..4f9b4c6 100644
      ticker = data['ticker']
      message("Current: \x0307${:,.2f}\x0f - High: \x0307${:,.2f}\x0f"
 diff --git a/plugins/cypher.py b/plugins/cypher.py
-index 3c45b5e..af01e8d 100644
+index e625436..6adc7d8 100644
 --- a/plugins/cypher.py
 +++ b/plugins/cypher.py
 @@ -37,7 +37,7 @@ def decode(password, encoded, notice):
  
- @hook.command
+ @hook.command(threaded=False)
  def cypher(text, notice):
 -    """cypher <pass> <string> -- Cyphers <string> with <password>.
 +    """<pass> <string> - cyphers <string> with <password>
@@ -448,7 +448,7 @@ index 3c45b5e..af01e8d 100644
      split = text.split(None, 1)
 @@ -51,7 +51,7 @@ def cypher(text, notice):
  
- @hook.command
+ @hook.command(threaded=False)
  def decypher(text, notice):
 -    """decypher <pass> <string> -- Decyphers <string> with <password>.
 +    """<pass> <string> - decyphers <string> with <password>
@@ -469,12 +469,12 @@ index 9896f08..782079a 100644
      # get a Process object for the bot using psutil
      process = psutil.Process(os.getpid())
 diff --git a/plugins/dice.py b/plugins/dice.py
-index e12c218..0bd12ad 100644
+index 7f2698f..f48a53e 100644
 --- a/plugins/dice.py
 +++ b/plugins/dice.py
 @@ -36,7 +36,7 @@ def n_rolls(count, n):
  #@hook.regex(valid_diceroll, re.I)
- @hook.command(["roll", "dice"])
+ @hook.command(["roll", "dice"], threaded=False)
  def dice(text, notice):
 -    """dice <dice roll> -- Simulates dice rolls. Example: 'dice 2d20-d5+4 roll 2': D20s, subtract 1D5, add 4
 +    """<dice roll> - simulates dice rolls. Example: 'dice 2d20-d5+4 roll 2': D20s, subtract 1D5, add 4
@@ -517,12 +517,12 @@ index f24109e..37b62ee 100644
      """
      try:
 diff --git a/plugins/drama.py b/plugins/drama.py
-index 76ee990..5273c51 100644
+index ac7940e..35a80d4 100644
 --- a/plugins/drama.py
 +++ b/plugins/drama.py
 @@ -9,8 +9,7 @@ ed_url = "http://encyclopediadramatica.se/"
  
- @hook.command
+ @hook.command()
  def drama(text):
 -    """drama <phrase> -- Gets the first paragraph of
 -    the Encyclopedia Dramatica article on <phrase>."""
@@ -531,12 +531,12 @@ index 76ee990..5273c51 100644
      data = http.get_json(api_url, search=text)
  
 diff --git a/plugins/eightball.py b/plugins/eightball.py
-index d4b1062..51fb302 100644
+index bcb52e4..080b4a0 100644
 --- a/plugins/eightball.py
 +++ b/plugins/eightball.py
 @@ -21,7 +21,7 @@ def load_responses(bot):
  
- @hook.command(["8ball", "8", "eightball"])
+ @hook.command(["8ball", "8", "eightball"], threaded=False)
  def eightball(action):
 -    """8ball <question> -- The all knowing magic eight ball, in electronic form. Ask and it shall be answered!"""
 +    """<question> - asks the all knowing magic electronic eight ball <question>"""
@@ -631,12 +631,12 @@ index 4eba97f..bb3e2e9 100644
          socket.setdefaulttimeout(5)
          domain = socket.gethostbyaddr(text)[0]
 diff --git a/plugins/encrypt.py b/plugins/encrypt.py
-index 21a9d45..7fe86c9 100644
+index 38ec426..6ee7e90 100644
 --- a/plugins/encrypt.py
 +++ b/plugins/encrypt.py
 @@ -62,7 +62,7 @@ def get_salt(bot):
  
- @hook.command
+ @hook.command(threaded=False)
  def encrypt(text, bot, db, notice):
 -    """encrypt <pass> <string> -- Encrypts <string> with <pass>. (<string> can only be decrypted using this bot)
 +    """<pass> <string> - encrypts <string> with <pass>. (<string> can only be decrypted using this bot)
@@ -645,7 +645,7 @@ index 21a9d45..7fe86c9 100644
      :type db: sqlalchemy.orm.session.Session
 @@ -100,8 +100,8 @@ def encrypt(text, bot, db, notice):
  
- @hook.command
+ @hook.command(threaded=False)
  def decrypt(text, bot, db, notice):
 -    """decrypt <pass> <string> -- Decrypts <string> with <pass>. (can only decrypt strings encrypted on this bot)
 -    :type bot: core.bot.CloudBot
@@ -668,19 +668,19 @@ index 12d9a5f..b13a57b 100644
      attempts = 0
  
 diff --git a/plugins/factoids.py b/plugins/factoids.py
-index a7cfe07..8bf0221 100644
+index 8a6657a..fd9c0b4 100644
 --- a/plugins/factoids.py
 +++ b/plugins/factoids.py
-@@ -70,7 +70,7 @@ def del_factoid(db, word):
+@@ -71,7 +71,7 @@ def del_factoid(db, word):
  
- @hook.command(["r", "remember"], permissions=["addfactoid"])
+ @hook.command(["r", "remember"], threaded=False, permissions=["addfactoid"])
  def remember(text, nick, db, notice):
 -    """remember <word> [+]<data> -- Remembers <data> with <word>. Add + to <data> to append."""
 +    """<word> [+]<data> - remembers <data> with <word> - add + to <data> to append"""
  
      append = False
  
-@@ -105,7 +105,7 @@ def remember(text, nick, db, notice):
+@@ -106,7 +106,7 @@ def remember(text, nick, db, notice):
  
  @hook.command(["f", "forget"], permissions=["delfactoid"])
  def forget(text, db, notice):
@@ -689,27 +689,25 @@ index a7cfe07..8bf0221 100644
  
      data = factoid_cache.get(text)
  
-@@ -120,7 +120,7 @@ def forget(text, db, notice):
+@@ -121,7 +121,7 @@ def forget(text, db, notice):
  
- @hook.command
+ @hook.command(threaded=False)
  def info(text, notice):
 -    """info <factoid> -- Shows the source of a factoid."""
 +    """<factoid> - shows the source of a factoid"""
  
      text = text.strip()
  
-@@ -131,8 +131,8 @@ def info(text, notice):
+@@ -133,7 +133,7 @@ def info(text, notice):
  
- 
- @hook.regex(r'^\^ ?(.+)')
--def factoid(inp, input, db, message, action):
+ @hook.regex(r'^\^ ?(.+)', threaded=False)
+ def factoid(inp, input, db, message, action):
 -    """?<word> -- Shows what data is associated with <word>."""
-+def factoid(inp, event, db, message, action):
 +    """<word> - shows what data is associated with <word>"""
  
      # split up the input
      split = inp.group(1).strip().split(" ")
-@@ -149,8 +149,8 @@ def factoid(inp, input, db, message, action):
+@@ -150,8 +150,8 @@ def factoid(inp, input, db, message, action):
          if data.startswith("<py>"):
              code = data[4:].strip()
              variables = 'input="""{}"""; nick="{}"; chan="{}"; bot_nick="{}";'.format(arguments.replace('"', '\\"'),
@@ -720,10 +718,10 @@ index a7cfe07..8bf0221 100644
              result = pyexec.eval_py(variables + code)
          else:
              result = data
-@@ -172,16 +172,17 @@ def factoid(inp, input, db, message, action):
+@@ -173,16 +173,17 @@ def factoid(inp, input, db, message, action):
  
  
- @hook.command(autohelp=False, permissions=["listfactoids"])
+ @hook.command(autohelp=False, threaded=False, permissions=["listfactoids"])
 -def listfactoids(reply):
 +def listfactoids(notice):
 +    """- lists all available factoids"""
@@ -856,10 +854,10 @@ index 73a8035..c3ebfd3 100644
  
      if not re.match("^[A-Za-z0-9_|.-\]\[]*$", text.lower()):
 diff --git a/plugins/fortune.py b/plugins/fortune.py
-index 1415d1d..2bf01e6 100644
+index 9c99033..61c2b6d 100644
 --- a/plugins/fortune.py
 +++ b/plugins/fortune.py
-@@ -10,12 +10,11 @@ def load_fortunes(bot):
+@@ -10,11 +10,10 @@ def load_fortunes(bot):
      path = os.path.join(bot.data_dir, "fortunes.txt")
      global fortunes
      with open(path) as f:
@@ -869,18 +867,17 @@ index 1415d1d..2bf01e6 100644
  
  
  @hook.command(autohelp=False, threaded=False)
- @asyncio.coroutine
  def fortune():
 -    """fortune -- Fortune cookies on demand."""
 +    """- hands out a fortune cookie"""
      return random.choice(fortunes)
 diff --git a/plugins/geoip.py b/plugins/geoip.py
-index 7156d52..8f2c46d 100644
+index 921397a..859c57b 100644
 --- a/plugins/geoip.py
 +++ b/plugins/geoip.py
 @@ -34,7 +34,7 @@ def load_regions(bot):
  
- @hook.command
+ @hook.command()
  def geoip(text):
 -    """geoip <host/ip> -- Gets the location of <host/ip>"""
 +    """<host/ip> - gets the location of <host/ip>"""
@@ -895,7 +892,7 @@ index 7156d52..8f2c46d 100644
      return "\x02Country:\x02 {country} ({cc}), \x02City:\x02 {city}{region}".format(**data)
 diff --git a/plugins/kill.py b/plugins/kill.py
 deleted file mode 100644
-index d418efd..0000000
+index cbc6845..0000000
 --- a/plugins/kill.py
 +++ /dev/null
 @@ -1,33 +0,0 @@
@@ -910,7 +907,7 @@ index d418efd..0000000
 -                                 data["parts"], variables=variables)
 -
 -
--@hook.command
+-@hook.command(threaded=False)
 -def kill(text, action=None, nick=None, conn=None, notice=None):
 -    """kill <user> -- Makes the bot kill <user>."""
 -    target = text.strip()
