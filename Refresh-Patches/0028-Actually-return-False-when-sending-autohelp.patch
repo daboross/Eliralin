@@ -1,0 +1,21 @@
+From f0892f293253fb9b0213aba1e4d3c2b954b7ef8d Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Fri, 30 May 2014 18:51:36 -0700
+Subject: [PATCH] Actually return False when sending autohelp
+
+
+diff --git a/cloudbot/core/pluginmanager.py b/cloudbot/core/pluginmanager.py
+index 3852203..ceed6cc 100644
+--- a/cloudbot/core/pluginmanager.py
++++ b/cloudbot/core/pluginmanager.py
+@@ -411,6 +411,7 @@ class PluginManager:
+ 
+         if hook.type == "command" and hook.auto_help and not event.text and hook.doc is not None:
+             event.notice_doc()
++            return False
+ 
+         if hook.single_thread:
+             # There should only be one running instance of this hook, so let's wait for the last event to be processed
+-- 
+1.9.3
+
