@@ -1,27 +1,9 @@
-From 4efc2660906de4114b646c1239bf6916d06160a2 Mon Sep 17 00:00:00 2001
+From 30358ce6a0f651328bd226b232fe1edf439759c3 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Fri, 30 May 2014 18:40:18 -0700
 Subject: [PATCH] More debugging stuff
 
 
-diff --git a/cloudbot/core/bot.py b/cloudbot/core/bot.py
-index 28e170f..288830f 100644
---- a/cloudbot/core/bot.py
-+++ b/cloudbot/core/bot.py
-@@ -205,8 +205,11 @@ class CloudBot:
- 
-         # EVENTS
-         for raw_hook in self.plugin_manager.catch_all_events:
--            # run catch-all events all first
--            yield from self.plugin_manager.launch(raw_hook, BaseEvent(bot=self, base_event=event))
-+            # run catch-all events that are asyncio all first
-+            if not raw_hook.threaded:
-+                yield from self.plugin_manager.launch(raw_hook, BaseEvent(bot=self, base_event=event))
-+            else:
-+                tasks.append(self.plugin_manager.launch(raw_hook, BaseEvent(bot=self, base_event=event)))
-         if event.irc_command in self.plugin_manager.raw_triggers:
-             for raw_hook in self.plugin_manager.raw_triggers[event.irc_command]:
-                 tasks.append(self.plugin_manager.launch(raw_hook, BaseEvent(bot=self, base_event=event)))
 diff --git a/cloudbot/core/events.py b/cloudbot/core/events.py
 index 4b48ea6..8e3c693 100644
 --- a/cloudbot/core/events.py
@@ -42,7 +24,7 @@ index 4b48ea6..8e3c693 100644
  
  
 diff --git a/cloudbot/core/pluginmanager.py b/cloudbot/core/pluginmanager.py
-index 8150a71..3852203 100644
+index 2482786..ceed6cc 100644
 --- a/cloudbot/core/pluginmanager.py
 +++ b/cloudbot/core/pluginmanager.py
 @@ -398,10 +398,15 @@ class PluginManager:

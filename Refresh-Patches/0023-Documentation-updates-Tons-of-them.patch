@@ -1,4 +1,4 @@
-From 29322f43e0e57959d65b1c77a8a7c544ef5f1188 Mon Sep 17 00:00:00 2001
+From 4719a913fc86d105f41fcac9253788e32baeea2b Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Thu, 29 May 2014 23:20:24 -0700
 Subject: [PATCH] Documentation updates! Tons of them!
@@ -1275,10 +1275,10 @@ index dc5ed61..fb71df2 100644
  
      results = [recipe.line for recipe in recipelist
 diff --git a/plugins/minecraft_ping.py b/plugins/minecraft_ping.py
-index a122b57..d50e486 100644
+index 5b91ceb..95b7918 100644
 --- a/plugins/minecraft_ping.py
 +++ b/plugins/minecraft_ping.py
-@@ -214,7 +214,7 @@ def format_output(data):
+@@ -220,7 +220,7 @@ def format_output(data):
  
  @hook.command(["mcping", "mcp"])
  def mcping(text):
