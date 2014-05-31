@@ -1,4 +1,4 @@
-From b9ff55b04e071069e16f6354550489fd3fc95c79 Mon Sep 17 00:00:00 2001
+From 29322f43e0e57959d65b1c77a8a7c544ef5f1188 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Thu, 29 May 2014 23:20:24 -0700
 Subject: [PATCH] Documentation updates! Tons of them!
@@ -854,10 +854,17 @@ index 73a8035..c3ebfd3 100644
  
      if not re.match("^[A-Za-z0-9_|.-\]\[]*$", text.lower()):
 diff --git a/plugins/fortune.py b/plugins/fortune.py
-index 9c99033..61c2b6d 100644
+index 9c99033..4f54264 100644
 --- a/plugins/fortune.py
 +++ b/plugins/fortune.py
-@@ -10,11 +10,10 @@ def load_fortunes(bot):
+@@ -1,6 +1,5 @@
+ import os
+ import random
+-import asyncio
+ 
+ from cloudbot import hook
+ 
+@@ -10,11 +9,10 @@ def load_fortunes(bot):
      path = os.path.join(bot.data_dir, "fortunes.txt")
      global fortunes
      with open(path) as f:
@@ -872,7 +879,7 @@ index 9c99033..61c2b6d 100644
 +    """- hands out a fortune cookie"""
      return random.choice(fortunes)
 diff --git a/plugins/geoip.py b/plugins/geoip.py
-index 921397a..859c57b 100644
+index 921397a..cb8c7da 100644
 --- a/plugins/geoip.py
 +++ b/plugins/geoip.py
 @@ -34,7 +34,7 @@ def load_regions(bot):
@@ -884,12 +891,242 @@ index 921397a..859c57b 100644
  
      try:
          record = geo.record_by_name(text)
+@@ -48,7 +48,7 @@ def geoip(text):
+         # it's a lazy patch, but it should do the job
+         try:
+             data["region"] = ", " + regions[record["country_code"]][record["region_name"]]
+-        except:
++        except Exception:
+             data["region"] = ""
+     else:
+         data["region"] = ""
 @@ -56,4 +56,5 @@ def geoip(text):
      data["cc"] = record["country_code"] or "N/A"
      data["country"] = record["country_name"] or "Unknown"
      data["city"] = record["city"] or "Unknown"
 +
      return "\x02Country:\x02 {country} ({cc}), \x02City:\x02 {city}{region}".format(**data)
+diff --git a/plugins/github.py b/plugins/github.py
+index 6984c26..abd56b3 100644
+--- a/plugins/github.py
++++ b/plugins/github.py
+@@ -60,7 +60,7 @@ def try_shorten_gitio(url, code=None):
+ 
+ @hook.command()
+ def ghissues(text):
+-    """ghissues username/repo [number] - Get specified issue summary, or open issue count """
++    """<username|repo> [number] - gets issue [number]'s summary, or the open issue count if no issue is specified"""
+     args = text.split()
+     if args[0] in shortcuts:
+         repo = shortcuts[args[0]]
+@@ -111,7 +111,7 @@ def ghissues(text):
+ 
+ @hook.command()
+ def gitio(text):
+-    """gitio <url> [code] -- Shorten Github URLs with git.io. [code] is an optional custom short code."""
++    """<url> [code] - shortens a github URL <url> using git.io with [code] as an optional custom short code"""
+     split = text.split()
+     url = split[0]
+ 
+diff --git a/plugins/google.py b/plugins/google.py
+index d7a8db3..e3f1172 100644
+--- a/plugins/google.py
++++ b/plugins/google.py
+@@ -12,7 +12,7 @@ def api_get(kind, query):
+ 
+ @hook.command(["googleimage", "gis", "image"])
+ def googleimage(text):
+-    """gis <query> -- Returns first Google Image result for <query>."""
++    """<query> - returns the first google image result for <query>"""
+ 
+     parsed = api_get('images', text)
+     if not 200 <= parsed['responseStatus'] < 300:
+@@ -24,7 +24,7 @@ def googleimage(text):
+ 
+ @hook.command(["google", "g", "search"])
+ def google(text):
+-    """google <query> -- Returns first google search result for <query>."""
++    """<query> - returns the first google search result for <query>"""
+ 
+     parsed = api_get('web', text)
+     if not 200 <= parsed['responseStatus'] < 300:
+diff --git a/plugins/google_translate.py b/plugins/google_translate.py
+index 6c10ab2..cdd2ad2 100644
+--- a/plugins/google_translate.py
++++ b/plugins/google_translate.py
+@@ -75,9 +75,7 @@ def match_language(fragment):
+ 
+ @hook.command()
+ def translate(text, bot):
+-    """translate [source language [target language]] <sentence> -- translates
+-    <sentence> from source language (default autodetect) to target
+-    language (default English) using Google Translate"""
++    """[source language [target language]] <sentence> - translates <sentence> from source language (default autodetect) to target language (default English) using Google Translate"""
+ 
+     api_key = bot.config.get("api_keys", {}).get("googletranslate", None)
+     if not api_key:
+diff --git a/plugins/googleurlparse.py b/plugins/googleurlparse.py
+index 7271bfe..b25694b 100644
+--- a/plugins/googleurlparse.py
++++ b/plugins/googleurlparse.py
+@@ -5,9 +5,7 @@ from cloudbot import hook
+ 
+ @hook.command(autohelp=False)
+ def googleurl(text, db, nick):
+-    """googleurl [nickname] - Converts Google urls (google.com/url) to normal urls
+-       where possible, in the specified nickname's last message. If nickname isn't provided,
+-       action will be performed on user's last message"""
++    """[nickname] - converts Google urls (google.com/url) to normal urls where possible, [nickname]'s last message, defaulting to the caller's last message if no nickname is specified"""
+     if not text:
+         text = nick
+     last_message = db.execute("select name, quote from seen_user where name"
+diff --git a/plugins/help.py b/plugins/help.py
+index 78a18fc..a1ec999 100644
+--- a/plugins/help.py
++++ b/plugins/help.py
+@@ -6,10 +6,10 @@ from cloudbot import hook
+ 
+ @hook.command("help", autohelp=False, threaded=False)
+ def help_command(text, conn, bot, notice, has_permission):
+-    """help  -- Gives a list of commands/help for a command.
++    """[command] - gives help for [command], or lists all available commands if no command is specified
+     :type text: str
+-    :type conn: core.irc.BotConnection
+-    :type bot: core.bot.CloudBot
++    :type conn: cloudbot.core.connection.BotConnection
++    :type bot: cloudbot.core.bot.CloudBot
+     """
+     if text:
+         searching_for = text.lower().strip()
+diff --git a/plugins/history.py b/plugins/history.py
+index 6f437e0..5950b98 100644
+--- a/plugins/history.py
++++ b/plugins/history.py
+@@ -51,7 +51,7 @@ def chat_tracker(event, db, conn):
+ 
+ @hook.command(autohelp=False, threaded=False)
+ def resethistory(event, conn):
+-    """resethistory - Resets chat history for the current channel"""
++    """- resets chat history for the current channel"""
+     try:
+         conn.history[event.chan].clear()
+         return "Reset chat history for current channel."
+@@ -62,7 +62,7 @@ def resethistory(event, conn):
+ 
+ @hook.command
+ def seen(text, nick, chan, db, event, conn):
+-    """seen <nick> <channel> -- Tell when a nickname was last in active in one of this bot's channels."""
++    """<nick> <channel> - tells when a nickname was last in active in one of my channels"""
+ 
+     if event.conn.nick.lower() == text.lower():
+         return "You need to get your eyes checked."
+@@ -75,8 +75,8 @@ def seen(text, nick, chan, db, event, conn):
+ 
+     db_init(db, conn.name)
+ 
+-    last_seen = db.execute("select name, time, quote from seen_user where name"
+-                           " like :name and chan = :chan", {'name': text, 'chan': chan}).fetchone()
++    last_seen = db.execute("select name, time, quote from seen_user where name like :name and chan = :chan",
++                           {'name': text, 'chan': chan}).fetchone()
+ 
+     if last_seen:
+         reltime = timesince.timesince(last_seen[1])
+diff --git a/plugins/horoscope.py b/plugins/horoscope.py
+index 394cb49..1eff2b9 100644
+--- a/plugins/horoscope.py
++++ b/plugins/horoscope.py
+@@ -11,7 +11,7 @@ def init(db):
+ 
+ @hook.command(autohelp=False)
+ def horoscope(text, db, notice, nick):
+-    """horoscope <sign> -- Get your horoscope."""
++    """<sign> - get your horoscope"""
+ 
+     # check if the user asked us not to save his details
+     dontsave = text.endswith(" dontsave")
+diff --git a/plugins/hulu.py b/plugins/hulu.py
+index c12eaf4..3bf7973 100644
+--- a/plugins/hulu.py
++++ b/plugins/hulu.py
+@@ -16,7 +16,7 @@ def hulu_url(match):
+ 
+ @hook.command('hulu')
+ def hulu_search(text):
+-    """hulu <search> - Search Hulu"""
++    """<query> - searches Hulu for <query>"""
+     result = http.get_soup(
+         "http://m.hulu.com/search?dp_identifier=hulu&{}&items_per_page=1&page=1".format(urlencode({'query': text})))
+     data = result.find('results').find('videos').find('video')
+diff --git a/plugins/ignore.py b/plugins/ignore.py
+index ec0df55..263da6e 100644
+--- a/plugins/ignore.py
++++ b/plugins/ignore.py
+@@ -52,7 +52,7 @@ def ignore_sieve(bot, event, _hook):
+ 
+ @hook.command(threaded=False, autohelp=False)
+ def ignored(notice, conn):
+-    """ignored -- Lists ignored channels/users."""
++    """- lists all channels and users I'm ignoring"""
+     ignorelist = conn.config["plugins"]["ignore"]["ignored"]
+     if ignorelist:
+         notice("Ignored channels/users are: {}".format(", ".join(ignorelist)))
+@@ -63,7 +63,7 @@ def ignored(notice, conn):
+ 
+ @hook.command(permissions=["ignore"])
+ def ignore(text, bot, conn, notice):
+-    """ignore <channel|nick|host> -- Makes the bot ignore <channel|user>."""
++    """<channel|nick|usermask> - adds <channel|nick> to my ignore list"""
+     target = text.lower()
+     if "!" not in target or "@" not in target:
+         target = "{}!*@*".format(target)
+@@ -80,7 +80,7 @@ def ignore(text, bot, conn, notice):
+ 
+ @hook.command(permissions=["ignore"])
+ def unignore(text, bot, conn, notice):
+-    """unignore <channel|user> -- Makes the bot listen to <channel|user>."""
++    """<channel|nick|usermask> - removes <channel|nick|usermask> from my ignore list"""
+     target = text.lower()
+     if "!" not in target or "@" not in target:
+         target = "{}!*@*".format(target)
+diff --git a/plugins/imdb.py b/plugins/imdb.py
+index 20a05a7..87dd83f 100644
+--- a/plugins/imdb.py
++++ b/plugins/imdb.py
+@@ -10,7 +10,7 @@ imdb_re = (r'(.*:)//(imdb.com|www.imdb.com)(:[0-9]+)?(.*)', re.I)
+ 
+ @hook.command()
+ def imdb(text):
+-    """imdb <movie> -- Gets information about <movie> from IMDb."""
++    """imdb <movie> - gets information about <movie> from IMDb"""
+ 
+     strip = text.strip()
+ 
+diff --git a/plugins/imgur.py b/plugins/imgur.py
+index 16d486d..683be24 100644
+--- a/plugins/imgur.py
++++ b/plugins/imgur.py
+@@ -18,8 +18,7 @@ def is_valid(data):
+ 
+ @hook.command(autohelp=False)
+ def imgur(text):
+-    """imgur [subreddit] -- Gets the first page of imgur images from [subreddit] and returns a link to them.
+-     If [subreddit] is undefined, return any imgur images"""
++    """[subreddit] - returns a link to the first page of imgur images from [subreddit], or the first page of all imgur images if no subreddit is provided"""
+     if text:
+         # see if the input ends with "nsfw"
+         show_nsfw = text.endswith(" nsfw")
+diff --git a/plugins/kernel.py b/plugins/kernel.py
+index d9c0043..ae8434d 100644
+--- a/plugins/kernel.py
++++ b/plugins/kernel.py
+@@ -5,6 +5,7 @@ from cloudbot import hook, http
+ 
+ @hook.command(autohelp=False)
+ def kernel(reply):
++    """- gets a list of linux kernel versions"""
+     contents = http.get("https://www.kernel.org/finger_banner")
+     contents = re.sub(r'The latest(\s*)', '', contents)
+     contents = re.sub(r'version of the Linux kernel is:(\s*)', '- ', contents)
 diff --git a/plugins/kill.py b/plugins/kill.py
 deleted file mode 100644
 index cbc6845..0000000
@@ -929,6 +1166,645 @@ index cbc6845..0000000
 -
 -    # act out the message
 -    action(generator.generate_string())
+diff --git a/plugins/lastfm.py b/plugins/lastfm.py
+index 620dacd..ae1f4ef 100644
+--- a/plugins/lastfm.py
++++ b/plugins/lastfm.py
+@@ -7,7 +7,7 @@ api_url = "http://ws.audioscrobbler.com/2.0/?format=json"
+ 
+ @hook.command(["lastfm", "l"], autohelp=False)
+ def lastfm(inp, nick, db, bot, notice):
+-    """lastfm [user] [dontsave] -- Displays the now playing (or last played) track of LastFM user [user]."""
++    """[user] [dontsave] - displays the now playing (or last played) track of LastFM user [user]"""
+     api_key = bot.config.get("api_keys", {}).get("lastfm")
+     if not api_key:
+         return "error: no api key set"
+@@ -73,8 +73,8 @@ def lastfm(inp, nick, db, bot, notice):
+     out += ending
+ 
+     if inp and not dontsave:
+-        db.execute("insert or replace into lastfm(nick, acc) values "
+-                   "(:nick, :account)", {'nick': nick.lower(), 'account': user})
++        db.execute("insert or replace into lastfm(nick, acc) values (:nick, :account)",
++                   {'nick': nick.lower(), 'account': user})
+         db.commit()
+ 
+     return out
+diff --git a/plugins/lmgtfy.py b/plugins/lmgtfy.py
+index f41acdc..ea8c0df 100644
+--- a/plugins/lmgtfy.py
++++ b/plugins/lmgtfy.py
+@@ -3,7 +3,7 @@ from cloudbot import hook, web, http
+ 
+ @hook.command(["lmgtfy", "gfy"])
+ def lmgtfy(text):
+-    """lmgtfy [phrase] - Posts a google link for the specified phrase"""
++    """[phrase] - gets a lmgtfy.com link for the specified phrase"""
+ 
+     link = "http://lmgtfy.com/?q={}".format(http.quote_plus(text))
+ 
+diff --git a/plugins/lyrics.py b/plugins/lyrics.py
+index 4e069f3..7292651 100644
+--- a/plugins/lyrics.py
++++ b/plugins/lyrics.py
+@@ -5,7 +5,7 @@ url = "http://search.azlyrics.com/search.php?q="
+ 
+ @hook.command
+ def lyrics(inp):
+-    """lyrics <search> - Search AZLyrics.com for song lyrics"""
++    """<search> - search AZLyrics.com for song lyrics"""
+     if "pastelyrics" in inp:
+         dopaste = True
+         inp = inp.replace("pastelyrics", "").strip()
+diff --git a/plugins/metacritic.py b/plugins/metacritic.py
+index 71dbf35..c56e792 100644
+--- a/plugins/metacritic.py
++++ b/plugins/metacritic.py
+@@ -8,8 +8,7 @@ from cloudbot import hook, http
+ 
+ @hook.command(["metacritic", "mc"])
+ def metacritic(inp):
+-    """mc [all|movie|tv|album|x360|ps3|pc|gba|ds|3ds|wii|vita|wiiu|xone|ps4] <title>
+-    Gets rating for <title> from metacritic on the specified medium."""
++    """[all|movie|tv|album|x360|ps3|pc|gba|ds|3ds|wii|vita|wiiu|xone|ps4] <title> - gets rating for <title> from metacritic on the specified medium"""
+ 
+     args = inp.strip()
+ 
+diff --git a/plugins/minecraft_bukget.py b/plugins/minecraft_bukget.py
+index 30f2b74..d021133 100644
+--- a/plugins/minecraft_bukget.py
++++ b/plugins/minecraft_bukget.py
+@@ -121,7 +121,7 @@ def format_output(data):
+ 
+ @hook.command(["bukget", "plugin"])
+ def bukget(text, reply, message):
+-    """bukget <slug/name> - Look up a plugin on dev.bukkit.org"""
++    """<slug/name> - gets details on a plugin from dev.bukkit.org"""
+     # get the plugin slug using search
+     try:
+         slug = plugin_search(text)
+@@ -143,7 +143,7 @@ def bukget(text, reply, message):
+ 
+ @hook.command(autohelp=None)
+ def randomplugin(reply, message):
+-    """randomplugin - Gets a random plugin from dev.bukkit.org"""
++    """- gets details on a random plugin from dev.bukkit.org"""
+     # get a random plugin slug
+     try:
+         slug = plugin_random()
+diff --git a/plugins/minecraft_items.py b/plugins/minecraft_items.py
+index dc5ed61..fb71df2 100644
+--- a/plugins/minecraft_items.py
++++ b/plugins/minecraft_items.py
+@@ -50,7 +50,7 @@ with open("./data/itemids.txt") as f:
+ 
+ @hook.command(["mcitem", "mcid"], threaded=False)
+ def mcitem(text, reply):
+-    """mcitem <item/id> -- gets the id from an item or vice versa"""
++    """<item/id> - gets the id for <item> or the item name for <id>"""
+     text = text.lower().strip()
+ 
+     if text == "":
+@@ -80,7 +80,7 @@ def mcitem(text, reply):
+ 
+ @hook.command(["mccraft", "mcrecipe"], threaded=False)
+ def mcrecipe(text, reply):
+-    """mcrecipe <item> -- gets the crafting recipe for an item"""
++    """<item> -- gets the crafting recipe for <item>"""
+     text = text.lower().strip()
+ 
+     results = [recipe.line for recipe in recipelist
+diff --git a/plugins/minecraft_ping.py b/plugins/minecraft_ping.py
+index a122b57..d50e486 100644
+--- a/plugins/minecraft_ping.py
++++ b/plugins/minecraft_ping.py
+@@ -214,7 +214,7 @@ def format_output(data):
+ 
+ @hook.command(["mcping", "mcp"])
+ def mcping(text):
+-    """mcping <server>[:port] - Ping a Minecraft server to check status."""
++    """<server[:port]> - gets the MOTD of the Minecraft server at <server[:port]>"""
+     try:
+         host, port = parse_input(text)
+     except ParseError as e:
+diff --git a/plugins/minecraft_status.py b/plugins/minecraft_status.py
+index d1a6ab4..855eccc 100644
+--- a/plugins/minecraft_status.py
++++ b/plugins/minecraft_status.py
+@@ -13,7 +13,7 @@ red_suffix = ": \x034\x02\u2716"
+ 
+ @hook.command(["mcs", "mcstatus", "mojang"], autohelp=False)
+ def mcstatus():
+-    """mcstatus -- Checks the status of various Mojang (the creators of Minecraft) servers."""
++    """- gets the status of various Mojang (Minecraft) servers"""
+ 
+     try:
+         result = http.get("http://status.mojang.com/check")
+diff --git a/plugins/minecraft_user.py b/plugins/minecraft_user.py
+index 4b7eec0..ca98223 100644
+--- a/plugins/minecraft_user.py
++++ b/plugins/minecraft_user.py
+@@ -67,7 +67,7 @@ def get_profile(name):
+ 
+ @hook.command(["mcuser", "mcpaid", "haspaid"])
+ def mcuser(text):
+-    """mcpaid <username> -- Gets information about the Minecraft user <account>."""
++    """<username> - gets information about the Minecraft user <account>"""
+     user = text.strip()
+ 
+     try:
+diff --git a/plugins/minecraft_wiki.py b/plugins/minecraft_wiki.py
+index 1d724f9..570723d 100644
+--- a/plugins/minecraft_wiki.py
++++ b/plugins/minecraft_wiki.py
+@@ -8,8 +8,7 @@ mc_url = "http://minecraft.gamepedia.com/"
+ 
+ @hook.command()
+ def mcwiki(text):
+-    """mcwiki <phrase> -- Gets the first paragraph of
+-    the Minecraft Wiki article on <phrase>."""
++    """mcwiki <phrase> - gets the first paragraph of the Minecraft Wiki article on <phrase>"""
+ 
+     try:
+         j = http.get_json(api_url, search=text)
+diff --git a/plugins/mlia.py b/plugins/mlia.py
+index 337eb03..065e960 100644
+--- a/plugins/mlia.py
++++ b/plugins/mlia.py
+@@ -23,7 +23,7 @@ refresh_cache()
+ 
+ @hook.command(autohelp=False)
+ def mlia(reply):
+-    """mlia -- Gets a random quote from MyLifeIsAverage.com."""
++    """- gets a random quote from MyLifeIsAverage.com"""
+     # grab the last item in the mlia cache and remove it
+     mlia_id, text = mlia_cache.pop()
+     # reply with the mlia we grabbed
+diff --git a/plugins/namegen.py b/plugins/namegen.py
+index 07375af..c9b909c 100644
+--- a/plugins/namegen.py
++++ b/plugins/namegen.py
+@@ -12,9 +12,9 @@ def get_generator(_json):
+ 
+ @hook.command(autohelp=False)
+ def namegen(text, bot, notice):
+-    """namegen [generator] -- Generates some names using the chosen generator.
++    """[generator|list] - generates some names using the chosen generator, or lists all generators if 'list' is specified
+     :type bot: core.bot.CloudBot
+-    'namegen list' will display a list of all generators."""
++    """
+ 
+     # clean up the input
+     inp = text.strip().lower()
+diff --git a/plugins/newegg.py b/plugins/newegg.py
+index d50a7c7..3e25ec2 100644
+--- a/plugins/newegg.py
++++ b/plugins/newegg.py
+@@ -72,7 +72,7 @@ def newegg_url(match):
+ 
+ @hook.command
+ def newegg(text):
+-    """newegg <item name> -- Searches newegg.com for <item name>"""
++    """newegg <item name> - searches newegg.com for <item name>"""
+ 
+     # form the search request
+     request = {
+diff --git a/plugins/notes.py b/plugins/notes.py
+index 7024186..bf93042 100644
+--- a/plugins/notes.py
++++ b/plugins/notes.py
+@@ -91,7 +91,7 @@ def db_search(db, nick, query):
+ 
+ @hook.command(["note", "notes"])
+ def note(inp, nick, db, notice):
+-    """note(s) <add|del|list|search> args -- Manipulates your list of notes."""
++    """<add|del|list|search> args - manipulates your list of notes"""
+ 
+     db_init(db)
+ 
+diff --git a/plugins/op.py b/plugins/op.py
+index 2c6a37b..e1d148a 100644
+--- a/plugins/op.py
++++ b/plugins/op.py
+@@ -31,71 +31,55 @@ def mode_cmd_no_target(mode, text, text_inp, chan, conn, notice):
+ 
+ @hook.command(permissions=["op_ban", "op"])
+ def ban(text, conn, chan, notice):
+-    """ban [channel] <user> -- Makes the bot ban <user> in [channel].
+-    If [channel] is blank the bot will ban <user> in
+-    the channel the command was used in."""
++    """[channel] <user> - bans <user> in [channel], or in the caller's channel if no channel is specified"""
+     mode_cmd("+b", "ban", text, chan, conn, notice)
+ 
+ 
+ @hook.command(permissions=["op_ban", "op"])
+ def unban(text, conn, chan, notice):
+-    """unban [channel] <user> -- Makes the bot unban <user> in [channel].
+-    If [channel] is blank the bot will unban <user> in
+-    the channel the command was used in."""
++    """[channel] <user> - unbans <user> in [channel], or in the caller's channel if no channel is specified"""
+     mode_cmd("-b", "unban", text, chan, conn, notice)
+ 
+ 
+ @hook.command(permissions=["op_quiet", "op"])
+ def quiet(text, conn, chan, notice):
+-    """quiet [channel] <user> -- Makes the bot quiet <user> in [channel].
+-    If [channel] is blank the bot will quiet <user> in
+-    the channel the command was used in."""
++    """[channel] <user> - quiets <user> in [channel], or in the caller's channel if no channel is specified"""
+     mode_cmd("+q", "quiet", text, chan, conn, notice)
+ 
+ 
+ @hook.command(permissions=["op_quiet", "op"])
+ def unquiet(text, conn, chan, notice):
+-    """unquiet [channel] <user> -- Makes the bot unquiet <user> in [channel].
+-    If [channel] is blank the bot will unquiet <user> in
+-    the channel the command was used in."""
++    """[channel] <user> - unquiets <user> in [channel], or in the caller's channel if no channel is specified"""
+     mode_cmd("-q", "unquiet", text, chan, conn, notice)
+ 
+ 
+ @hook.command(permissions=["op_voice", "op"])
+ def voice(text, conn, chan, notice):
+-    """voice [channel] <user> -- Makes the bot voice <user> in [channel].
+-    If [channel] is blank the bot will voice <user> in
+-    the channel the command was used in."""
++    """[channel] <user> - voices <user> in [channel], or in the caller's channel if no channel is specified"""
+     mode_cmd("+v", "voice", text, chan, conn, notice)
+ 
+ 
+ @hook.command(permissions=["op_voice", "op"])
+ def devoice(text, conn, chan, notice):
+-    """devoice [channel] <user> -- Makes the bot devoice <user> in [channel].
+-    If [channel] is blank the bot will devoice <user> in
+-    the channel the command was used in."""
++    """[channel] <user> - devoices <user> in [channel], or in the caller's channel if no channel is specified"""
+     mode_cmd("-v", "devoice", text, chan, conn, notice)
+ 
+ 
+ @hook.command(permissions=["op_op", "op"])
+ def op(text, conn, chan, notice):
+-    """op [channel] <user> -- Makes the bot op <user> in [channel].
+-    If [channel] is blank the bot will op <user> in
+-    the channel the command was used in."""
++    """[channel] <user> - ops <user> in [channel], or in the caller's channel if no channel is specified"""
+     mode_cmd("+o", "op", text, chan, conn, notice)
+ 
+ 
+ @hook.command(permissions=["op_op", "op"])
+ def deop(text, conn, chan, notice):
+-    """deop [channel] <user> -- Makes the bot deop <user> in [channel].
+-    If [channel] is blank the bot will deop <user> in
+-    the channel the command was used in."""
++    """[channel] <user> - deops <user> in [channel], or in the caller's channel if no channel is specified"""
+     mode_cmd("-o", "deop", text, chan, conn, notice)
+ 
+ 
+ @hook.command(permissions=["op_topic", "op"])
+ def topic(text, conn, chan):
+-    """topic [channel] <topic> -- Change the topic of a channel."""
++    """[channel] <topic> - changes the topic to <topic> in [channel], or in the caller's channel if no channel is specified"""
+     split = text.split(" ")
+     if split[0].startswith("#"):
+         message = " ".join(split[1:])
+@@ -107,9 +91,7 @@ def topic(text, conn, chan):
+ 
+ @hook.command(permissions=["op_kick", "op"])
+ def kick(text, chan, conn, notice):
+-    """kick [channel] <user> [reason] -- Makes the bot kick <user> in [channel]
+-    If [channel] is blank the bot will kick the <user> in
+-    the channel the command was used in."""
++    """[channel] <user> - kicks <user> from [channel], or from the caller's channel if no channel is specified"""
+     split = text.split(" ")
+ 
+     if split[0].startswith("#"):
+@@ -135,7 +117,7 @@ def kick(text, chan, conn, notice):
+ 
+ @hook.command(permissions=["op_rem", "op"])
+ def remove(text, chan, conn):
+-    """remove [channel] [user] -- Force a user to part from a channel."""
++    """[channel] <user> - force removes <user> from [channel], or in the caller's channel if no channel is specified"""
+     split = text.split(" ")
+     if split[0].startswith("#"):
+         message = " ".join(split[1:])
+@@ -149,31 +131,23 @@ def remove(text, chan, conn):
+ 
+ @hook.command(permissions=["op_mute", "op"], autohelp=False)
+ def mute(text, conn, chan, notice):
+-    """mute [channel] -- Makes the bot mute a channel..
+-    If [channel] is blank the bot will mute
+-    the channel the command was used in."""
++    """[channel] - mutes [channel], or in the caller's channel if no channel is specified"""
+     mode_cmd_no_target("+m", "mute", text, chan, conn, notice)
+ 
+ 
+ @hook.command(permissions=["op_mute", "op"], autohelp=False)
+ def unmute(text, conn, chan, notice):
+-    """mute [channel] -- Makes the bot mute a channel..
+-    If [channel] is blank the bot will mute
+-    the channel the command was used in."""
++    """[channel] - unmutes [channel], or in the caller's channel if no channel is specified"""
+     mode_cmd_no_target("-m", "unmute", text, chan, conn, notice)
+ 
+ 
+ @hook.command(permissions=["op_lock", "op"], autohelp=False)
+ def lock(text, conn, chan, notice):
+-    """lock [channel] -- Makes the bot lock a channel.
+-    If [channel] is blank the bot will mute
+-    the channel the command was used in."""
++    """[channel] - locks [channel], or in the caller's channel if no channel is specified"""
+     mode_cmd_no_target("+i", "lock", text, chan, conn, notice)
+ 
+ 
+ @hook.command(permissions=["op_lock", "op"], autohelp=False)
+ def unlock(text, conn, chan, notice):
+-    """unlock [channel] -- Makes the bot unlock a channel..
+-    If [channel] is blank the bot will mute
+-    the channel the command was used in."""
++    """[channel] - unlocks [channel], or in the caller's channel if no channel is specified"""
+     mode_cmd_no_target("-i", "unlock", text, chan, conn, notice)
+diff --git a/plugins/osrc.py b/plugins/osrc.py
+index 26b3a15..36d9aa9 100644
+--- a/plugins/osrc.py
++++ b/plugins/osrc.py
+@@ -6,7 +6,7 @@ user_url = "http://osrc.dfm.io/{}"
+ 
+ @hook.command
+ def osrc(text):
+-    """osrc <github user> -- Gets an Open Source Report Card for <github user>"""
++    """<github user> - gets an Open Source Report Card for <github user> from osrc.dfm.io"""
+ 
+     user_nick = text.strip()
+     url = user_url.format(user_nick)
+diff --git a/plugins/pagecheck.py b/plugins/pagecheck.py
+index 33fc807..e3e922d 100644
+--- a/plugins/pagecheck.py
++++ b/plugins/pagecheck.py
+@@ -3,9 +3,9 @@ import urllib.parse
+ from cloudbot import hook, http, urlnorm
+ 
+ 
+-@hook.command
++@hook.command(["down", "offline", "up"])
+ def down(text):
+-    """down <url> -- Checks if the site at <url> is up or down.
++    """<url> - checks if <url> is online or offline
+     :type text: str
+     """
+ 
+@@ -23,7 +23,7 @@ def down(text):
+ 
+ @hook.command
+ def isup(text):
+-    """isup -- uses isup.me to see if a site is up or not
++    """<url> - uses isup.me to check if <url> is online or offline
+     :type text: str
+     """
+ 
+diff --git a/plugins/password.py b/plugins/password.py
+index 55d4456..e3b90ed 100644
+--- a/plugins/password.py
++++ b/plugins/password.py
+@@ -14,8 +14,7 @@ with open("data/password_words.txt") as f:
+ 
+ @hook.command(autohelp=False)
+ def password(text, notice):
+-    """password <length> [types] -- Generates a password of <length> (default 10).
+-    [types] can include 'alpha', 'no caps', 'numeric', 'symbols' or any combination of the inp, eg. 'numbers symbols'"""
++    """[length [types]] - generates a password of <length> (default 10). [types] can include 'alpha', 'no caps', 'numeric', 'symbols' or any combination: eg. 'numbers symbols'"""
+     okay = []
+ 
+     # find the length needed for the password
+@@ -58,7 +57,7 @@ def password(text, notice):
+ 
+ @hook.command(["rpass", "rpassword", "readablepassword"], autohelp=False)
+ def readable_password(text, notice):
+-    """rpass [length]  -- Generates an easy to remember password with [length] (default 4) commonly used words."""
++    """[length] - generates an easy to remember password with [length] (default 4) commonly used words"""
+     if text:
+         try:
+             length = int(text)
+diff --git a/plugins/ping.py b/plugins/ping.py
+index 1ac9431..53dc7e0 100644
+--- a/plugins/ping.py
++++ b/plugins/ping.py
+@@ -10,7 +10,7 @@ ping_regex = re.compile(r"(\d+.\d+)/(\d+.\d+)/(\d+.\d+)/(\d+.\d+)")
+ 
+ @hook.command
+ def ping(text, reply):
+-    """ping <host> [count] -- Pings <host> [count] times."""
++    """<host> [count] - pings <host> [count] times"""
+ 
+     if os.name == "nt":
+         return "Sorry, this command is not supported on Windows systems."
+diff --git a/plugins/plpaste.py b/plugins/plpaste.py
+index f4c2578..3cf07b4 100644
+--- a/plugins/plpaste.py
++++ b/plugins/plpaste.py
+@@ -5,7 +5,7 @@ from cloudbot import hook, web
+ 
+ @hook.command(permissions=["adminonly"])
+ def plpaste(text, bot):
+-    """
++    """<command> - pastes the plugin file that contains <command>
+     :type text: str
+     :type bot: core.bot.CloudBot
+     """
+diff --git a/plugins/prefixes.py b/plugins/prefixes.py
+index 52550b3..960f2b1 100644
+--- a/plugins/prefixes.py
++++ b/plugins/prefixes.py
+@@ -40,7 +40,7 @@ def load_command_re(db):
+ 
+ @hook.command(permissions=["botcontrol"])
+ def addprefix(text, conn, chan, db):
+-    """delprefix <prefix> - Adds a command prefix <prefix> to the current channel
++    """<prefix> - adds a command prefix <prefix> to the current channel
+     :type text: str
+     :type chan: str
+     :type db: sqlalchemy.orm.Session
+@@ -54,7 +54,7 @@ def addprefix(text, conn, chan, db):
+ 
+ @hook.command(permissions=["botcontrol"])
+ def delprefix(text, chan, db):
+-    """delprefix <prefix> - Removes command prefix <prefix> from the current channel
++    """<prefix> - removes command prefix <prefix> from the current channel
+     :type text: str
+     :type chan: str
+     :type db: sqlalchemy.orm.Session
+diff --git a/plugins/python.py b/plugins/python.py
+index d7ab3a0..624bae3 100644
+--- a/plugins/python.py
++++ b/plugins/python.py
+@@ -2,8 +2,8 @@ from cloudbot import hook
+ from cloudbot.util.pyexec import eval_py
+ 
+ 
+-@hook.command
++@hook.command(["python", "py"])
+ def python(text):
+-    """python <prog> -- Executes <prog> as Python code."""
++    """<python code> - executes <python code> using eval.appspot.com"""
+ 
+     return eval_py(text)
+diff --git a/plugins/qrcode.py b/plugins/qrcode.py
+index ea6e465..21c2ce7 100644
+--- a/plugins/qrcode.py
++++ b/plugins/qrcode.py
+@@ -4,7 +4,7 @@ from cloudbot import hook, web, http
+ 
+ @hook.command(["qrcode", "qr"])
+ def qrcode(text):
+-    """qrcode [link] returns a link for a QR code."""
++    """[link] - returns a link to a QR code image for [link]"""
+ 
+     args = {
+         "cht": "qr",  # chart type (QR)
+diff --git a/plugins/quote.py b/plugins/quote.py
+index add0dcd..65fb512 100644
+--- a/plugins/quote.py
++++ b/plugins/quote.py
+@@ -123,8 +123,7 @@ def get_quote_by_chan(db, chan, num=False):
+ @hook.command('q')
+ @hook.command
+ def quote(inp, nick='', chan='', db=None, notice=None):
+-    """quote [#chan] [nick] [#n]/.quote add <nick> <msg>
+-    Gets random or [#n]th quote by <nick> or from <#chan>/adds quote."""
++    """[#chan] [nick] [#n] OR add <nick> <message> - gets the [#n]th quote by <nick> (defaulting to random) OR adds <message> as a quote for <nick> in the caller's channel"""
+     create_table_if_not_exists(db)
+ 
+     add = re.match(r"add[^\w@]+(\S+?)>?\s+(.*)", inp, re.I)
+diff --git a/plugins/rdio.py b/plugins/rdio.py
+index 5295041..1cc6250 100644
+--- a/plugins/rdio.py
++++ b/plugins/rdio.py
+@@ -1,4 +1,5 @@
+ import urllib
++import urllib.parse
+ import json
+ import re
+ 
+@@ -17,13 +18,13 @@ def getdata(inp, types, api_key, api_secret):
+ 
+ 
+ @hook.command
+-def rdio(inp, bot=None):
+-    """ rdio <search term> - alternatives: .rdiot (track), .rdioar (artist), .rdioal (album) """
++def rdio(text, bot):
++    """<query> - searches rdio for <query>"""
+     api_key = bot.config.get("api_keys", {}).get("rdio_key")
+     api_secret = bot.config.get("api_keys", {}).get("rdio_secret")
+     if not api_key:
+         return "error: no api key set"
+-    data = getdata(inp, "Track,Album,Artist", api_key, api_secret)
++    data = getdata(text, "Track,Album,Artist", api_key, api_secret)
+     try:
+         info = data['result']['results'][0]
+     except IndexError:
+@@ -47,13 +48,13 @@ def rdio(inp, bot=None):
+ 
+ 
+ @hook.command
+-def rdiot(inp, bot=None):
+-    """ rdiot <search term> - Search for tracks on rdio """
++def rdiot(text, bot):
++    """<query> - searches rdio for tracks matching <query>"""
+     api_key = bot.config.get("api_keys", {}).get("rdio_key")
+     api_secret = bot.config.get("api_keys", {}).get("rdio_secret")
+     if not api_key:
+         return "error: no api key set"
+-    data = getdata(inp, "Track", api_key, api_secret)
++    data = getdata(text, "Track", api_key, api_secret)
+     try:
+         info = data['result']['results'][0]
+     except IndexError:
+@@ -66,13 +67,13 @@ def rdiot(inp, bot=None):
+ 
+ 
+ @hook.command
+-def rdioar(inp, bot=None):
+-    """ rdioar <search term> - Search for artists on rdio """
++def rdioar(text, bot):
++    """<query> - searches rdio for artists matching <query>"""
+     api_key = bot.config.get("api_keys", {}).get("rdio_key")
+     api_secret = bot.config.get("api_keys", {}).get("rdio_secret")
+     if not api_key:
+         return "error: no api key set"
+-    data = getdata(inp, "Artist", api_key, api_secret)
++    data = getdata(text, "Artist", api_key, api_secret)
+     try:
+         info = data['result']['results'][0]
+     except IndexError:
+@@ -83,13 +84,13 @@ def rdioar(inp, bot=None):
+ 
+ 
+ @hook.command
+-def rdioal(inp, bot=None):
+-    """ rdioal <search term> - Search for albums on rdio """
++def rdioal(text, bot):
++    """<query> - searches rdio for albums matching <query>"""
+     api_key = bot.config.get("api_keys", {}).get("rdio_key")
+     api_secret = bot.config.get("api_keys", {}).get("rdio_secret")
+     if not api_key:
+         return "error: no api key set"
+-    data = getdata(inp, "Album", api_key, api_secret)
++    data = getdata(text, "Album", api_key, api_secret)
+     try:
+         info = data['result']['results'][0]
+     except IndexError:
+@@ -104,7 +105,7 @@ rdio_re = (r'(.*:)//(rd.io|www.rdio.com|rdio.com)(:[0-9]+)?(.*)', re.I)
+ 
+ 
+ @hook.regex(*rdio_re)
+-def rdio_url(match, bot=None):
++def rdio_url(match, bot):
+     api_key = bot.config.get("api_keys", {}).get("rdio_key")
+     api_secret = bot.config.get("api_keys", {}).get("rdio_secret")
+     if not api_key:
+diff --git a/plugins/recipe.py b/plugins/recipe.py
+index 73d748c..66e8591 100644
+--- a/plugins/recipe.py
++++ b/plugins/recipe.py
+@@ -48,7 +48,7 @@ def get_data(url):
+ 
+ @hook.command(autohelp=False)
+ def recipe(text):
+-    """recipe [term] - Gets a recipe for [term], or ets a random recipe if [term] is not provided"""
++    """[term] - gets a recipe for [term], or gets a random recipe if no term is specified"""
+     if text:
+         # get the recipe URL by searching
+         try:
+@@ -90,7 +90,7 @@ def recipe(text):
+ 
+ @hook.command(autohelp=False)
+ def dinner():
+-    """dinner - WTF IS FOR DINNER"""
++    """- gets a random dinner from whatthefuckshouldimakefordinner.com"""
+     try:
+         page = http.open(random_url)
+     except (http.HTTPError, http.URLError) as e:
+diff --git a/plugins/reddit.py b/plugins/reddit.py
+index 74e8837..5a3ca2d 100644
+--- a/plugins/reddit.py
++++ b/plugins/reddit.py
+@@ -26,13 +26,13 @@ def reddit_url(match):
+ 
+ 
+ @hook.command(autohelp=False)
+-def reddit(inp):
+-    """reddit <subreddit> [n] -- Gets a random post from <subreddit>, or gets the [n]th post in the subreddit."""
++def reddit(text):
++    """<subreddit> [n] - gets a random post from <subreddit>, or gets the [n]th post in the subreddit"""
+     id_num = None
+ 
+-    if inp:
++    if text:
+         # clean and split the input
+-        parts = inp.lower().strip().split()
++        parts = text.lower().strip().split()
+ 
+         # find the requested post number (if any)
+         if len(parts) > 1:
 -- 
 1.9.3
 
