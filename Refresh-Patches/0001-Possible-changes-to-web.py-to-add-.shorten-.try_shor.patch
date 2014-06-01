@@ -1,4 +1,4 @@
-From c14b70d84ee4c31489adea804652ef7463dd943d Mon Sep 17 00:00:00 2001
+From e8d5af547da36d3cfb4f927f4aa1d847f67aef6a Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 31 May 2014 19:27:28 -0700
 Subject: [PATCH] Possible changes to web.py to add .shorten .try_shorten and
@@ -251,7 +251,7 @@ index da35e35..a9e6152 100644
      else:
          return "No song results. " + url + inp.replace(" ", "+")
 diff --git a/plugins/minecraft_bukget.py b/plugins/minecraft_bukget.py
-index b32f88c..7841e3b 100644
+index b32f88c..b79759d 100644
 --- a/plugins/minecraft_bukget.py
 +++ b/plugins/minecraft_bukget.py
 @@ -99,7 +99,7 @@ def format_output(data):
@@ -263,6 +263,13 @@ index b32f88c..7841e3b 100644
  
      if description:
          line_a = "\x02{}\x02, by \x02{}\x02 - {} - ({}) \x02{}".format(name, authors, description, stage, url)
+@@ -156,4 +156,4 @@ def randomplugin(reply, message):
+     line_a, line_b = format_output(data)
+ 
+     reply(line_a)
+-    message(line_b)
+\ No newline at end of file
++    message(line_b)
 diff --git a/plugins/newegg.py b/plugins/newegg.py
 index c78816c..3ca14f2 100644
 --- a/plugins/newegg.py

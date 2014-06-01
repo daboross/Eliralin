@@ -1,4 +1,4 @@
-From d50efd4c285de785218852182ff65c5222c34895 Mon Sep 17 00:00:00 2001
+From 82e2bcab3a8a8b79e41831e695cc76b3e2f92eba Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:05:12 -0800
 Subject: [PATCH] Update minecraft_status to use unicode checks, and with a new
@@ -6,7 +6,7 @@ Subject: [PATCH] Update minecraft_status to use unicode checks, and with a new
 
 
 diff --git a/plugins/minecraft_status.py b/plugins/minecraft_status.py
-index 02f193e..d1a6ab4 100644
+index f73452e..855eccc 100644
 --- a/plugins/minecraft_status.py
 +++ b/plugins/minecraft_status.py
 @@ -3,42 +3,40 @@ import json
@@ -24,7 +24,7 @@ index 02f193e..d1a6ab4 100644
 +
 +@hook.command(["mcs", "mcstatus", "mojang"], autohelp=False)
  def mcstatus():
-     """mcstatus -- Checks the status of various Mojang (the creators of Minecraft) servers."""
+     """- gets the status of various Mojang (Minecraft) servers"""
  
      try:
 -        request = http.get("http://status.mojang.com/check")

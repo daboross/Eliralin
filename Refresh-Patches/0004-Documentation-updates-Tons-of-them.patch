@@ -1,4 +1,4 @@
-From edeb994c41e77bd4dc77cdd3108b1faacb647d49 Mon Sep 17 00:00:00 2001
+From 2c445033c0147a675cdbf870c525a3a623270724 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Thu, 29 May 2014 23:20:24 -0700
 Subject: [PATCH] Documentation updates! Tons of them!
@@ -6,7 +6,7 @@ Subject: [PATCH] Documentation updates! Tons of them!
 (also merges kill.py into attacks.py)
 
 diff --git a/cloudbot/core/events.py b/cloudbot/core/events.py
-index 4b48ea6..8e3c693 100644
+index 53af157..24beac0 100644
 --- a/cloudbot/core/events.py
 +++ b/cloudbot/core/events.py
 @@ -212,10 +212,12 @@ class CommandEvent(BaseEvent):
@@ -24,6 +24,13 @@ index 4b48ea6..8e3c693 100644
          self.notice(message, target=target)
  
  
+@@ -247,4 +249,4 @@ class RegexEvent(BaseEvent):
+         super().__init__(bot=bot, conn=conn, hook=hook, base_event=base_event, irc_raw=irc_raw, irc_prefix=irc_prefix,
+                          irc_command=irc_command, irc_paramlist=irc_paramlist, irc_message=irc_message, nick=nick,
+                          user=user, host=host, mask=mask)
+-        self.match = match
+\ No newline at end of file
++        self.match = match
 diff --git a/plugins/admin.py b/plugins/admin.py
 index 8562c3a..726726d 100644
 --- a/plugins/admin.py
@@ -233,7 +240,7 @@ index 8562c3a..726726d 100644
      """
      text = text.strip()
 diff --git a/plugins/attacks.py b/plugins/attacks.py
-index 00edafe..baeb604 100644
+index 00edafe..72d6973 100644
 --- a/plugins/attacks.py
 +++ b/plugins/attacks.py
 @@ -1,25 +1,37 @@
@@ -263,13 +270,13 @@ index 00edafe..baeb604 100644
 +
 +    with codecs.open(os.path.join(bot.data_dir, "larts.txt"), encoding="utf-8") as f:
 +        larts = [line.strip() for line in f.readlines() if not line.startswith("//")]
++
++    with codecs.open(os.path.join(bot.data_dir, "insults.txt"), encoding="utf-8") as f:
++        insults = [line.strip() for line in f.readlines() if not line.startswith("//")]
  
 -with open("data/flirts.txt") as f:
 -    flirts = [line.strip() for line in f.readlines()
 -              if not line.startswith("//")]
-+    with codecs.open(os.path.join(bot.data_dir, "insults.txt"), encoding="utf-8") as f:
-+        insults = [line.strip() for line in f.readlines() if not line.startswith("//")]
-+
 +    with codecs.open(os.path.join(bot.data_dir, "flirts.txt"), encoding="utf-8") as f:
 +        flirts = [line.strip() for line in f.readlines() if not line.startswith("//")]
 +
@@ -314,13 +321,14 @@ index 00edafe..baeb604 100644
      :type text: str
      :type conn: core.irc.BotConnection
      :type nick: str
-@@ -92,3 +104,26 @@ def flirt(text, conn, nick, notice, message):
+@@ -92,3 +104,27 @@ def flirt(text, conn, nick, notice, message):
          target = nick
  
      message('{}, {}'.format(target, random.choice(flirts)))
 +
 +
-+@hook.command(threaded=False)
++@asyncio.coroutine
++@hook.command()
 +def kill(text, conn, nick, notice, action):
 +    """<user> - kills <user>
 +    :type text: str
@@ -381,7 +389,7 @@ index 398402a..2c8e75d 100644
      """
  
 diff --git a/plugins/core_sieve.py b/plugins/core_sieve.py
-index a5f1881..760485d 100644
+index 404ffde..2329f79 100644
 --- a/plugins/core_sieve.py
 +++ b/plugins/core_sieve.py
 @@ -8,18 +8,19 @@ buckets = {}
@@ -429,9 +437,9 @@ index a5f1881..760485d 100644
      # check command spam tokens
 -    if hook.type == "command":
 +    if _hook.type == "command":
-         if qpt.is_enabled():
-             return event  # Don't run tokens when testing plugins - need to do it quickly
          uid = event.chan
+ 
+         if not uid in buckets:
 diff --git a/plugins/cryptocoins.py b/plugins/cryptocoins.py
 index c087ebc..4f9b4c6 100644
 --- a/plugins/cryptocoins.py
@@ -566,93 +574,6 @@ index 2dc8073..a6fa25f 100644
  
      magic = formatting.multiword_replace(random.choice(responses), color_codes)
      action("shakes the magic 8 ball... {}".format(magic))
-diff --git a/plugins/eliralin_teamcity.py b/plugins/eliralin_teamcity.py
-index c206042..0a52aa3 100644
---- a/plugins/eliralin_teamcity.py
-+++ b/plugins/eliralin_teamcity.py
-@@ -113,7 +113,7 @@ database = ProjectDatabase()
- 
- @hook.command(["teamcity", "ci"])
- def teamcity(text, bot, reply, message):
--    """teamcity [project] - Searches for project on teamcity, and displays project URL and download"""
-+    """[project] - searches for project on teamcity, and displays project URL and download"""
-     database.ensure_loaded(bot=bot)
-     search = text.lower()
-     level_found = 0
-@@ -143,7 +143,7 @@ def teamcity(text, bot, reply, message):
- 
- @hook.command(["reloadci", "reload_teamcity"], permissions=["botcontrol"], autohelp=False)
- def reload_teamcity(bot, reply):
--    """reloadci - Reloads teamcity database manually"""
-+    """- Reloads teamcity database manually"""
-     database.load_key(bot)
-     database.reload_database()
-     reply("Reloaded teamcity, found {} projects.".format(len(database.projects)))
-@@ -152,7 +152,7 @@ def reload_teamcity(bot, reply):
- 
- @hook.command(["listci", "list_teamcity"], permissions=["botcontrol"], autohelp=False)
- def list_teamcity(bot, reply):
--    """listci - Lists all projects loaded into database from teamcity"""
-+    """- lists all projects loaded into database from teamcity"""
-     database.ensure_loaded(bot=bot)
-     reply("Projects: {}".format(", ".join([project.name for project in database.projects])))
-     database.after_check()
-diff --git a/plugins/eliralin_utility.py b/plugins/eliralin_utility.py
-index 4eba97f..bb3e2e9 100644
---- a/plugins/eliralin_utility.py
-+++ b/plugins/eliralin_utility.py
-@@ -6,7 +6,7 @@ from cloudbot import hook
- 
- @hook.command(["josephus", "jose"])
- def josephus(text):
--    """jose [size] [every x] [starting person] - Calculates who dies last """
-+    """[size] [every x] [starting person] - calculates who dies last"""
-     split = text.split()
-     if len(split) != 3:
-         return "Not enough / too many arguments. {}".format(len(split))
-@@ -34,6 +34,7 @@ def pet(action, nick):
- 
- @hook.command(["hug", "huggle"])
- def huggle(text, action, nick):
-+    """<user> - huggles <user>"""
-     if text:
-         action("huggles {}".format(text))
-     else:
-@@ -42,6 +43,7 @@ def huggle(text, action, nick):
- 
- @hook.command()
- def colors(text):
-+    """[number] - shows all mIRC colors up to [number], defaulting to 30"""
-     if text:
-         intinp = int(text)
-         if intinp > 70:
-@@ -57,7 +59,7 @@ def colors(text):
- 
- @hook.command(permissions=["adminonly"])
- def tree(text, message, notice):
--    """tree [type] [text] - Tree text"""
-+    """<type> <text> - tree!"""
-     type_input = text.split(None, 1)
-     if len(type_input) < 2:
-         notice("tree [type] [text] - Tree text")
-@@ -83,7 +85,7 @@ def tree(text, message, notice):
- 
- @hook.command
- def dns(text):
--    """dns [domain] - Resolves the IP of a domain"""
-+    """<domain> - resolves the IP of <domain>"""
-     try:
-         socket.setdefaulttimeout(5)
-         ip = None
-@@ -100,7 +102,7 @@ def dns(text):
- 
- @hook.command
- def rdns(text):
--    """rdns [ip] - Resolves the hostname of an IP"""
-+    """<ip> - resolves the rdns hostname of <ip>"""
-     try:
-         socket.setdefaulttimeout(5)
-         domain = socket.gethostbyaddr(text)[0]
 diff --git a/plugins/encrypt.py b/plugins/encrypt.py
 index c6f1d5e..f78e10f 100644
 --- a/plugins/encrypt.py
@@ -691,7 +612,7 @@ index 95c0c0e..4b2386f 100644
      attempts = 0
  
 diff --git a/plugins/factoids.py b/plugins/factoids.py
-index 7fffe41..8a5806d 100644
+index 1de18d5..2afe29b 100644
 --- a/plugins/factoids.py
 +++ b/plugins/factoids.py
 @@ -73,7 +73,7 @@ def del_factoid(db, word):
@@ -723,7 +644,7 @@ index 7fffe41..8a5806d 100644
  
 @@ -137,7 +137,7 @@ def info(text, notice):
  @asyncio.coroutine
- @hook.regex(r'^\^ ?(.+)')
+ @hook.regex(r'^\? ?(.+)')
  def factoid(inp, input, db, message, action):
 -    """?<word> -- Shows what data is associated with <word>."""
 +    """<word> - shows what data is associated with <word>"""
@@ -785,7 +706,7 @@ index 4b96ee6..a16d748 100644
  
      try:
 diff --git a/plugins/fmylife.py b/plugins/fmylife.py
-index 86a63c7..9efd2c2 100644
+index 86a63c7..fe24b88 100644
 --- a/plugins/fmylife.py
 +++ b/plugins/fmylife.py
 @@ -7,10 +7,10 @@ from cloudbot import hook
@@ -802,13 +723,13 @@ index 86a63c7..9efd2c2 100644
      soup = BeautifulSoup(response.text)
  
      for e in soup.find_all('div', {'class': 'post article'}):
-@@ -19,16 +19,16 @@ def refresh_cache():
+@@ -19,16 +19,17 @@ def refresh_cache():
          fml_cache.append((fml_id, text))
  
  
--@hook.onload()
++@asyncio.coroutine
+ @hook.onload()
 -def initial_refresh():
-+@hook.onload(threaded=False)
 +def initial_refresh(loop):
      # do an initial refresh of the cache
 -    refresh_cache()
@@ -823,47 +744,56 @@ index 86a63c7..9efd2c2 100644
  
      # grab the last item in the fml cache and remove it
      fml_id, text = fml_cache.pop()
-@@ -36,4 +36,4 @@ def fml(reply, loop):
+@@ -36,4 +37,4 @@ def fml(reply, loop):
      reply('(#{}) {}'.format(fml_id, text))
      # refresh fml cache if its getting empty
      if len(fml_cache) < 3:
 -        yield from loop.run_in_executor(None, refresh_cache)
 +        yield from refresh_cache(loop)
 diff --git a/plugins/foods.py b/plugins/foods.py
-index 73a8035..c3ebfd3 100644
+index 73a8035..7891688 100644
 --- a/plugins/foods.py
 +++ b/plugins/foods.py
-@@ -46,9 +46,9 @@ potatoes = ['AC Belmont', 'AC Blue Pride', 'AC Brador', 'AC Chaleur', 'AC Domino
+@@ -1,4 +1,5 @@
+ import re
++import asyncio
+ import random
+ 
+ from cloudbot import hook
+@@ -46,9 +47,10 @@ potatoes = ['AC Belmont', 'AC Blue Pride', 'AC Brador', 'AC Chaleur', 'AC Domino
              'Yukon Gold']
  
  
 -@hook.command
 -def potato(text, action=None):
 -    """potato <user> - Makes <user> a tasty little potato."""
-+@hook.command(threaded=False)
++@asyncio.coroutine
++@hook.command()
 +def potato(text, action):
 +    """<user> - makes <user> a tasty little potato"""
      text = text.strip()
  
      if not re.match("^[A-Za-z0-9_|.-\]\[]*$", text.lower()):
-@@ -63,9 +63,9 @@ def potato(text, action=None):
+@@ -63,9 +65,10 @@ def potato(text, action=None):
      action("{} a {} {} {} potato for {} and serves it with a small {}!".format(method, flavor, size, potato_type, text,
                                                                                 side_dish))
  
 -@hook.command
-+@hook.command(threaded=False)
++@asyncio.coroutine
++@hook.command()
  def cake(text, action):
 -    """cake <user> - Gives <user> an awesome cake."""
 +    """<user> - gives <user> an awesome cake"""
      text = text.strip()
  
      if not re.match("^[A-Za-z0-9_|.-\]\[]*$", text.lower()):
-@@ -82,9 +82,9 @@ def cake(text, action):
+@@ -82,9 +85,10 @@ def cake(text, action):
                                                                           side_dish))
  
  
 -@hook.command
-+@hook.command(threaded=False)
++@asyncio.coroutine
++@hook.command()
  def cookie(text, action):
 -    """cookie <user> - Gives <user> a cookie"""
 +    """<user> - gives <user> a cookie"""
@@ -925,12 +855,15 @@ index 921397a..cb8c7da 100644
 +
      return "\x02Country:\x02 {country} ({cc}), \x02City:\x02 {city}{region}".format(**data)
 diff --git a/plugins/github.py b/plugins/github.py
-index 69e61f0..0e57dc3 100644
+index 69e61f0..ea60828 100644
 --- a/plugins/github.py
 +++ b/plugins/github.py
-@@ -9,7 +9,7 @@ shortcuts = {
+@@ -7,9 +7,9 @@ shortcuts = {
+ }
  
- @hook.command
+ 
+-@hook.command
++@hook.command()
  def issues(text):
 -    """issues <repo> [issue] - Get issues for <repo>. If [issue] is specified, summarize that issue."""
 +    """<username|repo> [number] - gets issue [number]'s summary, or the open issue count if no issue is specified"""
@@ -1008,7 +941,7 @@ index cc8a6a8..30029f6 100644
      if text:
          searching_for = text.lower().strip()
 diff --git a/plugins/history.py b/plugins/history.py
-index add40d0..e858a54 100644
+index add40d0..6a5b48b 100644
 --- a/plugins/history.py
 +++ b/plugins/history.py
 @@ -53,7 +53,7 @@ def chat_tracker(event, db, conn):
@@ -1020,9 +953,12 @@ index add40d0..e858a54 100644
      try:
          conn.history[event.chan].clear()
          return "Reset chat history for current channel."
-@@ -64,7 +64,7 @@ def resethistory(event, conn):
+@@ -62,9 +62,9 @@ def resethistory(event, conn):
+         return "There is no history for this channel."
  
- @hook.command
+ 
+-@hook.command
++@hook.command()
  def seen(text, nick, chan, db, event, conn):
 -    """seen <nick> <channel> -- Tell when a nickname was last in active in one of this bot's channels."""
 +    """<nick> <channel> - tells when a nickname was last in active in one of my channels"""
@@ -1204,12 +1140,15 @@ index 0458be3..9703eda 100644
      link = "http://lmgtfy.com/?q={}".format(http.quote_plus(text))
  
 diff --git a/plugins/lyrics.py b/plugins/lyrics.py
-index 50682a5..99405a8 100644
+index 50682a5..c2951d6 100644
 --- a/plugins/lyrics.py
 +++ b/plugins/lyrics.py
-@@ -5,7 +5,7 @@ url = "http://search.azlyrics.com/search.php?q="
+@@ -3,9 +3,9 @@ from cloudbot import hook, http, web
+ url = "http://search.azlyrics.com/search.php?q="
  
- @hook.command
+ 
+-@hook.command
++@hook.command()
  def lyrics(text):
 -    """lyrics <search> - Search AZLyrics.com for song lyrics"""
 +    """<search> - search AZLyrics.com for song lyrics"""
@@ -1231,10 +1170,10 @@ index 71dbf35..c56e792 100644
      args = inp.strip()
  
 diff --git a/plugins/minecraft_bukget.py b/plugins/minecraft_bukget.py
-index 7bdd01b..df9a4c1 100644
+index 998d049..5bdef9e 100644
 --- a/plugins/minecraft_bukget.py
 +++ b/plugins/minecraft_bukget.py
-@@ -120,7 +120,7 @@ def format_output(data):
+@@ -116,7 +116,7 @@ def format_output(data):
  
  @hook.command(["bukget", "plugin"])
  def bukget(text, reply, message):
@@ -1243,7 +1182,7 @@ index 7bdd01b..df9a4c1 100644
      # get the plugin slug using search
      try:
          slug = plugin_search(text)
-@@ -142,7 +142,7 @@ def bukget(text, reply, message):
+@@ -138,7 +138,7 @@ def bukget(text, reply, message):
  
  @hook.command(autohelp=None)
  def randomplugin(reply, message):
@@ -1288,18 +1227,18 @@ index 5b91ceb..95b7918 100644
          host, port = parse_input(text)
      except ParseError as e:
 diff --git a/plugins/minecraft_status.py b/plugins/minecraft_status.py
-index d1a6ab4..855eccc 100644
+index 02f193e..f73452e 100644
 --- a/plugins/minecraft_status.py
 +++ b/plugins/minecraft_status.py
-@@ -13,7 +13,7 @@ red_suffix = ": \x034\x02\u2716"
+@@ -5,7 +5,7 @@ from cloudbot import hook, http
  
- @hook.command(["mcs", "mcstatus", "mojang"], autohelp=False)
+ @hook.command(autohelp=False)
  def mcstatus():
 -    """mcstatus -- Checks the status of various Mojang (the creators of Minecraft) servers."""
 +    """- gets the status of various Mojang (Minecraft) servers"""
  
      try:
-         result = http.get("http://status.mojang.com/check")
+         request = http.get("http://status.mojang.com/check")
 diff --git a/plugins/minecraft_user.py b/plugins/minecraft_user.py
 index 4b7eec0..ca98223 100644
 --- a/plugins/minecraft_user.py
@@ -1357,12 +1296,15 @@ index 07375af..c9b909c 100644
      # clean up the input
      inp = text.strip().lower()
 diff --git a/plugins/newegg.py b/plugins/newegg.py
-index cdf90c2..7822aa1 100644
+index cdf90c2..7f38a15 100644
 --- a/plugins/newegg.py
 +++ b/plugins/newegg.py
-@@ -73,7 +73,7 @@ def newegg_url(match):
+@@ -71,9 +71,9 @@ def newegg_url(match):
+     return format_item(item, show_url=False)
  
- @hook.command
+ 
+-@hook.command
++@hook.command()
  def newegg(text):
 -    """newegg <item name> -- Searches newegg.com for <item name>"""
 +    """newegg <item name> - searches newegg.com for <item name>"""
@@ -1524,12 +1466,15 @@ index 2c6a37b..e1d148a 100644
 +    """[channel] - unlocks [channel], or in the caller's channel if no channel is specified"""
      mode_cmd_no_target("-i", "unlock", text, chan, conn, notice)
 diff --git a/plugins/osrc.py b/plugins/osrc.py
-index 977e052..4c0ff1b 100644
+index 977e052..01a3a71 100644
 --- a/plugins/osrc.py
 +++ b/plugins/osrc.py
-@@ -6,7 +6,7 @@ user_url = "http://osrc.dfm.io/{}"
+@@ -4,9 +4,9 @@ from cloudbot import hook, http, web
+ user_url = "http://osrc.dfm.io/{}"
  
- @hook.command
+ 
+-@hook.command
++@hook.command()
  def osrc(text):
 -    """osrc <github user> -- Gets an Open Source Report Card for <github user>"""
 +    """<github user> - gets an Open Source Report Card for <github user> from osrc.dfm.io"""
@@ -1537,7 +1482,7 @@ index 977e052..4c0ff1b 100644
      user_nick = text.strip()
      url = user_url.format(user_nick)
 diff --git a/plugins/pagecheck.py b/plugins/pagecheck.py
-index 33fc807..e3e922d 100644
+index 33fc807..2c2fb26 100644
 --- a/plugins/pagecheck.py
 +++ b/plugins/pagecheck.py
 @@ -3,9 +3,9 @@ import urllib.parse
@@ -1552,9 +1497,12 @@ index 33fc807..e3e922d 100644
      :type text: str
      """
  
-@@ -23,7 +23,7 @@ def down(text):
+@@ -21,9 +21,9 @@ def down(text):
+         return '{} seems to be down'.format(text)
  
- @hook.command
+ 
+-@hook.command
++@hook.command()
  def isup(text):
 -    """isup -- uses isup.me to see if a site is up or not
 +    """<url> - uses isup.me to check if <url> is online or offline
@@ -1585,12 +1533,15 @@ index 55d4456..e3b90ed 100644
          try:
              length = int(text)
 diff --git a/plugins/ping.py b/plugins/ping.py
-index 1ac9431..53dc7e0 100644
+index 1ac9431..a21ae5c 100644
 --- a/plugins/ping.py
 +++ b/plugins/ping.py
-@@ -10,7 +10,7 @@ ping_regex = re.compile(r"(\d+.\d+)/(\d+.\d+)/(\d+.\d+)/(\d+.\d+)")
+@@ -8,9 +8,9 @@ from cloudbot import hook
+ ping_regex = re.compile(r"(\d+.\d+)/(\d+.\d+)/(\d+.\d+)/(\d+.\d+)")
  
- @hook.command
+ 
+-@hook.command
++@hook.command()
  def ping(text, reply):
 -    """ping <host> [count] -- Pings <host> [count] times."""
 +    """<host> [count] - pings <host> [count] times"""
@@ -1610,28 +1561,6 @@ index 874459f..c13600d 100644
      :type text: str
      :type bot: core.bot.CloudBot
      """
-diff --git a/plugins/prefixes.py b/plugins/prefixes.py
-index 152d1aa..5b2ed03 100644
---- a/plugins/prefixes.py
-+++ b/plugins/prefixes.py
-@@ -41,7 +41,7 @@ def load_command_re(db):
- 
- @hook.command(permissions=["botcontrol"])
- def addprefix(text, conn, chan, db):
--    """delprefix <prefix> - Adds a command prefix <prefix> to the current channel
-+    """<prefix> - adds a command prefix <prefix> to the current channel
-     :type text: str
-     :type chan: str
-     :type db: sqlalchemy.orm.Session
-@@ -55,7 +55,7 @@ def addprefix(text, conn, chan, db):
- 
- @hook.command(permissions=["botcontrol"])
- def delprefix(text, chan, db):
--    """delprefix <prefix> - Removes command prefix <prefix> from the current channel
-+    """<prefix> - removes command prefix <prefix> from the current channel
-     :type text: str
-     :type chan: str
-     :type db: sqlalchemy.orm.Session
 diff --git a/plugins/python.py b/plugins/python.py
 index d7ab3a0..624bae3 100644
 --- a/plugins/python.py
@@ -1648,12 +1577,15 @@ index d7ab3a0..624bae3 100644
  
      return eval_py(text)
 diff --git a/plugins/qrcode.py b/plugins/qrcode.py
-index 8831e5d..ce5a6e0 100644
+index 8831e5d..4f47cb1 100644
 --- a/plugins/qrcode.py
 +++ b/plugins/qrcode.py
-@@ -5,7 +5,7 @@ from cloudbot import hook, web, http
+@@ -3,9 +3,9 @@ from cloudbot import hook, web, http
+ 
+ 
  @hook.command('qr')
- @hook.command
+-@hook.command
++@hook.command()
  def qrcode(text):
 -    """qrcode [link] returns a link for a QR code."""
 +    """[link] - returns a link to a QR code image for [link]"""
@@ -1661,12 +1593,15 @@ index 8831e5d..ce5a6e0 100644
      args = {
          "cht": "qr",  # chart type (QR)
 diff --git a/plugins/quote.py b/plugins/quote.py
-index add0dcd..65fb512 100644
+index add0dcd..3fab3e5 100644
 --- a/plugins/quote.py
 +++ b/plugins/quote.py
-@@ -123,8 +123,7 @@ def get_quote_by_chan(db, chan, num=False):
+@@ -121,10 +121,9 @@ def get_quote_by_chan(db, chan, num=False):
+ 
+ 
  @hook.command('q')
- @hook.command
+-@hook.command
++@hook.command()
  def quote(inp, nick='', chan='', db=None, notice=None):
 -    """quote [#chan] [nick] [#n]/.quote add <nick> <msg>
 -    Gets random or [#n]th quote by <nick> or from <#chan>/adds quote."""
@@ -1675,7 +1610,7 @@ index add0dcd..65fb512 100644
  
      add = re.match(r"add[^\w@]+(\S+?)>?\s+(.*)", inp, re.I)
 diff --git a/plugins/rdio.py b/plugins/rdio.py
-index 5295041..1cc6250 100644
+index 5295041..c09f479 100644
 --- a/plugins/rdio.py
 +++ b/plugins/rdio.py
 @@ -1,4 +1,5 @@
@@ -1684,12 +1619,14 @@ index 5295041..1cc6250 100644
  import json
  import re
  
-@@ -17,13 +18,13 @@ def getdata(inp, types, api_key, api_secret):
+@@ -16,14 +17,14 @@ def getdata(inp, types, api_key, api_secret):
+     return data
  
  
- @hook.command
+-@hook.command
 -def rdio(inp, bot=None):
 -    """ rdio <search term> - alternatives: .rdiot (track), .rdioar (artist), .rdioal (album) """
++@hook.command()
 +def rdio(text, bot):
 +    """<query> - searches rdio for <query>"""
      api_key = bot.config.get("api_keys", {}).get("rdio_key")
@@ -1701,12 +1638,14 @@ index 5295041..1cc6250 100644
      try:
          info = data['result']['results'][0]
      except IndexError:
-@@ -47,13 +48,13 @@ def rdio(inp, bot=None):
+@@ -46,14 +47,14 @@ def rdio(inp, bot=None):
+             return "\x02{}\x02 - {}".format(name, url)
  
  
- @hook.command
+-@hook.command
 -def rdiot(inp, bot=None):
 -    """ rdiot <search term> - Search for tracks on rdio """
++@hook.command()
 +def rdiot(text, bot):
 +    """<query> - searches rdio for tracks matching <query>"""
      api_key = bot.config.get("api_keys", {}).get("rdio_key")
@@ -1718,12 +1657,14 @@ index 5295041..1cc6250 100644
      try:
          info = data['result']['results'][0]
      except IndexError:
-@@ -66,13 +67,13 @@ def rdiot(inp, bot=None):
+@@ -65,14 +66,14 @@ def rdiot(inp, bot=None):
+     return "\x02{}\x02 by \x02{}\x02 - {} - {}".format(name, artist, album, url)
  
  
- @hook.command
+-@hook.command
 -def rdioar(inp, bot=None):
 -    """ rdioar <search term> - Search for artists on rdio """
++@hook.command()
 +def rdioar(text, bot):
 +    """<query> - searches rdio for artists matching <query>"""
      api_key = bot.config.get("api_keys", {}).get("rdio_key")
@@ -1735,12 +1676,14 @@ index 5295041..1cc6250 100644
      try:
          info = data['result']['results'][0]
      except IndexError:
-@@ -83,13 +84,13 @@ def rdioar(inp, bot=None):
+@@ -82,14 +83,14 @@ def rdioar(inp, bot=None):
+     return "\x02{}\x02 - {}".format(name, url)
  
  
- @hook.command
+-@hook.command
 -def rdioal(inp, bot=None):
 -    """ rdioal <search term> - Search for albums on rdio """
++@hook.command()
 +def rdioal(text, bot):
 +    """<query> - searches rdio for albums matching <query>"""
      api_key = bot.config.get("api_keys", {}).get("rdio_key")
@@ -1762,10 +1705,10 @@ index 5295041..1cc6250 100644
      api_secret = bot.config.get("api_keys", {}).get("rdio_secret")
      if not api_key:
 diff --git a/plugins/recipe.py b/plugins/recipe.py
-index 07008f5..9142439 100644
+index 2ba55b4..9effff4 100644
 --- a/plugins/recipe.py
 +++ b/plugins/recipe.py
-@@ -48,7 +48,7 @@ def get_data(url):
+@@ -43,7 +43,7 @@ def get_data(url):
  
  @hook.command(autohelp=False)
  def recipe(text):
@@ -1774,7 +1717,7 @@ index 07008f5..9142439 100644
      if text:
          # get the recipe URL by searching
          try:
-@@ -90,7 +90,7 @@ def recipe(text):
+@@ -85,7 +85,7 @@ def recipe(text):
  
  @hook.command(autohelp=False)
  def dinner():
@@ -1805,37 +1748,464 @@ index 74e8837..5a3ca2d 100644
  
          # find the requested post number (if any)
          if len(parts) > 1:
+diff --git a/plugins/rss.py b/plugins/rss.py
+index 997e01f..0b851d3 100644
+--- a/plugins/rss.py
++++ b/plugins/rss.py
+@@ -2,7 +2,7 @@ from cloudbot import hook, formatting, web
+ 
+ 
+ @hook.command("feed")
+-@hook.command
++@hook.command()
+ def rss(text, message):
+     """rss <feed> -- Gets the first three items from the RSS feed <feed>."""
+     limit = 3
+diff --git a/plugins/scene.py b/plugins/scene.py
+index fb34b46..97bad91 100644
+--- a/plugins/scene.py
++++ b/plugins/scene.py
+@@ -4,7 +4,7 @@ from cloudbot import hook, http, timesince
+ 
+ 
+ @hook.command("scene")
+-@hook.command
++@hook.command()
+ def pre(inp):
+     """pre <query> -- searches scene releases using orlydb.com"""
+ 
 diff --git a/plugins/shorten.py b/plugins/shorten.py
-index a6aca70..7ff07e1 100644
+index a6aca70..1ef455e 100644
 --- a/plugins/shorten.py
 +++ b/plugins/shorten.py
-@@ -3,7 +3,7 @@ from cloudbot import hook, web
+@@ -1,9 +1,9 @@
+ from cloudbot import hook, web
  
- @hook.command
+ 
+-@hook.command
++@hook.command()
  def shorten(text):
 -    """shorten <url> [custom] - Shorten a url. [custom] is an optional custom shortlink."""
 +    """<url> [custom] - shortens a url with [custom] as an optional custom shortlink"""
      args = text.split()
      url = args[0]
      custom = args[1] if len(args) > 1 else None
-@@ -16,7 +16,7 @@ def shorten(text):
+@@ -14,9 +14,9 @@ def shorten(text):
+         return e.message
  
- @hook.command
+ 
+-@hook.command
++@hook.command()
  def gitio(text):
 -    """gitio <url> [custom] -- Shorten a Github url with git.io. [custom] is an optional custom shortlink."""
 +    """<url> [custom] - shortens a github URL <url> using git.io with [custom] as an optional custom shortlink"""
      args = text.split()
      url = args[0]
      custom = args[1] if len(args) > 1 else None
-@@ -29,7 +29,7 @@ def gitio(text):
+@@ -27,9 +27,9 @@ def gitio(text):
+         return e.message
  
- @hook.command
+ 
+-@hook.command
++@hook.command()
  def isgd(text):
 -    """shorten <url> [custom] - Shorten a url with is.gd. [custom] is an optional custom shortlink."""
-+    """<url> [custom] - Shorten a url using is.gd with [custom] as an optional custom shortlink"""
++    """<url> [custom] - shortens a url using is.gd with [custom] as an optional custom shortlink"""
      args = text.split()
      url = args[0]
      custom = args[1] if len(args) > 1 else None
+diff --git a/plugins/slap.py b/plugins/slap.py
+index a777b78..64042b7 100644
+--- a/plugins/slap.py
++++ b/plugins/slap.py
+@@ -9,7 +9,7 @@ def get_generator(_json, variables):
+                                  data["parts"], variables=variables)
+ 
+ 
+-@hook.command
++@hook.command()
+ def slap(text, action, nick, conn, notice):
+     """slap <user> -- Makes the bot slap <user>."""
+     target = text.strip()
+diff --git a/plugins/slogan.py b/plugins/slogan.py
+index 6b88e97..73b3b38 100644
+--- a/plugins/slogan.py
++++ b/plugins/slogan.py
+@@ -7,7 +7,7 @@ with open("./data/slogans.txt") as f:
+                if not line.startswith("//")]
+ 
+ 
+-@hook.command
++@hook.command()
+ def slogan(text):
+     """slogan <word> -- Makes a slogan for <word>."""
+     out = random.choice(slogans)
+diff --git a/plugins/snopes.py b/plugins/snopes.py
+index 746cc41..6affa17 100644
+--- a/plugins/snopes.py
++++ b/plugins/snopes.py
+@@ -5,7 +5,7 @@ from cloudbot import hook, http
+ search_url = "http://search.atomz.com/search/?sp_a=00062d45-sp00000000"
+ 
+ 
+-@hook.command
++@hook.command()
+ def snopes(text):
+     """snopes <topic> -- Searches snopes for an urban legend about <topic>."""
+ 
+diff --git a/plugins/spellcheck.py b/plugins/spellcheck.py
+index 9cf3983..70f128e 100644
+--- a/plugins/spellcheck.py
++++ b/plugins/spellcheck.py
+@@ -6,7 +6,7 @@ from cloudbot import hook
+ locale = "en_US"
+ 
+ 
+-@hook.command
++@hook.command()
+ def spell(text):
+     """spell <word/sentence> -- Check spelling of a word or sentence."""
+ 
+diff --git a/plugins/spotify.py b/plugins/spotify.py
+index cfc5f0c..c51f6e7 100644
+--- a/plugins/spotify.py
++++ b/plugins/spotify.py
+@@ -32,7 +32,7 @@ def sptfy(inp, sptfy=False):
+ 
+ 
+ @hook.command('sptrack')
+-@hook.command
++@hook.command()
+ def spotify(inp):
+     """spotify <song> -- Search Spotify for <song>"""
+     try:
+@@ -50,7 +50,7 @@ def spotify(inp):
+                                                   data["tracks"][0]["artists"][0]["name"], url)
+ 
+ 
+-@hook.command
++@hook.command()
+ def spalbum(inp):
+     """spalbum <album> -- Search Spotify for <album>"""
+     try:
+@@ -68,7 +68,7 @@ def spalbum(inp):
+                                                   data["albums"][0]["artists"][0]["name"], url)
+ 
+ 
+-@hook.command
++@hook.command()
+ def spartist(inp):
+     """spartist <artist> -- Search Spotify for <artist>"""
+     try:
+diff --git a/plugins/steam.py b/plugins/steam.py
+index 7594134..1fc9498 100644
+--- a/plugins/steam.py
++++ b/plugins/steam.py
+@@ -63,7 +63,7 @@ def steam_url(match):
+     return get_steam_info("http://store.steampowered.com" + match.group(4))
+ 
+ 
+-@hook.command
++@hook.command()
+ def steam(inp):
+     """steam [search] - Search for specified game/trailer/DLC"""
+     page = http.get("http://store.steampowered.com/search/?term=" + inp)
+diff --git a/plugins/stock.py b/plugins/stock.py
+index 5bf6a97..efcf4ff 100644
+--- a/plugins/stock.py
++++ b/plugins/stock.py
+@@ -1,7 +1,7 @@
+ from cloudbot import hook, web
+ 
+ 
+-@hook.command
++@hook.command()
+ def stock(inp):
+     """stock <symbol> -- gets stock information"""
+     sym = inp.strip().lower()
+diff --git a/plugins/suggest.py b/plugins/suggest.py
+index b1a234a..de8c213 100644
+--- a/plugins/suggest.py
++++ b/plugins/suggest.py
+@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
+ from cloudbot import hook, http, formatting
+ 
+ 
+-@hook.command
++@hook.command()
+ def suggest(text):
+     """suggest <phrase> -- Gets suggested phrases for a google search"""
+ 
+diff --git a/plugins/title.py b/plugins/title.py
+index 58fac57..ccd5fb2 100644
+--- a/plugins/title.py
++++ b/plugins/title.py
+@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
+ from cloudbot import hook, http, urlnorm
+ 
+ 
+-@hook.command
++@hook.command()
+ def title(text):
+     """title <url> -- gets the title of a web page"""
+     url = urlnorm.normalize(text, assume_scheme="http")
+diff --git a/plugins/tvdb.py b/plugins/tvdb.py
+index 18e7003..c407df6 100644
+--- a/plugins/tvdb.py
++++ b/plugins/tvdb.py
+@@ -62,7 +62,7 @@ def get_episode_info(episode, api_key):
+     return first_aired, air_date, episode_desc
+ 
+ 
+-@hook.command
++@hook.command()
+ @hook.command('tv')
+ def tv_next(inp, bot=None):
+     """tv <series> -- Get the next episode of <series>."""
+@@ -112,7 +112,7 @@ def tv_next(inp, bot=None):
+         return "The next episodes of {}: {}".format(series_name, next_eps)
+ 
+ 
+-@hook.command
++@hook.command()
+ @hook.command('tv_prev')
+ def tv_last(inp, bot=None):
+     """tv_last <series> -- Gets the most recently aired episode of <series>."""
+diff --git a/plugins/twitch.py b/plugins/twitch.py
+index 3f62670..383516a 100644
+--- a/plugins/twitch.py
++++ b/plugins/twitch.py
+@@ -55,7 +55,7 @@ def twitch_url(match):
+ 
+ 
+ @hook.command('twitchviewers')
+-@hook.command
++@hook.command()
+ def twviewers(inp):
+     inp = inp.split("/")[-1]
+     if test(inp):
+diff --git a/plugins/twitter.py b/plugins/twitter.py
+index e9b5b4d..e17d8c3 100644
+--- a/plugins/twitter.py
++++ b/plugins/twitter.py
+@@ -54,7 +54,7 @@ def twitter_url(match, bot=None):
+ 
+ @hook.command("tw")
+ @hook.command("twatter")
+-@hook.command
++@hook.command()
+ def twitter(inp, bot=None):
+     """twitter <user> [n] -- Gets last/[n]th tweet from <user>"""
+ 
+@@ -139,7 +139,7 @@ def twitter(inp, bot=None):
+ 
+ 
+ @hook.command("twinfo")
+-@hook.command
++@hook.command()
+ def twuser(inp, bot=None):
+     """twuser <user> -- Get info on the Twitter user <user>"""
+ 
+diff --git a/plugins/update.py b/plugins/update.py
+index d022172..89032d0 100644
+--- a/plugins/update.py
++++ b/plugins/update.py
+@@ -3,7 +3,7 @@ from git import Repo
+ from cloudbot import hook, web
+ 
+ 
+-@hook.command
++@hook.command()
+ def update():
+     repo = Repo()
+     git = repo.git
+@@ -17,7 +17,7 @@ def update():
+         return pull
+ 
+ 
+-@hook.command
++@hook.command()
+ def version():
+     repo = Repo()
+ 
+diff --git a/plugins/utility.py b/plugins/utility.py
+index 6183346..0d65d65 100644
+--- a/plugins/utility.py
++++ b/plugins/utility.py
+@@ -35,7 +35,7 @@ def strip(string):
+ 
+ ## TODO: make this capitalize sentences correctly
+ @hook.command("capitalise")
+-@hook.command
++@hook.command()
+ def capitalize(text):
+     """capitalize <string> -- Capitalizes <string>.
+     :type text: str
+@@ -43,25 +43,25 @@ def capitalize(text):
+     return ". ".join([sentence.capitalize() for sentence in text.split(". ")])
+ 
+ 
+-@hook.command
++@hook.command()
+ def upper(text):
+     """upper <string> -- Convert string to uppercase."""
+     return text.upper()
+ 
+ 
+-@hook.command
++@hook.command()
+ def lower(text):
+     """lower <string> -- Convert string to lowercase."""
+     return text.lower()
+ 
+ 
+-@hook.command
++@hook.command()
+ def titlecase(text):
+     """title <string> -- Convert string to title case."""
+     return text.title()
+ 
+ 
+-@hook.command
++@hook.command()
+ def swapcase(text):
+     """swapcase <string> -- Swaps the capitalization of <string>."""
+     return text.swapcase()
+@@ -103,14 +103,14 @@ def base64_check(text):
+         return "'{}' is a valid base64 encoded string".format(text)
+ 
+ 
+-@hook.command
++@hook.command()
+ def unescape(text):
+     """unescape <string> -- Unicode unescapes <string>."""
+     decoder = codecs.getdecoder("unicode_escape")
+     return decoder(text)[0]
+ 
+ 
+-@hook.command
++@hook.command()
+ def escape(text):
+     """escape <string> -- Unicode escapes <string>."""
+     encoder = codecs.getencoder("unicode_escape")
+@@ -119,7 +119,7 @@ def escape(text):
+ # length
+ 
+ 
+-@hook.command
++@hook.command()
+ def length(text):
+     """length <string> -- Gets the length of <string>"""
+     return "The length of that string is {} characters.".format(len(text))
+@@ -128,7 +128,7 @@ def length(text):
+ # reverse
+ 
+ 
+-@hook.command
++@hook.command()
+ def reverse(text):
+     """reverse <string> -- Reverses <string>."""
+     return text[::-1]
+@@ -147,7 +147,7 @@ def hash_command(text):
+ # novelty
+ 
+ 
+-@hook.command
++@hook.command()
+ def munge(text):
+     """munge <text> -- Munges up <text>."""
+     return formatting.munge(text)
+@@ -156,7 +156,7 @@ def munge(text):
+ # colors - based on code by Reece Selwood - <https://github.com/hitzler/homero>
+ 
+ 
+-@hook.command
++@hook.command()
+ def rainbow(text):
+     text = str(text)
+     text = strip(text)
+@@ -171,7 +171,7 @@ def rainbow(text):
+     return out
+ 
+ 
+-@hook.command
++@hook.command()
+ def wrainbow(text):
+     text = str(text)
+     col = list(colors.items())
+@@ -183,7 +183,7 @@ def wrainbow(text):
+     return ' '.join(out)
+ 
+ 
+-@hook.command
++@hook.command()
+ def usa(text):
+     text = strip(text)
+     c = [colors['red'], '\x0300', colors['blue']]
+diff --git a/plugins/valvesounds.py b/plugins/valvesounds.py
+index 55a27de..14fe031 100644
+--- a/plugins/valvesounds.py
++++ b/plugins/valvesounds.py
+@@ -32,13 +32,13 @@ def get_sound_info(game, search):
+         return "{} (and {} others: {})".format(items[0], len(items) - 1, web.paste("\n".join(items)))
+ 
+ 
+-@hook.command
++@hook.command()
+ def portal2(text):
+     """portal2 <quote> - Look up Portal 2 quote. Example: .portal2 demand to see life's manager"""
+     return get_sound_info("portal2", text)
+ 
+ 
+-@hook.command
++@hook.command()
+ def portal2dlc(text):
+     """portal2dlc <quote> - Look up Portal 2 DLC quote. Example: .portal2dlc1 these exhibits are interactive"""
+     return get_sound_info("portal2dlc1", text)
+@@ -50,7 +50,7 @@ def portal2dlc2(text):
+     return get_sound_info("portal2dlc2", text)
+ 
+ 
+-@hook.command
++@hook.command()
+ def portal2music(text):
+     """portal2music <title> - Look up Portal 2 music. Example: .portal2music turret opera"""
+     return get_sound_info("portal2music", text)
+@@ -74,7 +74,7 @@ def tf2(text):
+     return get_sound_info("tf2", text)
+ 
+ 
+-@hook.command
++@hook.command()
+ def tf2music(text):
+     """tf2music title - Look up TF2 music lyrics. Example: .tf2music rocket jump waltz"""
+     return get_sound_info("tf2music", text)
+diff --git a/plugins/xkcd.py b/plugins/xkcd.py
+index efaacba..e02d9a7 100644
+--- a/plugins/xkcd.py
++++ b/plugins/xkcd.py
+@@ -36,7 +36,7 @@ def xkcd_url(match):
+     return xkcd_info(xkcd_id)
+ 
+ 
+-@hook.command
++@hook.command()
+ def xkcd(text):
+     """xkcd <search term> - Search for xkcd comic matching <search term>"""
+     return xkcd_search(text)
+diff --git a/plugins/yahooanswers.py b/plugins/yahooanswers.py
+index 423f919..315baf5 100644
+--- a/plugins/yahooanswers.py
++++ b/plugins/yahooanswers.py
+@@ -1,7 +1,7 @@
+ from cloudbot import hook, web, formatting
+ 
+ 
+-@hook.command
++@hook.command()
+ def answer(text):
+     """answer <query> -- find the answer to a question on Yahoo! Answers"""
+ 
 -- 
 2.0.0
 

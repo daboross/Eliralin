@@ -1,4 +1,4 @@
-From 3e6191b6e9583fa321bb1d7efa39b2235da83531 Mon Sep 17 00:00:00 2001
+From 0a05638abf708b3300c3cf5341d0f16c6a71f931 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Thu, 29 May 2014 22:01:16 -0700
 Subject: [PATCH] Catch the case where bukget returns no authors for a given
@@ -6,7 +6,7 @@ Subject: [PATCH] Catch the case where bukget returns no authors for a given
 
 
 diff --git a/plugins/minecraft_bukget.py b/plugins/minecraft_bukget.py
-index 7841e3b..dd4a1c5 100644
+index 5bdef9e..fff0559 100644
 --- a/plugins/minecraft_bukget.py
 +++ b/plugins/minecraft_bukget.py
 @@ -1,3 +1,4 @@
@@ -29,13 +29,6 @@ index 7841e3b..dd4a1c5 100644
      stage = data['stage']
  
      current_version = data['versions'][0]
-@@ -156,4 +161,4 @@ def randomplugin(reply, message):
-     line_a, line_b = format_output(data)
- 
-     reply(line_a)
--    message(line_b)
-\ No newline at end of file
-+    message(line_b)
 -- 
 2.0.0
 

@@ -1,4 +1,4 @@
-From 847c8d255d2fe8f8ff66a3221a3469c2c3f3aab7 Mon Sep 17 00:00:00 2001
+From fd33aae2a776d9ade03cbe2efb70ab59620683df Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Thu, 29 May 2014 23:28:01 -0700
 Subject: [PATCH] Add @asyncio.coroutine to a ton of plugins
@@ -229,7 +229,7 @@ index cfbf144..398402a 100644
  def coin(text, notice, action):
      """coin [amount] -- Flips [amount] of coins.
 diff --git a/plugins/core_ctcp.py b/plugins/core_ctcp.py
-index 8453d57..6ef1828 100644
+index 1393228..229ae7f 100644
 --- a/plugins/core_ctcp.py
 +++ b/plugins/core_ctcp.py
 @@ -1,19 +1,23 @@
@@ -243,7 +243,7 @@ index 8453d57..6ef1828 100644
 +@asyncio.coroutine
  @hook.regex(r'^\x01VERSION\x01$')
  def ctcp_version(notice):
-     notice('\x01VERSION Eliralin #refresh - http://git.io/elirefresh')
+     notice('\x01VERSION: CloudBot - http://git.io/cloudbotirc')
  
  
 +@asyncio.coroutine
@@ -459,7 +459,7 @@ index 21a9d45..c6f1d5e 100644
      """decrypt <pass> <string> -- Decrypts <string> with <pass>. (can only decrypt strings encrypted on this bot)
      :type bot: core.bot.CloudBot
 diff --git a/plugins/factoids.py b/plugins/factoids.py
-index a7cfe07..7fffe41 100644
+index 7c5648f..1de18d5 100644
 --- a/plugins/factoids.py
 +++ b/plugins/factoids.py
 @@ -1,5 +1,6 @@
@@ -500,7 +500,7 @@ index a7cfe07..7fffe41 100644
  
  
 +@asyncio.coroutine
- @hook.regex(r'^\^ ?(.+)')
+ @hook.regex(r'^\? ?(.+)')
  def factoid(inp, input, db, message, action):
      """?<word> -- Shows what data is associated with <word>."""
 @@ -171,6 +176,7 @@ def factoid(inp, input, db, message, action):
@@ -788,10 +788,10 @@ index 0b5adf0..71dbf35 100644
      """mc [all|movie|tv|album|x360|ps3|pc|gba|ds|3ds|wii|vita|wiiu|xone|ps4] <title>
      Gets rating for <title> from metacritic on the specified medium."""
 diff --git a/plugins/minecraft_bukget.py b/plugins/minecraft_bukget.py
-index dd4a1c5..1dfe9d8 100644
+index b79759d..998d049 100644
 --- a/plugins/minecraft_bukget.py
 +++ b/plugins/minecraft_bukget.py
-@@ -119,8 +119,7 @@ def format_output(data):
+@@ -114,8 +114,7 @@ def format_output(data):
  
  ## HOOK FUNCTIONS
  
@@ -861,45 +861,6 @@ index 7024186..7ff65e2 100644
      cmd = parts[0].lower()
  
      args = parts[1:]
-diff --git a/plugins/prefixes.py b/plugins/prefixes.py
-index 52550b3..152d1aa 100644
---- a/plugins/prefixes.py
-+++ b/plugins/prefixes.py
-@@ -1,3 +1,4 @@
-+import asyncio
- import re
- 
- from sqlalchemy import Table, Column, String, UniqueConstraint
-@@ -66,7 +67,8 @@ def delprefix(text, chan, db):
-     return "Removed command prefix {} from {}".format(text, chan)
- 
- 
--@hook.event("PRIVMSG", threaded=False)
-+@asyncio.coroutine
-+@hook.event("PRIVMSG")
- def run_extra_prefix(event, bot, conn, chan, irc_message):
-     """
-     :type event: cloudbot.core.events.BaseEvent
-diff --git a/plugins/profiling.py b/plugins/profiling.py
-index be201f0..2ed38e2 100644
---- a/plugins/profiling.py
-+++ b/plugins/profiling.py
-@@ -1,12 +1,14 @@
- import gc
- 
-+import asyncio
- import objgraph
- from pympler import muppy, summary, tracker
- 
- from cloudbot import hook, threaddump
- 
- 
--@hook.command(threaded=False, autohelp=False, permissions=["botcontrol"])
-+@asyncio.coroutine
-+@hook.command(autohelp=False, permissions=["botcontrol"])
- def threaddump_command(reply):
-     reply("Running thread dump")
-     return "Thread dump located at {}".format(threaddump.get_thread_dump())
 diff --git a/plugins/snopes.py b/plugins/snopes.py
 index 806cd8c..746cc41 100644
 --- a/plugins/snopes.py
