@@ -1,4 +1,4 @@
-From af65fde0fd90dfc4f91b7d5de823a92ccab5e6dc Mon Sep 17 00:00:00 2001
+From 8312d4d2ab303a1d7280c69a397867c0e3107a50 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Thu, 29 May 2014 23:20:24 -0700
 Subject: [PATCH] Documentation updates! Tons of them!
@@ -655,7 +655,7 @@ index 38ec426..6ee7e90 100644
      """
  
 diff --git a/plugins/fact.py b/plugins/fact.py
-index 9594c10..fe7364a 100644
+index 95c0c0e..4b2386f 100644
 --- a/plugins/fact.py
 +++ b/plugins/fact.py
 @@ -3,7 +3,7 @@ from cloudbot import hook, http, web
@@ -907,10 +907,10 @@ index 921397a..cb8c7da 100644
 +
      return "\x02Country:\x02 {country} ({cc}), \x02City:\x02 {city}{region}".format(**data)
 diff --git a/plugins/github.py b/plugins/github.py
-index 9b77db7..29747d1 100644
+index 69e61f0..0e57dc3 100644
 --- a/plugins/github.py
 +++ b/plugins/github.py
-@@ -8,7 +8,7 @@ shortcuts = {
+@@ -9,7 +9,7 @@ shortcuts = {
  
  @hook.command
  def issues(text):
@@ -918,7 +918,7 @@ index 9b77db7..29747d1 100644
 +    """<username|repo> [number] - gets issue [number]'s summary, or the open issue count if no issue is specified"""
      args = text.split()
      repo = args[0] if args[0] not in shortcuts else shortcuts[args[0]]
-     issue = args[1] if len(args) > 1 else None   
+     issue = args[1] if len(args) > 1 else None
 diff --git a/plugins/google.py b/plugins/google.py
 index d7a8db3..e3f1172 100644
 --- a/plugins/google.py
@@ -1093,7 +1093,7 @@ index 20a05a7..87dd83f 100644
      strip = text.strip()
  
 diff --git a/plugins/imgur.py b/plugins/imgur.py
-index b88a297..8fbcefb 100644
+index 61eede9..f951e47 100644
 --- a/plugins/imgur.py
 +++ b/plugins/imgur.py
 @@ -18,8 +18,7 @@ def is_valid(data):
@@ -1182,7 +1182,7 @@ index 620dacd..ae1f4ef 100644
  
      return out
 diff --git a/plugins/lmgtfy.py b/plugins/lmgtfy.py
-index de03830..d30e3b7 100644
+index 0458be3..9703eda 100644
 --- a/plugins/lmgtfy.py
 +++ b/plugins/lmgtfy.py
 @@ -3,7 +3,7 @@ from cloudbot import hook, web, http
@@ -1195,7 +1195,7 @@ index de03830..d30e3b7 100644
      link = "http://lmgtfy.com/?q={}".format(http.quote_plus(text))
  
 diff --git a/plugins/lyrics.py b/plugins/lyrics.py
-index da35e35..d8600fc 100644
+index a9e6152..83055c5 100644
 --- a/plugins/lyrics.py
 +++ b/plugins/lyrics.py
 @@ -5,7 +5,7 @@ url = "http://search.azlyrics.com/search.php?q="
@@ -1222,7 +1222,7 @@ index 71dbf35..c56e792 100644
      args = inp.strip()
  
 diff --git a/plugins/minecraft_bukget.py b/plugins/minecraft_bukget.py
-index 4ade7c6..400acc0 100644
+index 1dfe9d8..fff0559 100644
 --- a/plugins/minecraft_bukget.py
 +++ b/plugins/minecraft_bukget.py
 @@ -121,7 +121,7 @@ def format_output(data):
@@ -1348,7 +1348,7 @@ index 07375af..c9b909c 100644
      # clean up the input
      inp = text.strip().lower()
 diff --git a/plugins/newegg.py b/plugins/newegg.py
-index c78816c..92ab4d1 100644
+index 3ca14f2..8dd34af 100644
 --- a/plugins/newegg.py
 +++ b/plugins/newegg.py
 @@ -72,7 +72,7 @@ def newegg_url(match):
@@ -1515,7 +1515,7 @@ index 2c6a37b..e1d148a 100644
 +    """[channel] - unlocks [channel], or in the caller's channel if no channel is specified"""
      mode_cmd_no_target("-i", "unlock", text, chan, conn, notice)
 diff --git a/plugins/osrc.py b/plugins/osrc.py
-index 8468bec..4832a43 100644
+index 977e052..4c0ff1b 100644
 --- a/plugins/osrc.py
 +++ b/plugins/osrc.py
 @@ -6,7 +6,7 @@ user_url = "http://osrc.dfm.io/{}"
@@ -1589,7 +1589,7 @@ index 1ac9431..53dc7e0 100644
      if os.name == "nt":
          return "Sorry, this command is not supported on Windows systems."
 diff --git a/plugins/plpaste.py b/plugins/plpaste.py
-index 2cd984a..2a4bab7 100644
+index 874459f..c13600d 100644
 --- a/plugins/plpaste.py
 +++ b/plugins/plpaste.py
 @@ -5,7 +5,7 @@ from cloudbot import hook, web
@@ -1639,7 +1639,7 @@ index d7ab3a0..624bae3 100644
  
      return eval_py(text)
 diff --git a/plugins/qrcode.py b/plugins/qrcode.py
-index 4c31144..f5c927c 100644
+index 8831e5d..ce5a6e0 100644
 --- a/plugins/qrcode.py
 +++ b/plugins/qrcode.py
 @@ -5,7 +5,7 @@ from cloudbot import hook, web, http
@@ -1753,7 +1753,7 @@ index 5295041..1cc6250 100644
      api_secret = bot.config.get("api_keys", {}).get("rdio_secret")
      if not api_key:
 diff --git a/plugins/recipe.py b/plugins/recipe.py
-index 12c6ae0..5ec0ea2 100644
+index 07008f5..9142439 100644
 --- a/plugins/recipe.py
 +++ b/plugins/recipe.py
 @@ -48,7 +48,7 @@ def get_data(url):
@@ -1797,34 +1797,36 @@ index 74e8837..5a3ca2d 100644
          # find the requested post number (if any)
          if len(parts) > 1:
 diff --git a/plugins/shorten.py b/plugins/shorten.py
-index f4bf685..d7cefbc 100644
+index a6aca70..7ff07e1 100644
 --- a/plugins/shorten.py
 +++ b/plugins/shorten.py
-@@ -2,7 +2,7 @@ from cloudbot import hook, web
+@@ -3,7 +3,7 @@ from cloudbot import hook, web
  
  @hook.command
- def isgd(text):
--    """isgd <url> [custom] - Shorten a url with is.gd. [custom] is an optional custom shortlink."""
-+    """<url> [custom] - Shorten a url with is.gd with [custom] as an optional custom shortlink"""
-     args   = text.split()
-     url    = args[0]
+ def shorten(text):
+-    """shorten <url> [custom] - Shorten a url. [custom] is an optional custom shortlink."""
++    """<url> [custom] - shortens a url with [custom] as an optional custom shortlink"""
+     args = text.split()
+     url = args[0]
      custom = args[1] if len(args) > 1 else None
-@@ -15,7 +15,7 @@ def isgd(text):
+@@ -16,7 +16,7 @@ def shorten(text):
  
  @hook.command
  def gitio(text):
 -    """gitio <url> [custom] -- Shorten a Github url with git.io. [custom] is an optional custom shortlink."""
 +    """<url> [custom] - shortens a github URL <url> using git.io with [custom] as an optional custom shortlink"""
-     args   = text.split()
-     url    = args[0]
+     args = text.split()
+     url = args[0]
      custom = args[1] if len(args) > 1 else None
-@@ -24,4 +24,4 @@ def gitio(text):
-     try:
-         return gitio.shorten(url, custom)
-     except web.ShortenError as e:
--        return e.message
-\ No newline at end of file
-+        return e.message
+@@ -29,7 +29,7 @@ def gitio(text):
+ 
+ @hook.command
+ def isgd(text):
+-    """shorten <url> [custom] - Shorten a url with is.gd. [custom] is an optional custom shortlink."""
++    """<url> [custom] - Shorten a url using is.gd with [custom] as an optional custom shortlink"""
+     args = text.split()
+     url = args[0]
+     custom = args[1] if len(args) > 1 else None
 -- 
 1.9.3
 

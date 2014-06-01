@@ -1,11 +1,11 @@
-From 3b2cfc4e3ba3c8074cc0ef0ba31490a3095751d7 Mon Sep 17 00:00:00 2001
+From 05f5abe78e0fda5adee941240126ad7fc8324f3b Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 26 Apr 2014 19:49:34 -0700
 Subject: [PATCH] Add more dinner phrases
 
 
 diff --git a/plugins/recipe.py b/plugins/recipe.py
-index d1153d9..12c6ae0 100644
+index 2ba55b4..07008f5 100644
 --- a/plugins/recipe.py
 +++ b/plugins/recipe.py
 @@ -17,6 +17,11 @@ phrases = [

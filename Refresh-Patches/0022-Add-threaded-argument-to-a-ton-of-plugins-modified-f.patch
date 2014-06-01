@@ -1,4 +1,4 @@
-From 75fa580512b151590ab05252b3dec2210fd8501a Mon Sep 17 00:00:00 2001
+From e883f4f12ecd135a53756254933cbfaef9dded71 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Thu, 29 May 2014 23:28:01 -0700
 Subject: [PATCH] Add threaded argument to a ton of plugins (modified for
@@ -602,7 +602,7 @@ index 0b5adf0..71dbf35 100644
      """mc [all|movie|tv|album|x360|ps3|pc|gba|ds|3ds|wii|vita|wiiu|xone|ps4] <title>
      Gets rating for <title> from metacritic on the specified medium."""
 diff --git a/plugins/minecraft_bukget.py b/plugins/minecraft_bukget.py
-index 886928b..4ade7c6 100644
+index dd4a1c5..1dfe9d8 100644
 --- a/plugins/minecraft_bukget.py
 +++ b/plugins/minecraft_bukget.py
 @@ -119,8 +119,7 @@ def format_output(data):
