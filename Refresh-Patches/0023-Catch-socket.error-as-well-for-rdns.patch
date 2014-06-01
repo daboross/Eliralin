@@ -1,4 +1,4 @@
-From 3350b21136ea006941f338fd258e4667682246ba Mon Sep 17 00:00:00 2001
+From 9ac8a8928e4cd7828aca23593b4ef72de7fa09a1 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Thu, 29 May 2014 21:53:55 -0700
 Subject: [PATCH] Catch socket.error as well for rdns
