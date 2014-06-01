@@ -1,4 +1,4 @@
-From fc337afc1838658fb382f53deb7d40899e28aa37 Mon Sep 17 00:00:00 2001
+From 847c8d255d2fe8f8ff66a3221a3469c2c3f3aab7 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Thu, 29 May 2014 23:28:01 -0700
 Subject: [PATCH] Add @asyncio.coroutine to a ton of plugins

@@ -1,4 +1,4 @@
-From e394136710e5be343acc50b8fc0191b38bd96459 Mon Sep 17 00:00:00 2001
+From 468fd7e30a5d11a39dc24760ae954b6f56b69d31 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 23 Apr 2014 16:42:08 -0700
 Subject: [PATCH] Add a has_run attribute to Plugin for use in determining test
@@ -6,7 +6,7 @@ Subject: [PATCH] Add a has_run attribute to Plugin for use in determining test
 
 
 diff --git a/cloudbot/core/pluginmanager.py b/cloudbot/core/pluginmanager.py
-index a283cdf..2482786 100644
+index 015892b..41631a3 100644
 --- a/cloudbot/core/pluginmanager.py
 +++ b/cloudbot/core/pluginmanager.py
 @@ -445,6 +445,8 @@ class PluginManager:
@@ -18,7 +18,7 @@ index a283cdf..2482786 100644
          # Return the result
          return result
  
-@@ -551,6 +553,8 @@ class Hook:
+@@ -552,6 +554,8 @@ class Hook:
              logging.getLogger("cloudbot").warning("Ignoring extra args {} from {}:{}".format(
                  func_hook.kwargs, self.plugin.title, self.function_name))
  
