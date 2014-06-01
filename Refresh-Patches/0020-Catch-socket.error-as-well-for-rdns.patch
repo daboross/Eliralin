@@ -16,5 +16,5 @@ index 6d054c2..4eba97f 100644
 +    except (socket.gaierror, socket.error):
          return "Resolve Failed!"
 -- 
-1.9.3
+2.0.0
 

@@ -418,5 +418,5 @@ index 0000000..807620a
 +        for command in sorted(plugin.commands, key=attrgetter("name")):
 +            print("\t{} - {}".format("/".join(command.aliases), command.has_run))
 -- 
-1.9.3
+2.0.0
 

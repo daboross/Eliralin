@@ -651,5 +651,5 @@ index a8a3b25..1d724f9 100644
      """mcwiki <phrase> -- Gets the first paragraph of
      the Minecraft Wiki article on <phrase>."""
 -- 
-1.9.3
+2.0.0
 

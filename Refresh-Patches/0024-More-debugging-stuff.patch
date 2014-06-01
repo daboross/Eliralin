@@ -44,5 +44,5 @@ index 2482786..ceed6cc 100644
  
          if hook.type == "command" and hook.auto_help and not event.text and hook.doc is not None:
 -- 
-1.9.3
+2.0.0
 

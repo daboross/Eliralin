@@ -489,5 +489,5 @@ index b68ff0a..423f919 100644
      # we split the answer and .join() it to remove newlines/extra spaces
      answer_text = formatting.truncate_str(' '.join(result["ChosenAnswer"].split()), 80)
 -- 
-1.9.3
+2.0.0
 

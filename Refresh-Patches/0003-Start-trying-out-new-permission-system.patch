@@ -248,5 +248,5 @@ index c72a345..2696887 100644
      """
      :type logger: logging.Logger
 -- 
-1.9.3
+2.0.0
 
