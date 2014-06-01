@@ -1,9 +1,29 @@
-From 8312d4d2ab303a1d7280c69a397867c0e3107a50 Mon Sep 17 00:00:00 2001
+From 74aaaee23e5d3441191fadcd4dbe9c8503f56293 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Thu, 29 May 2014 23:20:24 -0700
 Subject: [PATCH] Documentation updates! Tons of them!
 
+(also merges kill.py into attacks.py)
 
+diff --git a/cloudbot/core/events.py b/cloudbot/core/events.py
+index 4b48ea6..8e3c693 100644
+--- a/cloudbot/core/events.py
++++ b/cloudbot/core/events.py
+@@ -212,10 +212,12 @@ class CommandEvent(BaseEvent):
+         """sends a notice containing this command's docstring to the current channel/user or a specific channel/user
+         :type target: str
+         """
++        if self.triggered_command is None:
++            raise ValueError("Triggered command not set on this event")
+         if self.hook.doc is None:
+-            message = self.conn.config["command_prefix"] + self.hook.name + " requires additional arguments."
++            message = self.conn.config["command_prefix"] + self.triggered_command + " requires additional arguments."
+         else:
+-            message = self.conn.config["command_prefix"] + self.hook.name + self.hook.doc
++            message = self.conn.config["command_prefix"] + self.triggered_command + self.hook.doc
+         self.notice(message, target=target)
+ 
+ 
 diff --git a/plugins/admin.py b/plugins/admin.py
 index f09b1c9..ca4f38a 100644
 --- a/plugins/admin.py
