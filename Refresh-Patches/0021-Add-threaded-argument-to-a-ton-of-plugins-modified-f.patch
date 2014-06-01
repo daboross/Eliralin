@@ -1,4 +1,4 @@
-From e3fcbd52e8709f3e67d0ed1380b4b212cbfdd7c4 Mon Sep 17 00:00:00 2001
+From 75fa580512b151590ab05252b3dec2210fd8501a Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Thu, 29 May 2014 23:28:01 -0700
 Subject: [PATCH] Add threaded argument to a ton of plugins (modified for
@@ -456,28 +456,6 @@ index 7156d52..921397a 100644
  def geoip(text):
      """geoip <host/ip> -- Gets the location of <host/ip>"""
  
-diff --git a/plugins/github.py b/plugins/github.py
-index 5457b54..6984c26 100644
---- a/plugins/github.py
-+++ b/plugins/github.py
-@@ -58,7 +58,7 @@ def try_shorten_gitio(url, code=None):
-         return url
- 
- 
--@hook.command
-+@hook.command()
- def ghissues(text):
-     """ghissues username/repo [number] - Get specified issue summary, or open issue count """
-     args = text.split()
-@@ -109,7 +109,7 @@ def ghissues(text):
-         return format_without_summary.format(issue_number, state, user, title, shorturl)
- 
- 
--@hook.command
-+@hook.command()
- def gitio(text):
-     """gitio <url> [code] -- Shorten Github URLs with git.io. [code] is an optional custom short code."""
-     split = text.split()
 diff --git a/plugins/google_translate.py b/plugins/google_translate.py
 index d48e092..6c10ab2 100644
 --- a/plugins/google_translate.py
@@ -624,7 +602,7 @@ index 0b5adf0..71dbf35 100644
      """mc [all|movie|tv|album|x360|ps3|pc|gba|ds|3ds|wii|vita|wiiu|xone|ps4] <title>
      Gets rating for <title> from metacritic on the specified medium."""
 diff --git a/plugins/minecraft_bukget.py b/plugins/minecraft_bukget.py
-index 4b9b023..30f2b74 100644
+index 886928b..4ade7c6 100644
 --- a/plugins/minecraft_bukget.py
 +++ b/plugins/minecraft_bukget.py
 @@ -119,8 +119,7 @@ def format_output(data):
