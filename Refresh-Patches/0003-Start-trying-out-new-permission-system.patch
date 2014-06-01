@@ -1,4 +1,4 @@
-From 55b3af7870f4c4a33722f948c3e9aae558f34cb6 Mon Sep 17 00:00:00 2001
+From 39d3aa816a89e934f5c17877a9619dc4176642d0 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 12 Apr 2014 22:26:30 -0700
 Subject: [PATCH] Start trying out new permission system

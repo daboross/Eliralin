@@ -1,4 +1,4 @@
-From a2bb1a87ba33db80f3f5162fa8b637166ce4c3f7 Mon Sep 17 00:00:00 2001
+From 20cfb15876b505fa0b64efb47b1b7cc90a66f11d Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Thu, 29 May 2014 23:20:24 -0700
 Subject: [PATCH] Documentation updates! Tons of them!
@@ -1136,6 +1136,47 @@ index d9c0043..ae8434d 100644
      contents = http.get("https://www.kernel.org/finger_banner")
      contents = re.sub(r'The latest(\s*)', '', contents)
      contents = re.sub(r'version of the Linux kernel is:(\s*)', '- ', contents)
+diff --git a/plugins/kill.py b/plugins/kill.py
+deleted file mode 100644
+index 9c491f9..0000000
+--- a/plugins/kill.py
++++ /dev/null
+@@ -1,35 +0,0 @@
+-import asyncio
+-import json
+-
+-from cloudbot import hook, textgen
+-
+-
+-def get_generator(_json, variables):
+-    data = json.loads(_json)
+-    return textgen.TextGenerator(data["templates"],
+-                                 data["parts"], variables=variables)
+-
+-
+-@asyncio.coroutine
+-@hook.command()
+-def kill(text, action=None, nick=None, conn=None, notice=None):
+-    """kill <user> -- Makes the bot kill <user>."""
+-    target = text.strip()
+-
+-    if " " in target:
+-        notice("Invalid username!")
+-        return
+-
+-    # if the user is trying to make the bot kill itself, kill them
+-    if target.lower() == conn.nick.lower() or target.lower() == "itself":
+-        target = nick
+-
+-    variables = {
+-        "user": target
+-    }
+-
+-    with open("./data/kills.json") as f:
+-        generator = get_generator(f.read(), variables)
+-
+-    # act out the message
+-    action(generator.generate_string())
 diff --git a/plugins/lastfm.py b/plugins/lastfm.py
 index 27e16ea..4b89fbd 100644
 --- a/plugins/lastfm.py

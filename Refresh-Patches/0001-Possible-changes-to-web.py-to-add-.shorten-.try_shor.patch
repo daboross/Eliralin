@@ -1,4 +1,4 @@
-From e47b28b4df41e81d6a162237061eddce267e1d0d Mon Sep 17 00:00:00 2001
+From 946a049ba7f1840be40a1f5bb8b679ad50209784 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 31 May 2014 19:27:28 -0700
 Subject: [PATCH] Possible changes to web.py to add .shorten .try_shorten and

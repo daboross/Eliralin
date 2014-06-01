@@ -1,4 +1,4 @@
-From ded4189c1fe0f7ada8ae9787c0e6933443510b4a Mon Sep 17 00:00:00 2001
+From e394136710e5be343acc50b8fc0191b38bd96459 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 23 Apr 2014 16:42:08 -0700
 Subject: [PATCH] Add a has_run attribute to Plugin for use in determining test

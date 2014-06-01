@@ -1,4 +1,4 @@
-From c2aabae408ccd5693a2ad1455bb1ca5e3fa83d8d Mon Sep 17 00:00:00 2001
+From f6c93612a7f4dcbe91a2232987d0c3624321f28d Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 23 Apr 2014 16:39:07 -0700
 Subject: [PATCH] Disable the command limiting system when using qpt
