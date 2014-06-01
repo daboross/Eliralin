@@ -1,14 +1,11 @@
-From 1fa9c8666e6b1efe0f08924e8f271a3bbacc4fc9 Mon Sep 17 00:00:00 2001
+From 36be2fefe36f3fd3f7995652aafd114af5371747 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 31 May 2014 19:42:47 -0700
-Subject: [PATCH 3/3] Use qx.lc for all shortening, just to test
+Subject: [PATCH] Use qx.lc for all shortening, just to test
 
----
- cloudbot/util/web.py | 33 ++++++++++++++++++++++++++++++---
- 1 file changed, 30 insertions(+), 3 deletions(-)
 
 diff --git a/cloudbot/util/web.py b/cloudbot/util/web.py
-index 06c11c0..b166a3e 100644
+index 944f4f0..599c637 100644
 --- a/cloudbot/util/web.py
 +++ b/cloudbot/util/web.py
 @@ -48,21 +48,21 @@ def _paste_service(name):
@@ -36,7 +33,7 @@ index 06c11c0..b166a3e 100644
      impl = paste_services.get(service)
      assert impl is not None, "invalid service {}".format(service)
  
-@@ -112,3 +112,30 @@ class Hastebin(PasteService):
+@@ -116,3 +116,30 @@ class Hastebin(PasteService):
              return "{}/{}.{}".format(server, j['key'], ext)
          else:
              return "{}/{}".format(server, j['key'])
@@ -69,5 +66,5 @@ index 06c11c0..b166a3e 100644
 +                return url
 \ No newline at end of file
 -- 
-1.9.3
+2.0.0
 
