@@ -1,4 +1,4 @@
-From 68bfe6ef1762086700019fada14684285fc95321 Mon Sep 17 00:00:00 2001
+From 6ec2d596a5c7f026b659f1e8072d8e262588579e Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Thu, 29 May 2014 23:20:24 -0700
 Subject: [PATCH] Documentation updates! Tons of them!
@@ -801,17 +801,10 @@ index 73a8035..7891688 100644
  
      if not re.match("^[A-Za-z0-9_|.-\]\[]*$", text.lower()):
 diff --git a/plugins/fortune.py b/plugins/fortune.py
-index df84421..3f51155 100644
+index df84421..b85ff7c 100644
 --- a/plugins/fortune.py
 +++ b/plugins/fortune.py
-@@ -1,6 +1,5 @@
- import os
- import random
--import asyncio
- 
- from cloudbot import hook
- 
-@@ -10,12 +9,11 @@ def load_fortunes(bot):
+@@ -10,12 +10,11 @@ def load_fortunes(bot):
      path = os.path.join(bot.data_dir, "fortunes.txt")
      global fortunes
      with open(path) as f:
