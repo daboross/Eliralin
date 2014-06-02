@@ -1,4 +1,4 @@
-From 6e7bdb700d62c44fba85dec2c2986035bda8d02b Mon Sep 17 00:00:00 2001
+From 3129a20f17362b5c3b1a92affc782d1452d2b6c5 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 29 Apr 2014 02:58:21 -0700
 Subject: [PATCH] Add per-channel command prefixes
@@ -6,10 +6,11 @@ Subject: [PATCH] Add per-channel command prefixes
 
 diff --git a/plugins/prefixes.py b/plugins/prefixes.py
 new file mode 100644
-index 0000000..52550b3
+index 0000000..16f1c0e
 --- /dev/null
 +++ b/plugins/prefixes.py
-@@ -0,0 +1,88 @@
+@@ -0,0 +1,90 @@
++import asyncio
 +import re
 +
 +from sqlalchemy import Table, Column, String, UniqueConstraint
@@ -78,7 +79,8 @@ index 0000000..52550b3
 +    return "Removed command prefix {} from {}".format(text, chan)
 +
 +
-+@hook.event("PRIVMSG", threaded=False)
++@asyncio.coroutine
++@hook.irc_raw("PRIVMSG")
 +def run_extra_prefix(event, bot, conn, chan, irc_message):
 +    """
 +    :type event: cloudbot.core.events.BaseEvent

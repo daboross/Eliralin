@@ -1,4 +1,4 @@
-From 5d54e6e5a225f597059038190ec96a46cd223881 Mon Sep 17 00:00:00 2001
+From 6d183a30ab893dc50dbb7dd1830de179a8c2b5c4 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 3 May 2014 23:44:11 +0200
 Subject: [PATCH] Add profiling module for profiling
@@ -70,19 +70,21 @@ index 0000000..28ce79c
 +    return web.haste("\n".join(code), ext='txt')
 diff --git a/plugins/profiling.py b/plugins/profiling.py
 new file mode 100644
-index 0000000..be201f0
+index 0000000..2ed38e2
 --- /dev/null
 +++ b/plugins/profiling.py
-@@ -0,0 +1,44 @@
+@@ -0,0 +1,46 @@
 +import gc
 +
++import asyncio
 +import objgraph
 +from pympler import muppy, summary, tracker
 +
 +from cloudbot import hook, threaddump
 +
 +
-+@hook.command(threaded=False, autohelp=False, permissions=["botcontrol"])
++@asyncio.coroutine
++@hook.command(autohelp=False, permissions=["botcontrol"])
 +def threaddump_command(reply):
 +    reply("Running thread dump")
 +    return "Thread dump located at {}".format(threaddump.get_thread_dump())
