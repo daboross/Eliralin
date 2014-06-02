@@ -1,4 +1,4 @@
-From 7c582238a336ae73a7fda4f782ccd9d4cfa8cbd6 Mon Sep 17 00:00:00 2001
+From 0e4085306121e486a9e27abf24f58daab8d98d05 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:19:10 -0800
 Subject: [PATCH] Create eliralin_utility.py for extras
@@ -6,19 +6,20 @@ Subject: [PATCH] Create eliralin_utility.py for extras
 
 diff --git a/plugins/eliralin_utility.py b/plugins/eliralin_utility.py
 new file mode 100644
-index 0000000..6d054c2
+index 0000000..908fc8b
 --- /dev/null
 +++ b/plugins/eliralin_utility.py
-@@ -0,0 +1,109 @@
+@@ -0,0 +1,116 @@
++import asyncio
 +from random import random
 +import socket
 +
 +from cloudbot import hook
 +
-+
++@asyncio.coroutine
 +@hook.command(["josephus", "jose"])
 +def josephus(text):
-+    """jose [size] [every x] [starting person] - Calculates who dies last """
++    """[size] [every x] [starting person] - calculates who dies last """
 +    split = text.split()
 +    if len(split) != 3:
 +        return "Not enough / too many arguments. {}".format(len(split))
@@ -37,6 +38,7 @@ index 0000000..6d054c2
 +    return "Josephus should be at position {} to survive.".format(current)
 +
 +
++@asyncio.coroutine
 +@hook.regex("(?i)(^ )*pets Eliralin *$")
 +def pet(action, nick):
 +    r = random()
@@ -44,16 +46,20 @@ index 0000000..6d054c2
 +        action("huggles {}".format(nick))
 +
 +
-+@hook.command(["hug", "huggle"])
++@asyncio.coroutine
++@hook.command(["hug", "huggle"], autohelp=False)
 +def huggle(text, action, nick):
++    """[user] - huggles [user]"""
 +    if text:
 +        action("huggles {}".format(text))
 +    else:
 +        action("huggles {}".format(nick))
 +
 +
-+@hook.command()
++@asyncio.coroutine
++@hook.command(autohelp=False)
 +def colors(text):
++    """- shows IRC colors"""
 +    if text:
 +        intinp = int(text)
 +        if intinp > 70:
@@ -67,9 +73,10 @@ index 0000000..6d054c2
 +    return result
 +
 +
++@asyncio.coroutine
 +@hook.command(permissions=["adminonly"])
 +def tree(text, message, notice):
-+    """tree [type] [text] - Tree text"""
++    """[type] [text] - makes a tree"""
 +    type_input = text.split(None, 1)
 +    if len(type_input) < 2:
 +        notice("tree [type] [text] - Tree text")
@@ -93,9 +100,9 @@ index 0000000..6d054c2
 +    message((spaces - 1) * ' ' + ('----' if len(type_input[1]) % 2 == 0 else '---'))
 +
 +
-+@hook.command
++@hook.command()
 +def dns(text):
-+    """dns [domain] - Resolves the IP of a domain"""
++    """<domain> - resolves the IP of <domain>"""
 +    try:
 +        socket.setdefaulttimeout(5)
 +        ip = None
@@ -110,14 +117,14 @@ index 0000000..6d054c2
 +        return "Resolve Failed!"
 +
 +
-+@hook.command
++@hook.command()
 +def rdns(text):
-+    """rdns [ip] - Resolves the hostname of an IP"""
++    """<ip> - Resolves the hostname of <ip>"""
 +    try:
 +        socket.setdefaulttimeout(5)
 +        domain = socket.gethostbyaddr(text)[0]
 +        return "{} resolves to {}".format(text, domain)
-+    except socket.gaierror:
++    except (socket.gaierror, socket.error):
 +        return "Resolve Failed!"
 -- 
 2.0.0

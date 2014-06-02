@@ -1,4 +1,4 @@
-From 55566c183656200bf0707977254cd881c4c815d0 Mon Sep 17 00:00:00 2001
+From f74c67b1606de96ba1885cdcacae918c92dfe750 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 3 May 2014 23:44:11 +0200
 Subject: [PATCH] Add profiling module for profiling
@@ -119,13 +119,13 @@ index 0000000..be201f0
 +    tr.print_diff()
 +    print("Done printing diff")
 diff --git a/requirements.txt b/requirements.txt
-index d24afdb..d7461a9 100644
+index 9d7896b..b065003 100644
 --- a/requirements.txt
 +++ b/requirements.txt
-@@ -9,3 +9,6 @@ pycrypto
- pbkdf2
+@@ -10,3 +10,6 @@ pbkdf2
  requests
  psutil
+ twitter
 +
 +objgraph
 +pympler
