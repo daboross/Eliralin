@@ -1,4 +1,4 @@
-From ad9c557abf3d69d4b85ae610133d0cce254dd805 Mon Sep 17 00:00:00 2001
+From 15f64bccf743719c03325e216767045fea894679 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 22 Apr 2014 21:34:42 -0700
 Subject: [PATCH] Add QPT - Quick Plugin Testing
@@ -183,10 +183,10 @@ index cf6d21a..8a1f83e 100644
              self.type, self.plugin.title, self.ignore_bots, self.permissions, self.single_thread, self.threaded
 diff --git a/cloudbot/util/qpt.py b/cloudbot/util/qpt.py
 new file mode 100644
-index 0000000..887fe67
+index 0000000..76a399a
 --- /dev/null
 +++ b/cloudbot/util/qpt.py
-@@ -0,0 +1,146 @@
+@@ -0,0 +1,148 @@
 +import asyncio
 +import glob
 +import importlib
@@ -329,6 +329,8 @@ index 0000000..887fe67
 +                return
 +
 +            yield from run_test(func, bot, conn, input_queue, output_queue)
++
++    sys.exit(0)
 +
 +
 +def is_enabled():
@@ -746,7 +748,7 @@ index 0000000..52efcb5
 \ No newline at end of file
 diff --git a/qpt_tests/z_print.py b/qpt_tests/z_print.py
 new file mode 100644
-index 0000000..807620a
+index 0000000..5f1de73
 --- /dev/null
 +++ b/qpt_tests/z_print.py
 @@ -0,0 +1,16 @@
@@ -765,7 +767,7 @@ index 0000000..807620a
 +    for plugin in plugins:
 +        print(plugin.title + ":")
 +        for command in sorted(plugin.commands, key=attrgetter("name")):
-+            print("\t{} - {}".format("/".join(command.aliases), command.has_run))
++            print("\t{} - {}".format("/".join(command.aliases), command.has_run if hasattr(command, "has_run") else False))
 -- 
 2.0.0
 
