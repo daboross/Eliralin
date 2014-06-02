@@ -1,4 +1,4 @@
-From f74c67b1606de96ba1885cdcacae918c92dfe750 Mon Sep 17 00:00:00 2001
+From 5d54e6e5a225f597059038190ec96a46cd223881 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 3 May 2014 23:44:11 +0200
 Subject: [PATCH] Add profiling module for profiling
