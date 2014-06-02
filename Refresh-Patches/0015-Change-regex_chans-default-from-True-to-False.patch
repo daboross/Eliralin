@@ -1,4 +1,4 @@
-From faa692c0f59de676c53dd0f0929f17f45e2adfd4 Mon Sep 17 00:00:00 2001
+From 95dd509d4353613cc83730855b629028b151b48e Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 29 Apr 2014 12:31:44 -0700
 Subject: [PATCH] Change regex_chans default from True to False

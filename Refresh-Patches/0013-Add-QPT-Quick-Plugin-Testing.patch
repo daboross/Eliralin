@@ -1,0 +1,771 @@
+From 8aea233d53bf4221bfbe6b225378c1af00012539 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Tue, 22 Apr 2014 21:34:42 -0700
+Subject: [PATCH] Add QPT - Quick Plugin Testing
+
+Adds a has_run attribute to Plugin for use in determining test completeness
+
+Disables the command limiting system when using QPT
+
+QPT Tests:
+- mass.py - Tests almost all bot commands, but requires the suer to watch console output for errors or incorrect results.
+- test_admin.py - Tests the admin plugin accurantly, validating command results against regexes
+- print_all_commands.py - Debugging test that just prints all the bot's commands to console, currently disabled
+
+QPT can be enabled with the "--qpt" command line argument.
+
+diff --git a/cloudbot/__init__.py b/cloudbot/__init__.py
+index 1230cbd..16b5131 100644
+--- a/cloudbot/__init__.py
++++ b/cloudbot/__init__.py
+@@ -5,10 +5,11 @@ import os
+ 
+ from .core import bot, connection, config, permissions, pluginmanager, events
+ from .util import botvars, bucket, formatting, hook, http, textgen, timeformat, timesince, urlnorm, web
+-from .util import threaddump
++from .util import threaddump, qpt
+ 
+ __all__ = ["core", "util", "bot", "connection", "config", "permissions", "pluginmanager", "events", "botvars", "bucket",
+-           "formatting", "hook", "http", "textgen", "timeformat", "timesince", "urlnorm", "web", "dev_mode", "threaddump]
++           "formatting", "hook", "http", "textgen", "timeformat", "timesince", "urlnorm", "web", "dev_mode", "threaddump",
++           "qpt"]
+ 
+ 
+ def _setup():
+diff --git a/cloudbot/core/connection.py b/cloudbot/core/connection.py
+index 64df4de..2081e1d 100644
+--- a/cloudbot/core/connection.py
++++ b/cloudbot/core/connection.py
+@@ -5,8 +5,8 @@ import ssl
+ from ssl import SSLContext
+ 
+ from cloudbot.core.permissions import PermissionManager
+-
+ from cloudbot.core.events import BaseEvent
++from cloudbot.util import qpt
+ 
+ irc_prefix_re = re.compile(r":([^ ]*) ([^ ]*) (.*)")
+ irc_noprefix_re = re.compile(r"([^ ]*) (.*)")
+@@ -235,10 +235,13 @@ class IRCConnection:
+         else:
+             self._connected = True
+             self.logger.info("[{}] Connecting".format(self.readable_name))
+-
+-        self._transport, self._protocol = yield from self.loop.create_connection(
+-            lambda: IRCProtocol(self), host=self.host, port=self.port, ssl=self.ssl_context,
+-        )
++        if qpt.is_enabled():
++            self._transport = QPTTransport()
++            self._protocol = QPTProtocol(self)
++        else:
++            self._transport, self._protocol = yield from self.loop.create_connection(
++                lambda: IRCProtocol(self), host=self.host, port=self.port, ssl=self.ssl_context,
++            )
+ 
+     def stop(self):
+         if not self._connected:
+@@ -358,3 +361,93 @@ class IRCProtocol(asyncio.Protocol):
+             # Put the message into the queue to be handled
+             # TODO: Do we want to directly call the handling method here?
+             self.message_queue.put_nowait(event)
++
++
++class QPTProtocol:
++    def __init__(self, ircconn):
++        """
++        :type ircconn: IRCConnection
++        """
++        self.loop = ircconn.loop
++        self.logger = ircconn.logger
++        self.readable_name = ircconn.readable_name
++        self.describe_server = lambda: ircconn.describe_server()
++        self.botconn = ircconn.botconn
++        self.output_queue = ircconn.output_queue
++        self.message_queue = ircconn.message_queue
++        # input buffer
++        self._input_buffer = b""
++        # connected
++        self._connected = True
++        self.input_queue = asyncio.Queue(loop=self.botconn.bot.loop)
++        asyncio.async(qpt.run_tests(self.botconn.bot, self.botconn, self.input_queue, self.output_queue))
++        asyncio.async(self.recieve_loop())
++
++    @asyncio.coroutine
++    def recieve_loop(self):
++        while self._connected:
++            line = yield from self.input_queue.get()
++
++            # parse the line into a message
++            if line.startswith(":"):
++                prefix_line_match = irc_prefix_re.match(line)
++                if prefix_line_match is None:
++                    self.logger.critical("[{}] Received invalid IRC line '{}' from {}".format(
++                        self.readable_name, line, self.describe_server()
++                    ))
++                    continue
++
++                netmask_prefix, command, params = prefix_line_match.groups()
++                prefix = ":" + netmask_prefix  # TODO: Do we need to know this?
++                netmask_match = irc_netmask_re.match(netmask_prefix)
++                if netmask_match is None:
++                    # This isn't in the format of a netmask
++                    nick = netmask_prefix
++                    user = None
++                    host = None
++                    mask = netmask_prefix
++                else:
++                    nick = netmask_match.group(1)
++                    user = netmask_match.group(2)
++                    host = netmask_match.group(3)
++                    mask = netmask_prefix
++            else:
++                prefix = None
++                noprefix_line_match = irc_noprefix_re.match(line)
++                if noprefix_line_match is None:
++                    self.logger.critical("[{}] Received invalid IRC line '{}' from {}".format(
++                        self.readable_name, line, self.describe_server()
++                    ))
++                    continue
++                command = noprefix_line_match.group(1)
++                params = noprefix_line_match.group(2)
++                nick = None
++                user = None
++                host = None
++                mask = None
++
++            param_list = irc_param_re.findall(params)
++            if param_list:
++                # TODO: What the heck?
++                if param_list[-1].startswith(":"):
++                    param_list[-1] = param_list[-1][1:]
++                last_param = param_list[-1]
++            else:
++                last_param = None
++            # Set up parsed message
++            # TODO: What do you actually want to send here? Are prefix and params really necessary?
++            event = BaseEvent(conn=self.botconn, irc_raw=line, irc_prefix=prefix, irc_command=command,
++                              irc_paramlist=param_list, irc_message=last_param, nick=nick, user=user, host=host,
++                              mask=mask)
++            # we should also remember to ping the server if they ping us
++            if command == "PING":
++                self.output_queue.put_nowait("PONG :" + last_param)
++
++            # Put the message into the queue to be handled
++            # TODO: Do we want to directly call the handling method here?
++            self.message_queue.put_nowait(event)
++
++
++class QPTTransport:
++    def close(self):
++        pass
+\ No newline at end of file
+diff --git a/cloudbot/core/pluginmanager.py b/cloudbot/core/pluginmanager.py
+index cf6d21a..8a1f83e 100644
+--- a/cloudbot/core/pluginmanager.py
++++ b/cloudbot/core/pluginmanager.py
+@@ -436,6 +436,8 @@ class PluginManager:
+             # Run the plugin with the message, and wait for it to finish
+             result = yield from self._execute_hook(hook, event)
+ 
++        hook.has_run = True
++
+         # Return the result
+         return result
+ 
+@@ -544,6 +546,8 @@ class Hook:
+     def description(self):
+         return "{}:{}".format(self.plugin.title, self.function_name)
+ 
++        self.has_run = False
++
+     def __repr__(self):
+         return "type: {}, plugin: {}, ignore_bots: {}, permissions: {}, single_thread: {}, threaded: {}".format(
+             self.type, self.plugin.title, self.ignore_bots, self.permissions, self.single_thread, self.threaded
+diff --git a/cloudbot/util/qpt.py b/cloudbot/util/qpt.py
+new file mode 100644
+index 0000000..887fe67
+--- /dev/null
++++ b/cloudbot/util/qpt.py
+@@ -0,0 +1,146 @@
++import asyncio
++import glob
++import importlib
++import inspect
++import os
++import traceback
++import sys
++
++
++def _test_hook(func, times):
++    specifications = inspect.getargspec(func)
++    args = specifications[0]
++    if args is None:
++        args = []
++    func._qpt_test = True
++    func._qpt_args = args
++    func._qpt_name = func.__module__ + "." + func.__name__
++    func._qpt_times = times
++    return func
++
++
++def print_both(text):
++    pass
++    print()
++    print("# " + text)
++    print()
++
++
++def print_before(text):
++    pass
++    print()
++    print("# " + text)
++
++
++def print_after(text):
++    pass
++    print("# " + text)
++    print()
++
++
++def test(times=1):
++    return lambda func: _test_hook(func, times)
++
++
++@asyncio.coroutine
++def run_test(func, bot, conn, input_queue, output_queue):
++    """
++    :type bot: cloudbot.core.bot.CloudBot
++    :type conn: cloudbot.core.connection.BotConnection
++    :type input_queue: asyncio.Queue
++    :type output_queue: asyncio.Queue
++    """
++    if not hasattr(func, "_qpt_test") or not func._qpt_test:
++        return
++
++    @asyncio.coroutine
++    def send(line):
++        if not line:
++            raise ValueError
++        else:
++            yield from input_queue.put(line.strip())
++
++    @asyncio.coroutine
++    def get():
++        future = asyncio.Task(output_queue.get())
++        yield from asyncio.wait_for(future, 5)
++        return future.result()
++
++    @asyncio.coroutine
++    def run_command(text):
++        yield from send(":TestUser!~user@example.com PRIVMSG #channel :" + conn.config.get("command_prefix") + text)
++
++    for test_number in range(func._qpt_times):
++        # each test might want to run multiple times, with the test number as an argument.
++        # We'll treat each of these times as a different test
++
++        if not bot.running:
++            return
++
++        while not output_queue.empty():
++            print_before("Removed '{}' from queue.".format((yield from output_queue.get())))
++
++        print_both("Running test {} #{}".format(func._qpt_name, test_number))
++        params = []
++        for arg in func._qpt_args:
++            if arg == "bot":
++                params.append(bot)
++            elif arg == "conn":
++                params.append(conn)
++            elif arg == "get":
++                params.append(get)
++            elif arg == "send":
++                params.append(send)
++            elif arg == "run_command":
++                params.append(run_command)
++            elif arg == "test_number":
++                params.append(test_number)
++            else:
++                print_before("Test {} #{} Failure: required invalid arg {}".format(func._qpt_name, test_number, arg))
++                continue
++        if not asyncio.iscoroutine(func):
++            func = asyncio.coroutine(func)
++        try:
++            yield from func(*params)
++        except asyncio.TimeoutError:
++            yield from asyncio.sleep(0.1)  # wait 0.1 second before saying results
++            print_before("Test {} #{} Failure: queue get failed".format(func._qpt_name, test_number))
++        except Exception:
++            yield from asyncio.sleep(0.1)  # wait 0.1 second before saying results
++            print_before("Test {} #{} Failure:".format(func._qpt_name, test_number))
++            sys.stdout.flush()
++            traceback.print_exc()
++        else:
++            yield from asyncio.sleep(0.1)  # wait 0.1 second before saying results
++            print_before("Test {} #{} success".format(func._qpt_name, test_number))
++
++
++@asyncio.coroutine
++def run_tests(bot, conn, input_queue, output_queue):
++    files = sorted(list(set(glob.glob(os.path.join("qpt_tests", '*.py')))))
++    print(files)
++    for file in files:
++        if not bot.running:
++            return
++        title = os.path.splitext(os.path.basename(file))[0]
++
++        if title == "__init__":
++            continue  # ignore __init__
++
++        try:
++            module = importlib.import_module("qpt_tests." + title)
++        except Exception:
++            print_both("Failed to start tests in {}:".format(title))
++            traceback.print_exc()
++            continue
++
++        for func in module.__dict__.values():
++
++            if not bot.running:
++                return
++
++            yield from run_test(func, bot, conn, input_queue, output_queue)
++
++
++def is_enabled():
++    return "--qpt" in sys.argv
+diff --git a/plugins/core_sieve.py b/plugins/core_sieve.py
+index 78e0d48..eb85b10 100644
+--- a/plugins/core_sieve.py
++++ b/plugins/core_sieve.py
+@@ -1,5 +1,5 @@
+ import asyncio
+-from cloudbot import bucket, hook
++from cloudbot import bucket, hook, qpt
+ 
+ TOKENS = 10
+ RESTORE_RATE = 2
+@@ -54,6 +54,8 @@ def sieve_suite(bot, event, _hook):
+ 
+     # check command spam tokens
+     if _hook.type == "command":
++        if qpt.is_enabled():
++            return event  # Don't run tokens when testing plugins - need to do it quickly
+         uid = event.chan
+ 
+         if not uid in buckets:
+diff --git a/qpt_tests/__init__.py b/qpt_tests/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/qpt_tests/mass.py b/qpt_tests/mass.py
+new file mode 100644
+index 0000000..8f6a221
+--- /dev/null
++++ b/qpt_tests/mass.py
+@@ -0,0 +1,304 @@
++import re
++
++from cloudbot.util import qpt
++
++
++# this is a list of commands to run, and the expected result
++tested_result_commands = [
++    (
++        "rpass",
++        r"NOTICE TestUser :Your password is '\w+ \w+ \w+ \w+'. Feel free to remove the spaces when using it."
++    ),
++    (
++        "bf ++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.",
++        r"PRIVMSG #channel :TestUser, Hello World!"
++    ),
++    (
++        "choose option1, option2 option3     option4",
++        r"PRIVMSG #channel :TestUser, (option1|option2|option3|option4)"
++    ),
++    (
++        "coin",
++        "PRIVMSG #channel :\x01ACTION flips a coin and gets (heads|tails).\x01"
++    ),
++    (
++        "coin 0",
++        "PRIVMSG #channel :\x01ACTION makes a coin flipping motion\x01"
++    ),
++]
++
++# this is a list of commands to run, with no expected result
++# this is for mass tests where you can just check the console results.
++# where expected result regexes haven't been written yet
++mass_valid_commands = [
++    # admin.py
++    "adduser TestUser2!~user@example.com admins",
++    "deluser TestUser2!~user@example.com",
++    "join #chan2",
++    "part #chan2",
++    "cycle #channel",
++    "permgroups",
++    "gperms admins",
++    "gusers admins",
++    "ugroups",
++    "uperms",
++    "me hi",
++    "me #chan2 hi",
++    "message TestUser2 Hi",
++    "nick TestBot2",
++    "raw PRIVMSG #channel :This is a raw message.",
++    # we can't test restart/stop, it would restart/stop the bot
++    "say hi",
++    "say #chan2 hi",
++    # attacks.py
++    "flirt TestUser",
++    "flirt itself",
++    "insult TestUser",
++    "insult itself",
++    "lart TestUser",
++    "lart itself",
++    # brainfuck.py - tested above
++    # choose.py - tested above
++    # coin.py - tested above
++    # core_ctcp, core_misc, core_sieve, core_tracker, correction - empty
++    # cryptocoins.py
++    "ltc",
++    "btc",
++    # cypher.py
++    "cypher mypassword mytext",
++    "decypher mypassword w5rDssOkw4bDq8On",
++    # dbtest.py - TODO
++    # debug.py
++    "debug",
++    # dice.py
++    "roll 2d6",
++    # dictionary.py
++    "define world",
++    "e world",
++    # domainr.py
++    "domain cloudbot",
++    # drama.py
++    "drama world",
++    # eightball.py
++    "8 ?",
++    # eliralin_teamcity.py
++    "listci",
++    "reloadci",
++    "ci SkyWars",
++    # eliralin_utility.py
++    "colors",
++    "dns qx.lc",
++    "hug TestUser2",
++    "jose 5",
++    "rdns qx.lc",
++    "tree",
++    # encrypt.py - test_encrypt.py
++    # fact.py
++    "fact",
++    # factoids.py - test_factoids.py
++    # fishbans.py
++    "bancount notch",
++    "bancount daboross",
++    "bans notch",
++    "bans daboross",
++    # fmylife.py
++    "fml",
++    # foods.py
++    "cake TestUser2",
++    "cookie TestUser2",
++    "potato TestUser2",
++    # fortune.py
++    "fortune",
++    # geoip.py
++    "geoip daboross.net",
++    "gitio github.com/ClouDev/CloudBot",
++    # github.py
++    "ghissues ClouDev/CloudBot",
++    # google.py
++    "g cloudbot",
++    "gis cloudbot",
++    # google_translate.py - TODO
++    # googleurlparse.py - TODO
++    # help.py
++    "help",
++    "help lart",
++    # history.py - TODO
++    # horoscope.py
++    "horoscope",
++    # hulu.py - TODO
++    # ignore.py - TODO
++    # imdb.py - TODO
++    # imgur.py
++    "imgur",
++    # kernel.py
++    "kernel",
++    # kill.py
++    "kill TestUser",  # TODO: kill should be in attacks
++    # lastfm.py - TODO
++    # lmgtfy.py
++    "lmgtfy cloudbot",
++    # lyrics.py - TODO
++    # metacritic.py - TODO
++    # minecraft_bukget.py
++    "plugin skywars",
++    "randomplugin",
++    # minecraft_items.py
++    "mcid cobblestone",
++    "mccraft stonestairs",
++    # minecraft_ping.py
++    "mcping play.aemservers.net",
++    # minecraft_status.py
++    "mcstatus",
++    # minecraft_user.py
++    "mcuser zbsh",
++    "mcuser iamnotausernameplz",
++    # minecraft_wiki.py
++    "mcwiki stone",
++    # mlia.py
++    "mlia",
++    # namegen.py
++    "namegen",
++    "namegen dragons",  # TODO: namegen for each in list
++    "namegen list",
++    # newegg.py
++    "newegg monitor",
++    # notes.py - TODO
++    # op.py
++    "ban Dabo",
++    "unban Dabo",
++    "voice Dabo",
++    "devoice Dabo",
++    "kick Dabo",
++    "lock Dabo",
++    "unlock Dabo",
++    "mute Dabo",
++    "unmute Dabo",
++    "op Dabo",
++    "deop Dabo",
++    "quiet Dabo",
++    "unquiet Dabo",
++    "remove Dabo",
++    "topic Hey a topic",
++    "remove Dabo",
++    # osrc.py
++    "osrc daboross",
++    # pagecheck.py
++    "down daboross.net",
++    "isup daboross.net",
++    "down asdffdsaasdffdsa.net",
++    "isup asdffdsaasdffdsa.net",
++    # password.py
++    "password 8",
++    "readablepassword 8",
++    # ping.py
++    "ping dabo.guru",
++    # plpaste.py
++    "plpaste admin",
++    # prefixes.py
++    "addprefix %",
++    "delprefix %",
++    # profiling.py
++    "threaddump",
++    # pympler_* / show_* not included
++    # python.py
++    "python print('Hello World!')",
++    # qrcode.py
++    "qr dabo.guru",
++    # quote.py - TODO
++    # rdio.py - TODO
++    # recipe.py
++    "dinner",
++    "recipe",
++    # reddit.py - TODO
++    # rottentomatoes.py - TODO
++    # rss.py - TODO
++    # scene.py - TODO
++    # shorten.py
++    "shorten dabo.guru",
++    # slap.py
++    "slap Dabo",  # TODO: This should be in attacks
++    # slogan.py
++    "slogan CloudBot",
++    # snopes.py - TODO
++    # soundcloud.py - TODO
++    # spellcheck.py
++    "spell hallo",
++    # spotify.py - TODO
++    # steam.py - TODO
++    # steam_calc.py - TODO
++    # stock.py - TODO
++    # suggest.py
++    "suggest cloudb",
++    # system.py
++    "memory",
++    "pid",
++    "system",
++    "uptime",
++    # time_plugin.py - TODO
++    # title.py
++    "title dabo.guru",
++    # tvdb.py - TODO
++    # twitch.py - TODO
++    # urban.py
++    "urban cloud",
++    "upper cloudbot",
++    # utility.py
++    # - case manipulation
++    "titlecase cloud bot",
++    "lower ClOuDbOt",
++    "swapcase cloudBOT",
++    "capitalize cloudbot. period.",
++    # - encoding
++    "rot13 hi",
++    "rot13 uv",
++    "base64 hi",
++    "unbase64 aGk=",
++    "isbase64 hi",
++    "isbase64 aGk=",
++    "escape \u26c2",
++    "unescape \\u26c2",
++    # - other string stuff
++    "length cloudbot",
++    "reverse racecars",
++    "hash cloudbot",
++    "munge cloudbot",
++    # - colors
++    "rainbow cloudbot",
++    "wrainbow cloudbot",
++    "usa cloudbot",
++    # validate.py
++    "validate dabo.guru",
++    # valvesounds.py .- TODO
++    # vimeo.py - TODO
++    # weather.py
++    "weather seattle",
++    # wikipedia.py
++    "wiki seattle",
++    # wolframalpha.py
++    "wa 2 + 2",
++    # xkcd.py
++    "xkcd NRO",
++    # yahooanswers.py
++    "answer why is the world green?",
++    # youtube.py
++    "youtube asdf",
++    "youtime asdf"
++]
++
++
++@qpt.test(times=len(tested_result_commands))
++def test_command_results(test_number, run_command, get):
++    """
++    :type test_number: int
++    """
++    command, expected_result = tested_result_commands[test_number]
++    yield from run_command(command)
++    result = yield from get()
++    assert re.match(expected_result, result), "{} didn't match {}".format(expected_result, result)
++
++
++@qpt.test(times=len(mass_valid_commands))
++def mass_test(test_number, run_command, get):
++    yield from run_command(mass_valid_commands[test_number])
++    # get an result, even if it isn't used.
++    yield from get()
+diff --git a/qpt_tests/test_admin.py b/qpt_tests/test_admin.py
+new file mode 100644
+index 0000000..b1b189e
+--- /dev/null
++++ b/qpt_tests/test_admin.py
+@@ -0,0 +1,28 @@
++import re
++
++from cloudbot.util.qpt import test
++
++
++@test()
++def mass_test(conn, run_command, get):
++    """
++    :type conn: cloudbot.core.connection.BotConnection
++    """
++    conn.permissions.add_user_to_group("TestUser!~user@example.com", "admins")
++    conn.bot.config.save_config()
++    conn.permissions.reload()
++    yield from run_command("groups")
++    assert re.match(r"PRIVMSG #channel :TestUser, Valid groups: {('\S+', )+'\S+'}", (yield from get()))
++    for group in conn.permissions.get_groups():
++        yield from run_command("gperms {}".format(group))
++        assert re.match(
++            r"PRIVMSG #channel :TestUser, Group \S+ has permissions \[('\S+', )*'\S+'\]|"
++            r"PRIVMSG #channel :TestUser, Group \S+ exists, but has no permissions",
++            (yield from get())
++        )
++        yield from run_command("gusers {}".format(group))
++        assert re.match(
++            r"PRIVMSG #channel :TestUser, Group \S+ has members: \[('\S+', )*'\S+'\]|"
++            r"PRIVMSG #channel :TestUser, Group \S+ exists, but has no members",
++            (yield from get())
++        )
+diff --git a/qpt_tests/test_encrypt.py b/qpt_tests/test_encrypt.py
+new file mode 100644
+index 0000000..8642ea7
+--- /dev/null
++++ b/qpt_tests/test_encrypt.py
+@@ -0,0 +1,13 @@
++import re
++
++from cloudbot.util import qpt
++
++
++@qpt.test()
++def test_encrypt(run_command, get):
++    yield from run_command("encrypt mypass mytext")
++    match = re.match(r"PRIVMSG #channel :TestUser, (.+)", (yield from get()))
++    assert match
++    assert match.groups()
++    yield from run_command("decrypt mypass {}".format(match.groups()[0]))
++    assert re.match(r"PRIVMSG #channel :TestUser, mytext", (yield from get()))
+\ No newline at end of file
+diff --git a/qpt_tests/test_factoids.py b/qpt_tests/test_factoids.py
+new file mode 100644
+index 0000000..52efcb5
+--- /dev/null
++++ b/qpt_tests/test_factoids.py
+@@ -0,0 +1,17 @@
++import re
++
++from cloudbot.util import qpt
++
++
++@qpt.test()
++def test_factoids(run_command, send, get):
++    yield from run_command("r qpttest qpttestcode")
++    yield from get()
++    yield from send(":TestUser!~user@example.com PRIVMSG #channel :^qpttest")
++    assert re.match(r"PRIVMSG #channel :qpttestcode", (yield from get()))
++
++    yield from run_command("f qpttestcode")
++    yield from get()
++
++    yield from run_command("listfactoids")
++    yield from get()
+\ No newline at end of file
+diff --git a/qpt_tests/z_print.py b/qpt_tests/z_print.py
+new file mode 100644
+index 0000000..807620a
+--- /dev/null
++++ b/qpt_tests/z_print.py
+@@ -0,0 +1,16 @@
++from operator import attrgetter
++
++from cloudbot.util.qpt import test
++
++
++@test()
++def print_all_commands(bot):
++    """
++    Prints all commands on a bot, sorted by plugin. This is used for debug.
++    :type bot: cloudbot.core.bot.CloudBot
++    """
++    plugins = sorted(bot.plugin_manager.plugins.values(), key=attrgetter("title"))
++    for plugin in plugins:
++        print(plugin.title + ":")
++        for command in sorted(plugin.commands, key=attrgetter("name")):
++            print("\t{} - {}".format("/".join(command.aliases), command.has_run))
+-- 
+2.0.0
+
