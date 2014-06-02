@@ -1,4 +1,4 @@
-From fc9a8ae54e15d23926b5d07c79184ad3b935f793 Mon Sep 17 00:00:00 2001
+From b869876bdab9755c4993ea5bb3ccbeccbe889e2a Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 22 Apr 2014 21:34:42 -0700
 Subject: [PATCH] Add a "quick" plugin testing system, for automated plugin
@@ -7,20 +7,20 @@ Subject: [PATCH] Add a "quick" plugin testing system, for automated plugin
 The quick plugin testing, or "qpt", can be enabled with the "--qpt" command line argument.
 
 diff --git a/cloudbot/__init__.py b/cloudbot/__init__.py
-index d2ee8b7..d763277 100644
+index 1230cbd..16b5131 100644
 --- a/cloudbot/__init__.py
 +++ b/cloudbot/__init__.py
-@@ -5,11 +5,11 @@ import os
+@@ -5,10 +5,11 @@ import os
  
  from .core import bot, connection, config, permissions, pluginmanager, events
- from .util import botvars, bucket, formatting, hook, http, pyexec, textgen, timeformat, timesince, urlnorm, web
+ from .util import botvars, bucket, formatting, hook, http, textgen, timeformat, timesince, urlnorm, web
 -from .util import threaddump
 +from .util import threaddump, qpt
  
  __all__ = ["core", "util", "bot", "connection", "config", "permissions", "pluginmanager", "events", "botvars", "bucket",
-            "formatting", "hook", "http", "pyexec", "textgen", "timeformat", "timesince", "urlnorm", "web", "dev_mode",
--           "threaddump"]
-+           "threaddump", "qpt"]
+-           "formatting", "hook", "http", "textgen", "timeformat", "timesince", "urlnorm", "web", "dev_mode", "threaddump]
++           "formatting", "hook", "http", "textgen", "timeformat", "timesince", "urlnorm", "web", "dev_mode", "threaddump",
++           "qpt"]
  
  
  def _setup():

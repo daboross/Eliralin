@@ -1,4 +1,4 @@
-From 93c36bd0e6b752ee67f400d01eef6c0f4f7aa89a Mon Sep 17 00:00:00 2001
+From f6ba85856c536d8bb9a9e7c53eb99f7f10d61702 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 26 Apr 2014 19:43:21 -0700
 Subject: [PATCH] Replace symbol for factoids.
@@ -6,7 +6,7 @@ Subject: [PATCH] Replace symbol for factoids.
 Changes ?fact to ^fact
 
 diff --git a/plugins/factoids.py b/plugins/factoids.py
-index 2afe29b..8a5806d 100644
+index 8068141..8bf2ce2 100644
 --- a/plugins/factoids.py
 +++ b/plugins/factoids.py
 @@ -135,7 +135,7 @@ def info(text, notice):
@@ -15,7 +15,7 @@ index 2afe29b..8a5806d 100644
  @asyncio.coroutine
 -@hook.regex(r'^\? ?(.+)')
 +@hook.regex(r'^\^ ?(.+)')
- def factoid(inp, input, db, message, action):
+ def factoid(inp, event, db, message, action):
      """<word> - shows what data is associated with <word>"""
  
 -- 
