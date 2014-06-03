@@ -1,4 +1,4 @@
-From 02507bd6ae4b1d7c3322d77ebd7f05d4da474620 Mon Sep 17 00:00:00 2001
+From 54a6a9d85d497d7713549d803b5797598bcd9a9d Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 26 Apr 2014 19:43:21 -0700
 Subject: [PATCH] Replace symbol for factoids.
@@ -6,18 +6,18 @@ Subject: [PATCH] Replace symbol for factoids.
 Changes ?fact to ^fact
 
 diff --git a/plugins/factoids.py b/plugins/factoids.py
-index 8068141..8bf2ce2 100644
+index c2f8e6e..1906644 100644
 --- a/plugins/factoids.py
 +++ b/plugins/factoids.py
-@@ -135,7 +135,7 @@ def info(text, notice):
+@@ -11,7 +11,7 @@ from cloudbot import botvars, hook, formatting, web
  
+ re_lineends = re.compile(r'[\r\n]*')
  
- @asyncio.coroutine
--@hook.regex(r'^\? ?(.+)')
-+@hook.regex(r'^\^ ?(.+)')
- def factoid(inp, event, db, message, action):
-     """<word> - shows what data is associated with <word>"""
+-FACTOID_CHAR = "?"  # TODO: config
++FACTOID_CHAR = "^"  # TODO: config
  
+ # some simple "shortcodes" for formatting purposes
+ shortcodes = {
 -- 
 2.0.0
 

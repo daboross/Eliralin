@@ -1,4 +1,4 @@
-From 6d183a30ab893dc50dbb7dd1830de179a8c2b5c4 Mon Sep 17 00:00:00 2001
+From 623ec5c6646ffe8f5172ba619e0a399055dbefd7 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 3 May 2014 23:44:11 +0200
 Subject: [PATCH] Add profiling module for profiling
@@ -22,10 +22,10 @@ index 317d600..1230cbd 100644
  def _setup():
 diff --git a/cloudbot/util/threaddump.py b/cloudbot/util/threaddump.py
 new file mode 100644
-index 0000000..28ce79c
+index 0000000..df0a64f
 --- /dev/null
 +++ b/cloudbot/util/threaddump.py
-@@ -0,0 +1,42 @@
+@@ -0,0 +1,43 @@
 +import threading
 +import traceback
 +import sys
@@ -50,6 +50,7 @@ index 0000000..28ce79c
 +    else:
 +        name = "Unknown thread"
 +
++    name = "{} ({})".format(name, thread_id)
 +    if is_current:
 +        name += " - Current thread"
 +
@@ -67,16 +68,16 @@ index 0000000..28ce79c
 +            if line:
 +                code.append("    {}".format(line.strip()))
 +        code.append("")  # new line
-+    return web.haste("\n".join(code), ext='txt')
++    return web.paste("\n".join(code), ext='txt')
 diff --git a/plugins/profiling.py b/plugins/profiling.py
 new file mode 100644
-index 0000000..2ed38e2
+index 0000000..e1f87d5
 --- /dev/null
 +++ b/plugins/profiling.py
-@@ -0,0 +1,46 @@
+@@ -0,0 +1,45 @@
 +import gc
-+
 +import asyncio
++
 +import objgraph
 +from pympler import muppy, summary, tracker
 +
@@ -85,9 +86,8 @@ index 0000000..2ed38e2
 +
 +@asyncio.coroutine
 +@hook.command(autohelp=False, permissions=["botcontrol"])
-+def threaddump_command(reply):
-+    reply("Running thread dump")
-+    return "Thread dump located at {}".format(threaddump.get_thread_dump())
++def threaddump_command():
++    return threaddump.get_thread_dump()
 +
 +
 +@hook.command(autohelp=False, permissions=["botcontrol"])

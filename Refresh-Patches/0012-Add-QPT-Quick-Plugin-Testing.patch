@@ -1,4 +1,4 @@
-From a54c3680db2d5d98a3d3b3283a09381856df99e1 Mon Sep 17 00:00:00 2001
+From e06638cea2773930ee4f3f664dc5ef77ed9cccdd Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 22 Apr 2014 21:34:42 -0700
 Subject: [PATCH] Add QPT - Quick Plugin Testing
@@ -160,10 +160,10 @@ index 64df4de..2081e1d 100644
 +        pass
 \ No newline at end of file
 diff --git a/cloudbot/core/pluginmanager.py b/cloudbot/core/pluginmanager.py
-index cf6d21a..6502f09 100644
+index 4afd479..66671d5 100644
 --- a/cloudbot/core/pluginmanager.py
 +++ b/cloudbot/core/pluginmanager.py
-@@ -436,6 +436,8 @@ class PluginManager:
+@@ -425,6 +425,8 @@ class PluginManager:
              # Run the plugin with the message, and wait for it to finish
              result = yield from self._execute_hook(hook, event)
  
@@ -172,7 +172,7 @@ index cf6d21a..6502f09 100644
          # Return the result
          return result
  
-@@ -540,6 +542,8 @@ class Hook:
+@@ -530,6 +532,8 @@ class Hook:
              logging.getLogger("cloudbot").warning("Ignoring extra args {} from {}".format(
                  func_hook.kwargs, self.description))
  
@@ -724,36 +724,36 @@ index 0000000..8642ea7
 \ No newline at end of file
 diff --git a/qpt_tests/test_factoids.py b/qpt_tests/test_factoids.py
 new file mode 100644
-index 0000000..52efcb5
+index 0000000..bdea05e
 --- /dev/null
 +++ b/qpt_tests/test_factoids.py
-@@ -0,0 +1,17 @@
+@@ -0,0 +1,19 @@
 +import re
 +
 +from cloudbot.util import qpt
 +
 +
-+@qpt.test()
-+def test_factoids(run_command, send, get):
-+    yield from run_command("r qpttest qpttestcode")
-+    yield from get()
-+    yield from send(":TestUser!~user@example.com PRIVMSG #channel :^qpttest")
-+    assert re.match(r"PRIVMSG #channel :qpttestcode", (yield from get()))
-+
-+    yield from run_command("f qpttestcode")
-+    yield from get()
-+
-+    yield from run_command("listfactoids")
-+    yield from get()
++@qpt.test(times=3)
++def test_factoids(run_command, send, get, test_number):
++    if test_number == 1:
++        yield from run_command("r qpttest qpttestcode")
++        yield from get()
++    elif test_number == 2:
++        yield from send(":TestUser!~user@example.com PRIVMSG #channel :^qpttest")
++        assert re.match(r"PRIVMSG #channel :qpttestcode", (yield from get()))
++    elif test_number == 2:
++        yield from run_command("f qpttestcode")
++        yield from get()
++    elif test_number == 3:
++        yield from run_command("listfactoids")
++        yield from get()
 \ No newline at end of file
 diff --git a/qpt_tests/z_print.py b/qpt_tests/z_print.py
 new file mode 100644
-index 0000000..807620a
+index 0000000..8c3fc77
 --- /dev/null
 +++ b/qpt_tests/z_print.py
-@@ -0,0 +1,16 @@
-+from operator import attrgetter
-+
+@@ -0,0 +1,17 @@
 +from cloudbot.util.qpt import test
 +
 +
@@ -763,11 +763,15 @@ index 0000000..807620a
 +    Prints all commands on a bot, sorted by plugin. This is used for debug.
 +    :type bot: cloudbot.core.bot.CloudBot
 +    """
-+    plugins = sorted(bot.plugin_manager.plugins.values(), key=attrgetter("title"))
-+    for plugin in plugins:
-+        print(plugin.title + ":")
-+        for command in sorted(plugin.commands, key=attrgetter("name")):
-+            print("\t{} - {}".format("/".join(command.aliases), command.has_run))
++    commands = sorted(((hook.description, hook.has_run) for hook in set(bot.plugin_manager.commands.values())))
++
++    print("Commands run:")
++    for desc in (desc for has_run, desc in commands if has_run):
++        print("\t{}".format(desc))
++    print("Commands missed:")
++    for desc in (desc for has_run, desc in commands if not has_run):
++        print("\t{}".format(desc))
+\ No newline at end of file
 -- 
 2.0.0
 
