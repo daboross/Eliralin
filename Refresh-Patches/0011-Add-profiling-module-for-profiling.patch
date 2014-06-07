@@ -1,4 +1,4 @@
-From 623ec5c6646ffe8f5172ba619e0a399055dbefd7 Mon Sep 17 00:00:00 2001
+From 1d5505ea51a93e6bc2791e34c4d84944284475cb Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 3 May 2014 23:44:11 +0200
 Subject: [PATCH] Add profiling module for profiling
@@ -121,7 +121,7 @@ index 0000000..e1f87d5
 +    tr.print_diff()
 +    print("Done printing diff")
 diff --git a/requirements.txt b/requirements.txt
-index 9d7896b..b065003 100644
+index e65ba2f..5c65b2a 100644
 --- a/requirements.txt
 +++ b/requirements.txt
 @@ -10,3 +10,6 @@ pbkdf2
