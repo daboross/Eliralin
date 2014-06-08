@@ -1,4 +1,4 @@
-From 21a39db5870ef756cc39241f69ce6490fbdb1d26 Mon Sep 17 00:00:00 2001
+From 46d4edca607444993e231a993d1bf64c0d109395 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 8 Jun 2014 00:27:02 -0700
 Subject: [PATCH] Remove the main_loop function from bot, call bot.process
@@ -6,7 +6,7 @@ Subject: [PATCH] Remove the main_loop function from bot, call bot.process
 
 
 diff --git a/cloudbot/core/bot.py b/cloudbot/core/bot.py
-index f80a572..77516e8 100644
+index 26d4a3f..9cd3b29 100644
 --- a/cloudbot/core/bot.py
 +++ b/cloudbot/core/bot.py
 @@ -17,6 +17,7 @@ from cloudbot.core.pluginmanager import PluginManager
