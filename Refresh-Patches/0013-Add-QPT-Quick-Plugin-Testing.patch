@@ -1,4 +1,4 @@
-From 999beed2819390c84eac8dd9e723ec5d2f739315 Mon Sep 17 00:00:00 2001
+From 0a312cb6eb8424ee40f5f5b2a96a57c5e7389db0 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 22 Apr 2014 21:34:42 -0700
 Subject: [PATCH] Add QPT - Quick Plugin Testing
@@ -33,7 +33,7 @@ index 1230cbd..16b5131 100644
  
  def _setup():
 diff --git a/cloudbot/core/connection.py b/cloudbot/core/connection.py
-index 64df4de..2081e1d 100644
+index c6e9790..edb1572 100644
 --- a/cloudbot/core/connection.py
 +++ b/cloudbot/core/connection.py
 @@ -5,8 +5,8 @@ import ssl
@@ -46,7 +46,7 @@ index 64df4de..2081e1d 100644
  
  irc_prefix_re = re.compile(r":([^ ]*) ([^ ]*) (.*)")
  irc_noprefix_re = re.compile(r"([^ ]*) (.*)")
-@@ -235,10 +235,13 @@ class IRCConnection:
+@@ -228,10 +228,13 @@ class IRCConnection:
          else:
              self._connected = True
              self.logger.info("[{}] Connecting".format(self.readable_name))
@@ -64,10 +64,10 @@ index 64df4de..2081e1d 100644
  
      def stop(self):
          if not self._connected:
-@@ -358,3 +361,93 @@ class IRCProtocol(asyncio.Protocol):
-             # Put the message into the queue to be handled
-             # TODO: Do we want to directly call the handling method here?
-             self.message_queue.put_nowait(event)
+@@ -350,3 +353,93 @@ class IRCProtocol(asyncio.Protocol):
+ 
+             # handle the message, async
+             asyncio.async(self.bot.process(event))
 +
 +
 +class QPTProtocol:
@@ -150,9 +150,9 @@ index 64df4de..2081e1d 100644
 +            if command == "PING":
 +                self.output_queue.put_nowait("PONG :" + last_param)
 +
-+            # Put the message into the queue to be handled
-+            # TODO: Do we want to directly call the handling method here?
-+            self.message_queue.put_nowait(event)
++            # handle the message, async
++            asyncio.async(self.bot.process(event))
++
 +
 +
 +class QPTTransport:

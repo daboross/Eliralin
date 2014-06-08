@@ -1,4 +1,4 @@
-From 5c154522ed04b5e8089875b257c8415ed0af2460 Mon Sep 17 00:00:00 2001
+From 8c3ca523e5df6bcea7591c91a148409d35016a91 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Thu, 29 May 2014 22:01:16 -0700
 Subject: [PATCH] Catch the case where bukget returns no authors for a given
