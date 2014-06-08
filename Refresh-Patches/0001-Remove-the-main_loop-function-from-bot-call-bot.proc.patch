@@ -1,4 +1,4 @@
-From 86f42fb2e47c546db6a5560b2812ad506dc7e454 Mon Sep 17 00:00:00 2001
+From 21a39db5870ef756cc39241f69ce6490fbdb1d26 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 8 Jun 2014 00:27:02 -0700
 Subject: [PATCH] Remove the main_loop function from bot, call bot.process
