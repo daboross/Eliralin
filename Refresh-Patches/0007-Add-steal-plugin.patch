@@ -1,4 +1,4 @@
-From d13b631017f59602e60916ac2c2950f3291e1ee0 Mon Sep 17 00:00:00 2001
+From 26d883967c4a41b19a98d47a323c9a24da2c59f5 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:18:52 -0800
 Subject: [PATCH] Add steal plugin.

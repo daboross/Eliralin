@@ -1,4 +1,4 @@
-From 0b512021dc638b3502852bd01a8c5b9a38abcb87 Mon Sep 17 00:00:00 2001
+From cc00b8579dccc55ff7658f650d94259d694662df Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 8 Jun 2014 02:04:36 -0700
 Subject: [PATCH] Get rid of output_queue, instead just have a send() method on
@@ -6,18 +6,21 @@ Subject: [PATCH] Get rid of output_queue, instead just have a send() method on
 
 
 diff --git a/cloudbot/core/connection.py b/cloudbot/core/connection.py
-index c6e9790..aa947d9 100644
+index c6e9790..383a76e 100644
 --- a/cloudbot/core/connection.py
 +++ b/cloudbot/core/connection.py
-@@ -8,6 +8,7 @@ from cloudbot.core.permissions import PermissionManager
+@@ -5,9 +5,9 @@ import ssl
+ from ssl import SSLContext
  
+ from cloudbot.core.permissions import PermissionManager
+-
  from cloudbot.core.events import BaseEvent
  
 +
  irc_prefix_re = re.compile(r":([^ ]*) ([^ ]*) (.*)")
  irc_noprefix_re = re.compile(r"([^ ]*) (.*)")
  irc_netmask_re = re.compile(r"([^!@]*)!([^@]*)@(.*)")
-@@ -27,7 +28,6 @@ class BotConnection:
+@@ -27,7 +27,6 @@ class BotConnection:
      :type nick: str
      :type vars: dict
      :type history: dict[str, list[tuple]]
@@ -25,7 +28,7 @@ index c6e9790..aa947d9 100644
      :type connection: IRCConnection
      :type permissions: PermissionManager
      :type connected: bool
-@@ -71,8 +71,6 @@ class BotConnection:
+@@ -71,8 +70,6 @@ class BotConnection:
          self.vars = {}
          self.history = {}
  
@@ -34,7 +37,7 @@ index c6e9790..aa947d9 100644
          # create permissions manager
          self.permissions = PermissionManager(self)
  
-@@ -156,14 +154,15 @@ class BotConnection:
+@@ -156,14 +153,15 @@ class BotConnection:
          else:
              self.send(command)
  
@@ -54,7 +57,7 @@ index c6e9790..aa947d9 100644
  
  
  class IRCConnection:
-@@ -175,11 +174,11 @@ class IRCConnection:
+@@ -175,11 +173,11 @@ class IRCConnection:
      :type host: str
      :type port: int
      :type use_ssl: bool
@@ -67,7 +70,7 @@ index c6e9790..aa947d9 100644
      """
  
      def __init__(self, conn, ignore_cert_errors=True, timeout=300):
-@@ -191,7 +190,6 @@ class IRCConnection:
+@@ -191,7 +189,6 @@ class IRCConnection:
          self.host = conn.server
          self.port = conn.port
          self.use_ssl = conn.ssl
@@ -75,7 +78,7 @@ index c6e9790..aa947d9 100644
          self.loop = conn.loop
          self.botconn = conn
  
-@@ -233,6 +231,15 @@ class IRCConnection:
+@@ -233,6 +230,15 @@ class IRCConnection:
              lambda: IRCProtocol(self), host=self.host, port=self.port, ssl=self.ssl_context,
          )
  
@@ -86,12 +89,12 @@ index c6e9790..aa947d9 100644
 +        pause until we connect.
 +        :param line: Line to send
 +        """
-+        self._protocol.send(line)
++        yield from self._protocol.send(line)
 +
      def stop(self):
          if not self._connected:
              return
-@@ -250,7 +257,6 @@ class IRCProtocol(asyncio.Protocol):
+@@ -250,7 +256,6 @@ class IRCProtocol(asyncio.Protocol):
          self.readable_name = ircconn.readable_name
          self.describe_server = lambda: ircconn.describe_server()
          self.botconn = ircconn.botconn
@@ -99,7 +102,7 @@ index c6e9790..aa947d9 100644
          self.bot = ircconn.botconn.bot
          # input buffer
          self._input_buffer = b""
-@@ -260,13 +266,20 @@ class IRCProtocol(asyncio.Protocol):
+@@ -260,13 +265,20 @@ class IRCProtocol(asyncio.Protocol):
          # transport
          self.transport = None
  
@@ -121,7 +124,7 @@ index c6e9790..aa947d9 100644
          if exc is None:
              # we've been closed intentionally, so don't reconnect
              return
-@@ -275,17 +288,20 @@ class IRCProtocol(asyncio.Protocol):
+@@ -275,17 +287,20 @@ class IRCProtocol(asyncio.Protocol):
  
      def eof_received(self):
          self._connected = False
@@ -148,12 +151,12 @@ index c6e9790..aa947d9 100644
  
      def data_received(self, data):
          self._input_buffer += data
-@@ -346,7 +362,7 @@ class IRCProtocol(asyncio.Protocol):
+@@ -346,7 +361,7 @@ class IRCProtocol(asyncio.Protocol):
                                mask=mask)
              # we should also remember to ping the server if they ping us
              if command == "PING":
 -                self.output_queue.put_nowait("PONG :" + last_param)
-+                yield from self.send("PONG :" + last_param)
++                asyncio.async(self.send("PONG :" + last_param))
  
              # handle the message, async
              asyncio.async(self.bot.process(event))

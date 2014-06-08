@@ -1,11 +1,11 @@
-From ec959f9a542b902cf33d63e4c57e4f1cce88e3ff Mon Sep 17 00:00:00 2001
+From db8d937ecf2afe9e4b3f634e50fef6b8c55cf96a Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 3 May 2014 23:44:11 +0200
 Subject: [PATCH] Add profiling module for profiling
 
 
 diff --git a/cloudbot/__init__.py b/cloudbot/__init__.py
-index 317d600..1230cbd 100644
+index 317d600..ed0b608 100644
 --- a/cloudbot/__init__.py
 +++ b/cloudbot/__init__.py
 @@ -5,9 +5,10 @@ import os
@@ -16,7 +16,7 @@ index 317d600..1230cbd 100644
  
  __all__ = ["core", "util", "bot", "connection", "config", "permissions", "pluginmanager", "events", "botvars", "bucket",
 -           "formatting", "hook", "http", "textgen", "timeformat", "timesince", "urlnorm", "web", "dev_mode"]
-+           "formatting", "hook", "http", "textgen", "timeformat", "timesince", "urlnorm", "web", "dev_mode", "threaddump]
++           "formatting", "hook", "http", "textgen", "timeformat", "timesince", "urlnorm", "web", "dev_mode", "threaddump"]
  
  
  def _setup():
