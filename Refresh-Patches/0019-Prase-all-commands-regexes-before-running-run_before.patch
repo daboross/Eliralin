@@ -1,4 +1,4 @@
-From 66284e8d9f9104b2325f1c4ea9e7e3da58412457 Mon Sep 17 00:00:00 2001
+From a6448ff653484394f27c2f323ac12191007225ba Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 8 Jun 2014 00:57:47 -0700
 Subject: [PATCH] Prase all commands/regexes before running run_before_tasks
