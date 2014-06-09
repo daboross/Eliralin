@@ -1,4 +1,4 @@
-From e5d291bfe98fda5b012a917069b652de298de6f4 Mon Sep 17 00:00:00 2001
+From d81dba7d5c3acb8fb6badf4775b7c260e5434bb1 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 29 Apr 2014 02:58:21 -0700
 Subject: [PATCH] Add per-channel command prefixes
@@ -6,17 +6,18 @@ Subject: [PATCH] Add per-channel command prefixes
 
 diff --git a/plugins/prefixes.py b/plugins/prefixes.py
 new file mode 100644
-index 0000000..16f1c0e
+index 0000000..ab3f1ba
 --- /dev/null
 +++ b/plugins/prefixes.py
-@@ -0,0 +1,90 @@
+@@ -0,0 +1,109 @@
 +import asyncio
 +import re
-+
 +from sqlalchemy import Table, Column, String, UniqueConstraint
 +
 +from cloudbot import hook, botvars
 +from cloudbot.core.events import CommandEvent
++from cloudbot.util import formatting
++
 +
 +table = Table(
 +    "prefixes",
@@ -28,17 +29,20 @@ index 0000000..16f1c0e
 +)
 +
 +
++def _load_db_query(db):
++    query = db.execute(table.select())
++    return [(row["connection"], row["channel"], row["prefix"]) for row in query]
++
++
++@asyncio.coroutine
 +@hook.onload()
-+def load_command_re(db):
++def load_command_re(async, db):
 +    """
 +    :type db: sqlalchemy.orm.Session
 +    """
 +    global chan_re
 +    channel_prefixes = {}
-+    for row in db.execute(table.select()):
-+        connection = row["connection"]
-+        channel = row["channel"]
-+        prefix = row["prefix"]
++    for connection, channel, prefix in async(_load_db_query, db):
 +        key = (connection, channel)
 +        if key in channel_prefixes:
 +            channel_prefixes[key].append(re.escape(prefix))
@@ -51,31 +55,33 @@ index 0000000..16f1c0e
 +        chan_re[key] = re.compile(command_re)
 +
 +
++@asyncio.coroutine
 +@hook.command(permissions=["botcontrol"])
-+def addprefix(text, conn, chan, db):
++def addprefix(text, conn, chan, async, db, logger):
 +    """delprefix <prefix> - Adds a command prefix <prefix> to the current channel
 +    :type text: str
 +    :type chan: str
 +    :type db: sqlalchemy.orm.Session
 +    """
-+    print("Adding prefix {} to {}".format(text, chan))
-+    db.execute(table.insert().values(connection=conn.name, channel=chan, prefix=text))
-+    db.commit()
-+    load_command_re(db)
++    logger.info("Adding prefix {} to {}".format(text, chan))
++    yield from async(db.execute, table.insert().values(connection=conn.name, channel=chan, prefix=text))
++    yield from async(db.commit)
++    yield from load_command_re(async, db)
 +    return "Added command prefix {} to {}".format(text, chan)
 +
 +
++@asyncio.coroutine
 +@hook.command(permissions=["botcontrol"])
-+def delprefix(text, chan, db):
++def delprefix(text, chan, async, db, logger):
 +    """delprefix <prefix> - Removes command prefix <prefix> from the current channel
 +    :type text: str
 +    :type chan: str
 +    :type db: sqlalchemy.orm.Session
 +    """
-+    print("Removing prefix {} from {}".format(text, chan))
-+    db.execute(table.delete().where(table.c.channel == chan).where(table.c.prefix == text))
-+    db.commit()
-+    load_command_re(db)
++    logger.info("Removing prefix {} from {}".format(text, chan))
++    yield from async(db.execute, table.delete().where(table.c.channel == chan).where(table.c.prefix == text))
++    yield from async(db.commit)
++    yield from load_command_re(async, db)
 +    return "Removed command prefix {} from {}".format(text, chan)
 +
 +
@@ -96,10 +102,23 @@ index 0000000..16f1c0e
 +            command = match.group(2).lower()
 +            if command in bot.plugin_manager.commands:
 +                command_hook = bot.plugin_manager.commands[command]
-+                # this event is a one-use event, so we can just modify it and send it to the plugin
 +                event = CommandEvent(triggered_command=command, hook=command_hook, text=match.group(3).strip(),
 +                                     base_event=event)
 +                yield from bot.plugin_manager.launch(command_hook, event)
++            else:
++                potential_matches = []
++                for potential_match, plugin in bot.plugin_manager.commands.items():
++                    if potential_match.startswith(command):
++                        potential_matches.append((potential_match, plugin))
++                if potential_matches:
++                    if len(potential_matches) == 1:
++                        command_hook = potential_matches[0][1]
++                        event = CommandEvent(triggered_command=command, hook=command_hook, text=match.group(3).strip(),
++                                             base_event=event)
++                        yield from bot.plugin_manager.launch(command_hook, event)
++                    else:
++                        event.notice("Possible matches: {}".format(
++                            formatting.get_text_list([command for command, plugin in potential_matches])))
 -- 
 2.0.0
 
