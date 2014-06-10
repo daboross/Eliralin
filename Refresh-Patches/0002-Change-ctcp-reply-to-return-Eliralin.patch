@@ -1,19 +1,19 @@
-From e1e5e621845a004dcc09558d985850569978908b Mon Sep 17 00:00:00 2001
+From ff20fb2413e3868c2536b40117233714bd9551ca Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:13:03 -0800
 Subject: [PATCH] Change ctcp reply to return 'Eliralin'
 
 
 diff --git a/plugins/core_ctcp.py b/plugins/core_ctcp.py
-index 229ae7f..6ef1828 100644
+index 557c24a..8a1b601 100644
 --- a/plugins/core_ctcp.py
 +++ b/plugins/core_ctcp.py
-@@ -8,7 +8,7 @@ from cloudbot import hook
+@@ -9,7 +9,7 @@ import cloudbot
  @asyncio.coroutine
  @hook.regex(r'^\x01VERSION\x01$')
  def ctcp_version(notice):
--    notice('\x01VERSION: CloudBot - http://git.io/cloudbotirc')
-+    notice('\x01VERSION Eliralin #refresh - http://git.io/elirefresh')
+-    notice("\x01VERSION: CloudBotRefresh v{} - http://cloudbot.pw/".format(cloudbot.__version__))
++    notice("\x01VERSION: Eliralin v{} - http://git.io/elirefresh".format(cloudbot.__version__))
  
  
  @asyncio.coroutine
