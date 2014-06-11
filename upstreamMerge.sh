@@ -6,8 +6,8 @@ function update {
     local remote_branch=$3
     cd "$basedir/$what"
     git checkout -B "$branch"
-    git fetch && git reset --hard "origin/${remote_branch}"
+    git fetch && git reset --hard "${remote_branch}"
     cd ../
     git add "$what"
 }
-update Refresh master python3.4
+update Refresh master eliralin/event-changes
