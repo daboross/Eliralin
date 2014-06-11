@@ -1,19 +1,19 @@
-From 4c1a5651b32d0fed9c2004411a41099b793ee5e2 Mon Sep 17 00:00:00 2001
+From b1b4e7099cdee4975cacf65c162bcd6855138823 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 26 Apr 2014 18:39:33 -0700
 Subject: [PATCH] Change reply format from ({}) to {},
 
 
 diff --git a/cloudbot/core/events.py b/cloudbot/core/events.py
-index e98521e..41ced31 100644
+index f60b1bd..25f9c89 100644
 --- a/cloudbot/core/events.py
 +++ b/cloudbot/core/events.py
-@@ -217,7 +217,7 @@ class BaseEvent:
+@@ -231,7 +231,7 @@ class BaseEvent:
          if target == self.nick:
-             self.conn.msg(target, message)
+             self.conn.message(target, message)
          else:
--            self.conn.msg(target, "({}) {}".format(self.nick, message))
-+            self.conn.msg(target, "{}, {}".format(self.nick, message))
+-            self.conn.message(target, "({}) {}".format(self.nick, message))
++            self.conn.message(target, "{}, {}".format(self.nick, message))
  
      def action(self, message, target=None):
          """sends an action to the current channel/user or a specific channel/user
