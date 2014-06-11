@@ -1,4 +1,4 @@
-From 62844293a5b05255ea5fea4ce3078cc5bd4793bc Mon Sep 17 00:00:00 2001
+From 6859fabe80c31ca8ccfc3ed9e87de2e4c1be5f98 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 29 Apr 2014 02:58:21 -0700
 Subject: [PATCH] Add per-channel command prefixes
@@ -6,12 +6,13 @@ Subject: [PATCH] Add per-channel command prefixes
 
 diff --git a/plugins/prefixes.py b/plugins/prefixes.py
 new file mode 100644
-index 0000000..9ad0f8a
+index 0000000..3f28a1d
 --- /dev/null
 +++ b/plugins/prefixes.py
 @@ -0,0 +1,137 @@
 +import asyncio
 +import re
++
 +from sqlalchemy import Table, Column, String, UniqueConstraint
 +
 +from cloudbot import hook, botvars
@@ -60,7 +61,7 @@ index 0000000..9ad0f8a
 +def addprefix(text, conn, chan, async, db, logger):
 +    """<prefix> - adds a command prefix <prefix> to the current channel
 +    :type text: str
-+    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
 +    :type chan: str
 +    :type db: sqlalchemy.orm.Session
 +    """
@@ -76,7 +77,7 @@ index 0000000..9ad0f8a
 +def delprefix(text, conn, chan, async, db, logger):
 +    """<prefix> - removes command prefix <prefix> from the current channel
 +    :type text: str
-+    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
 +    :type chan: str
 +    :type db: sqlalchemy.orm.Session
 +    """
@@ -98,8 +99,7 @@ index 0000000..9ad0f8a
 +def prefixes(text, conn, chan, async, db):
 +    """[channel] - shows prefixes for [channel], or the caller's channel if no channel is specified
 +    :type text: str
-+    :type bot: cloudbot.core.bot.CloudBot
-+    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
 +    :type chan: str
 +    :type db: sqlalchemy.orm.Session
 +    """
@@ -115,17 +115,17 @@ index 0000000..9ad0f8a
 +
 +@asyncio.coroutine
 +@hook.irc_raw("PRIVMSG")
-+def run_extra_prefix(event, bot, conn, chan, irc_message):
++def run_extra_prefix(event, bot, conn, chan, content):
 +    """
 +    :type event: cloudbot.core.events.BaseEvent
 +    :type bot: cloudbot.core.bot.CloudBot
-+    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
 +    :type chan: str
-+    :type irc_message: str
++    :type content: str
 +    """
 +    key = (conn.name, chan)
 +    if key in chan_re:
-+        match = chan_re[key].match(irc_message)
++        match = chan_re[key].match(content)
 +        if match:
 +            command = match.group(2).lower()
 +            if command in bot.plugin_manager.commands:
