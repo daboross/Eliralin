@@ -1,4 +1,4 @@
-From e6e9cdaa6aeff4f9eeacd74740448067191181cb Mon Sep 17 00:00:00 2001
+From 3add93dcaabc6b28d27be2f4990097e6f5fef2dc Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 26 Apr 2014 19:43:21 -0700
 Subject: [PATCH] Replace symbol for factoids.
@@ -6,7 +6,7 @@ Subject: [PATCH] Replace symbol for factoids.
 Changes ?fact to ^fact
 
 diff --git a/plugins/factoids.py b/plugins/factoids.py
-index c2f8e6e..1906644 100644
+index efde4c5..68db19a 100644
 --- a/plugins/factoids.py
 +++ b/plugins/factoids.py
 @@ -11,7 +11,7 @@ from cloudbot import botvars, hook, formatting, web
