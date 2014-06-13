@@ -1,4 +1,4 @@
-From 2d74d4446d3cb47bf68d35d625f454ad5eedd9e4 Mon Sep 17 00:00:00 2001
+From 7c52ea807c26cf3c45a72c24d2fd69aee83ee520 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 26 Apr 2014 18:39:33 -0700
 Subject: [PATCH] Change reply format from ({}) to {},
