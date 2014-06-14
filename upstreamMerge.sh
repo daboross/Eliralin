@@ -10,4 +10,4 @@ function update {
     cd ../
     git add "$what"
 }
-update Refresh master eliralin/event-changes
+update Refresh master origin/connection-emerge
