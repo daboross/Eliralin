@@ -1,14 +1,14 @@
-From 7c52ea807c26cf3c45a72c24d2fd69aee83ee520 Mon Sep 17 00:00:00 2001
+From 68cf85e2c0c4b093dfabe186ecd7378f576064c0 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 26 Apr 2014 18:39:33 -0700
 Subject: [PATCH] Change reply format from ({}) to {},
 
 
 diff --git a/cloudbot/core/events.py b/cloudbot/core/events.py
-index f60b1bd..25f9c89 100644
+index a9446e8..db9fc6d 100644
 --- a/cloudbot/core/events.py
 +++ b/cloudbot/core/events.py
-@@ -231,7 +231,7 @@ class BaseEvent:
+@@ -234,7 +234,7 @@ class BaseEvent:
          if target == self.nick:
              self.conn.message(target, message)
          else:
