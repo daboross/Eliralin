@@ -1,4 +1,4 @@
-From ac793bb56ebf16f2f8852dc916b8728138852507 Mon Sep 17 00:00:00 2001
+From 2fd39352a30b3e33db071b0cac78af10ec6d84f7 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 29 Apr 2014 02:58:21 -0700
 Subject: [PATCH] Add per-channel command prefixes
@@ -6,7 +6,7 @@ Subject: [PATCH] Add per-channel command prefixes
 
 diff --git a/plugins/prefixes.py b/plugins/prefixes.py
 new file mode 100644
-index 0000000..3f28a1d
+index 0000000..3187301
 --- /dev/null
 +++ b/plugins/prefixes.py
 @@ -0,0 +1,137 @@
@@ -16,7 +16,7 @@ index 0000000..3f28a1d
 +from sqlalchemy import Table, Column, String, UniqueConstraint
 +
 +from cloudbot import hook, botvars
-+from cloudbot.core.events import CommandEvent
++from cloudbot.events import CommandEvent
 +from cloudbot.util import formatting
 +
 +
@@ -61,7 +61,7 @@ index 0000000..3f28a1d
 +def addprefix(text, conn, chan, async, db, logger):
 +    """<prefix> - adds a command prefix <prefix> to the current channel
 +    :type text: str
-+    :type conn: cloudbot.core.connection.Connection
++    :type conn: cloudbot.connection.Connection
 +    :type chan: str
 +    :type db: sqlalchemy.orm.Session
 +    """
@@ -77,7 +77,7 @@ index 0000000..3f28a1d
 +def delprefix(text, conn, chan, async, db, logger):
 +    """<prefix> - removes command prefix <prefix> from the current channel
 +    :type text: str
-+    :type conn: cloudbot.core.connection.Connection
++    :type conn: cloudbot.connection.Connection
 +    :type chan: str
 +    :type db: sqlalchemy.orm.Session
 +    """
@@ -99,7 +99,7 @@ index 0000000..3f28a1d
 +def prefixes(text, conn, chan, async, db):
 +    """[channel] - shows prefixes for [channel], or the caller's channel if no channel is specified
 +    :type text: str
-+    :type conn: cloudbot.core.connection.Connection
++    :type conn: cloudbot.connection.Connection
 +    :type chan: str
 +    :type db: sqlalchemy.orm.Session
 +    """
@@ -117,9 +117,9 @@ index 0000000..3f28a1d
 +@hook.irc_raw("PRIVMSG")
 +def run_extra_prefix(event, bot, conn, chan, content):
 +    """
-+    :type event: cloudbot.core.events.BaseEvent
-+    :type bot: cloudbot.core.bot.CloudBot
-+    :type conn: cloudbot.core.connection.Connection
++    :type event: cloudbot.events.BaseEvent
++    :type bot: cloudbot.bot.CloudBot
++    :type conn: cloudbot.connection.Connection
 +    :type chan: str
 +    :type content: str
 +    """
