@@ -1,4 +1,3 @@
 [submodule "Refresh"]
 	path = Refresh
-    url = https://github.com/daboross/EliRefresh.git
-    branch = connection-emerge
+    url = https://github.com/CloudBotIRC/CloudBotRefresh.git

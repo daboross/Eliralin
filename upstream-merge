@@ -1,0 +1,17 @@
+#!/bin/bash
+
+declare -r SCRIPT="$([[ $0 = /* ]] && echo "$0" || echo "$PWD/${0#./}")"
+declare -r BASE_DIR="$(dirname $SCRIPT)"
+
+function update {
+    local -r ORIGIN="$1"            ; shift
+    local -r ORIGIN_BRANCH="$1"     ; shift
+    local -r UPSTREAM="$1"          ; shift
+    local -r UPSTREAM_BRANCH="$1"   ; shift
+
+    cd "$BASE_DIR/$ORIGIN"
+    git fetch "$UPSTREAM"
+    git checkout -B "$ORIGIN_BRANCH" --track "$UPSTREAM/$UPSTREAM_BRANCH"
+}
+
+update Refresh master origin python3.4

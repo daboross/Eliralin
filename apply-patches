@@ -1,0 +1,59 @@
+#!/bin/bash
+
+declare -r SCRIPT="$([[ $0 = /* ]] && echo "$0" || echo "$PWD/${0#./}")"
+declare -r BASE_DIR="$(dirname $SCRIPT)"
+
+function apply_patches {
+    local -r ORIGIN="$1"        ; shift
+    local -r ORIGIN_BRANCH="$1" ; shift
+    local -r TARGET="$1"        ; shift
+    local -r TARGET_BRANCH="$1" ; shift
+    local -r PATCH_DIR="$1"     ; shift
+
+    cd "$BASE_DIR/$ORIGIN"
+
+    git checkout -B "$ORIGIN_BRANCH"
+
+    cd "$BASE_DIR"
+
+    if [[ ! -d  "$BASE_DIR/$TARGET" ]]; then
+        git clone "$ORIGIN" "$TARGET" -b "$ORIGIN_BRANCH"
+    fi
+
+    cd "$BASE_DIR/$TARGET"
+
+    echo "# +---"
+    echo "# | Resetting $TARGET/$TARGET_BRANCH to $ORIGIN/$ORIGIN_BRANCH"
+    echo "# +---"
+
+    if [[ "$TARGET" == "$ORIGIN" ]]; then
+        git checkout -B "$TARGET_BRANCH" --track "$ORIGIN_BRANCH"
+    else
+        git fetch upstream &> /dev/null
+        git checkout -B "$TARGET_BRANCH" --track "upstream/$ORIGIN_BRANCH"
+    fi
+
+    echo "# +---"
+    echo "# | Applying patches to $TARGET/$TARGET_BRANCH from $PATCH_DIR"
+    echo "# +---"
+
+    git am --abort
+    git am --3way "$BASE_DIR/$PATCH_DIR/"*.patch
+    if [[ "$?" != "0" ]]; then
+        echo "# +---"
+        echo "# | Something did not apply cleanly to $TARGET/$TARGET_BRANCH."
+        echo "# | Please review above details and finish the apply then"
+        echo "# | save the changes with \`rebuild-patches\`"
+        echo "# +---"
+        return 1
+    else
+        echo "# +---"
+        echo "# | Patches applied cleanly to $target"
+        echo "# +---"
+    fi
+}
+
+# Refresh/master  + Patches-01-Connection-Emerge -> Refresh/connection-emerge
+apply_patches Refresh master Refresh connection-emerge Patches-01-Connection-Emerge
+# Refresh/connection-emerge + Patches-02-Eliralin -> Eliralin/master
+apply_patches Refresh connection-emerge Eliralin master Patches-02-Eliralin

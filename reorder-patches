@@ -1,8 +1,17 @@
 #!/bin/bash
-basedir=`pwd`
-function cleanPatches {
-    local target="$1"
-    cd "$basedir/$target-Patches"
+
+declare -r SCRIPT="$([[ $0 = /* ]] && echo "$0" || echo "$PWD/${0#./}")"
+declare -r BASE_DIR="$(dirname $SCRIPT)"
+
+function reorder_patches {
+    local -r PATCH_DIR="$1" ; shift
+
+    echo "# +---"
+    echo "# | Reordering patches in $PATCH_DIR"
+    echo "# +---"
+
+    cd "$BASE_DIR/$PATCH_DIR"
+
     local -i NUM=1
     for NAME in *; do
         NAME_WITHOUT="${NAME:4}"
@@ -16,4 +25,6 @@ function cleanPatches {
         NUM="$((NUM + 1))"
     done
 }
-cleanPatches Refresh
+
+reorder_patches Patches-01-Connection-Emerge
+reorder_patches Patches-02-Eliralin

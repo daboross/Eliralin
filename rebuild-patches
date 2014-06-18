@@ -1,0 +1,27 @@
+#!/bin/bash
+
+declare -r SCRIPT="$([[ $0 = /* ]] && echo "$0" || echo "$PWD/${0#./}")"
+declare -r BASE_DIR="$(dirname $SCRIPT)"
+
+function save_patches {
+    local -r TARGET="$1"        ; shift
+    local -r TARGET_BRANCH="$1" ; shift
+    local -r PATCH_DIR="$1"     ; shift
+    echo "# +---"
+    echo "# | Saving patches for $TARGET/$TARGET_BRANCH to $PATCH_DIR"
+    echo "# +---"
+
+    cd "$BASE_DIR/$TARGET"
+
+    git checkout "$TARGET_BRANCH"
+    local -r UPSTREAM_REMOTE_AND_BRANCH="$(git rev-parse --abbrev-ref --symbolic-full-name @{u})"
+
+    git format-patch --no-stat -N -o "$BASE_DIR/$PATCH_DIR" "$UPSTREAM_REMOTE_AND_BRANCH"
+
+    echo "# +---"
+    echo "# | Patches for $TARGET/$TARGET_BRANCH saved to $PATCH_DIR"
+    echo "# +---"
+}
+
+save_patches Refresh connection-emerge Patches-01-Connection-Emerge
+save_patches Eliralin master Patches-02-Eliralin
