@@ -41,13 +41,20 @@ function apply_patches {
     log "Applying patches to $TARGET/$TARGET_BRANCH from $PATCH_DIR"
 
     git am --abort
-    git am --3way "$BASE_DIR/$PATCH_DIR/"*.patch
-    if (( "$?" )); then # if return code is not 0
-        log_fail "Something did not apply cleanly to $TARGET/$TARGET_BRANCH."
-        log_fail "Please review above details and finish the apply then save the changes with \`rebuild-patches\`"
-        return 1
+    if [[ "$(ls -A "$BASE_DIR/$PATCH_DIR/")" ]]; then
+        git am --3way "$BASE_DIR/$PATCH_DIR/"*.patch
+        if (( "$?" )); then # if return code is not 0
+            log_fail "Something did not apply cleanly to $TARGET/$TARGET_BRANCH."
+            log_fail "Please review above details and finish the apply then save the changes with \`rebuild-patches\`"
+            return 1
+        else
+            log "Patches applied cleanly to $TARGET/$TARGET_BRANCH"
+            if [[ "$TARGET" == "$ORIGIN" ]]; then
+                log "Checking out $ORIGIN to $ORIGIN_BRANCH"
+                git checkout "$ORIGIN_BRANCH"
+            fi
+        fi
     else
-        log "Patches applied cleanly to $TARGET/$TARGET_BRANCH"
         if [[ "$TARGET" == "$ORIGIN" ]]; then
             log "Checking out $ORIGIN to $ORIGIN_BRANCH"
             git checkout "$ORIGIN_BRANCH"

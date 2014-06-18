@@ -24,7 +24,7 @@ function update {
 }
 
 # Refresh/connection-emerge -> CloudBotRefresh/connection-emerge
-update Refresh connection-emerge git@github.com:CloudBotIRC/CloudBotRefresh.git connection-emerge
+update Refresh connection-emerge git@github.com:daboross/EliRefresh.git connection-emerge
 
 # Eliralin/master -> EliRefresh/master
 update Eliralin master git@github.com:daboross/EliRefresh.git master
