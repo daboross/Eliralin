@@ -25,14 +25,14 @@ create() {
 
     cd "$BASE_DIR/$TARGET"
     log "Saving patches from $TARGET/$GIT_HASH to $PATCH_DIR"
-    git format-patch -o "$(readlink -f $BASE_DIR/$PATCH_DIR)" "$GIT_HASH"
+    git format-patch -o "$(readlink -f "$BASE_DIR/$PATCH_DIR")" "$GIT_HASH"
     git reset --hard "$GIT_HASH"
 }
 
 restore() {
     log "Applying patches from $PATCH_DIR to $TARGET"
     cd "$BASE_DIR/$TARGET"
-    git am --3way "$PATCH_DIR/"*.patch
+    git am --3way "$(readlink -f "$BASE_DIR/$PATCH_DIR")/"*.patch
 }
 
 cd "$(dirname "$([[ $0 = /* ]] && echo "$0" || echo "$PWD/${0#./}")")"

@@ -23,7 +23,7 @@ function save_patches {
     git checkout "$TARGET_BRANCH"
     local -r UPSTREAM_REMOTE_AND_BRANCH="$(git rev-parse --abbrev-ref --symbolic-full-name @{u})"
 
-    git format-patch --no-stat -N -o "$BASE_DIR/$PATCH_DIR" "$UPSTREAM_REMOTE_AND_BRANCH"
+    git format-patch --no-stat -N -o "$(readlink -f $BASE_DIR/$PATCH_DIR)" "$UPSTREAM_REMOTE_AND_BRANCH"
 
     log "Patches for $TARGET/$TARGET_BRANCH saved to $PATCH_DIR"
 }
