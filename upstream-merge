@@ -17,4 +17,4 @@ function update {
 update Refresh master origin python3.4
 # This is just a small hack to not merge the latest changes
 cd "$BASE_DIR/Refresh"
-git reset --hard f1ed6f0174cae37de2c1051592667123cf7eba77
+git reset --hard f8e1b4e68cb48a3af399c27604c8cc106958f02b
