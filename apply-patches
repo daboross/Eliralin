@@ -23,7 +23,7 @@ function apply_patches {
 
     cd "$BASE_DIR/$ORIGIN"
 
-    git checkout -B "$ORIGIN_BRANCH"
+    git checkout "$ORIGIN_BRANCH"
 
     cd "$BASE_DIR"
 
