@@ -1,4 +1,4 @@
-From be9691dbe8e1503bcd4c09edda0689b5070dad41 Mon Sep 17 00:00:00 2001
+From 4853bb2829f510d4efe9db6bf3b35e301e7344c1 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sun, 8 Jun 2014 00:05:30 -0700
 Subject: [PATCH] Add a disabled auto-voice plugin that is basically a copied

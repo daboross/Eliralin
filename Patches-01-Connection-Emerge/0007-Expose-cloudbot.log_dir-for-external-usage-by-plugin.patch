@@ -1,4 +1,4 @@
-From 671f15eba70b2d92ce1755822bd17f0ee090ee0b Mon Sep 17 00:00:00 2001
+From cb7f1a580555aa57b70b58bda9538b475701293c Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 16 Jun 2014 22:49:48 -0700
 Subject: [PATCH] Expose cloudbot.log_dir for external usage by plugins
