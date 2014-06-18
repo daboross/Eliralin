@@ -1,7 +1,8 @@
-From 2db015c39b9ef48342064be7a2fa052433b136e0 Mon Sep 17 00:00:00 2001
+From 46dc327eae1e2e510bd02dbbeb3c4c0612f7ce61 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
-Date: Tue, 17 Jun 2014 23:30:33 -0500
-Subject: [PATCH] Change default realname to CloudBotRefresh, using cloudbot.pw
+Date: Tue, 17 Jun 2014 23:59:52 -0500
+Subject: [PATCH] Use CloudBotRefresh - http://cloudbot.pw instead of CloudBot
+ - http://git.io/refresh for the default realname
 
 
 diff --git a/config.default b/config.default

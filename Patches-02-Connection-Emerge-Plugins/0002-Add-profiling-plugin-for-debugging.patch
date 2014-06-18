@@ -1,4 +1,4 @@
-From f5e7f271dc593cc0ca5a02d4cd087fb7f7860da7 Mon Sep 17 00:00:00 2001
+From 3f9fe2592842ee9dad6b0033c0834c86029faaa0 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 11 Jun 2014 01:27:44 -0700
 Subject: [PATCH] Add profiling plugin for debugging

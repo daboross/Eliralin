@@ -1,4 +1,4 @@
-From 4704d61819ebd2c8b4eba4cd14bce38f872302bf Mon Sep 17 00:00:00 2001
+From acf073973cd3962202300e04277b10713439bdcf Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 10 Jun 2014 16:35:24 -0700
 Subject: [PATCH] Majorly redo events.py, to have a new set of non-irc-specific
@@ -11,6 +11,7 @@ Subject: [PATCH] Majorly redo events.py, to have a new set of non-irc-specific
 - Add an EventType enumeration for specifying different types of events in a non-irc-specific manner
 - Update plugins to use event.content instead of event.irc_message
 - Set event.bot when creating on connection.py, instead of setting it in child events in bot.process
+- Remove event.server, as it's irc-specific and can be easily gotten from event.conn.server
 
 diff --git a/cloudbot/core/bot.py b/cloudbot/core/bot.py
 index 5788ff6..5760519 100644
@@ -269,7 +270,7 @@ index 64bb737..3a468aa 100644
 -            asyncio.async(self.bot.process(event))
 +            asyncio.async(self.bot.process(event), loop=self.loop)
 diff --git a/cloudbot/core/events.py b/cloudbot/core/events.py
-index 949a597..a1895ff 100644
+index 949a597..62830c5 100644
 --- a/cloudbot/core/events.py
 +++ b/cloudbot/core/events.py
 @@ -1,38 +1,63 @@
@@ -412,10 +413,20 @@ index 949a597..a1895ff 100644
  
      @asyncio.coroutine
      def prepare(self):
-@@ -179,20 +217,6 @@ class BaseEvent:
-             return None
+@@ -169,30 +207,6 @@ class BaseEvent:
+             self.db = None
  
      @property
+-    def server(self):
+-        """
+-        :rtype: str
+-        """
+-        if self.conn is not None:
+-            return self.conn.server
+-        else:
+-            return None
+-
+-    @property
 -    def chan(self):
 -        """
 -        :rtype: str
@@ -433,7 +444,7 @@ index 949a597..a1895ff 100644
      def event(self):
          """
          :rtype; cloudbot.core.events.BaseEvent
-@@ -301,18 +325,18 @@ class CommandEvent(BaseEvent):
+@@ -301,18 +315,18 @@ class CommandEvent(BaseEvent):
      :type triggered_command: str
      """
  
@@ -458,7 +469,7 @@ index 949a597..a1895ff 100644
          self.hook = hook
          self.text = text
          self.triggered_command = triggered_command
-@@ -343,13 +367,14 @@ class RegexEvent(BaseEvent):
+@@ -343,13 +357,14 @@ class RegexEvent(BaseEvent):
      :type match: re.__Match
      """
  
