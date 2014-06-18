@@ -1,4 +1,4 @@
-From c9b887da87ca9b4464945dcbc3e18a6eea5cf2c8 Mon Sep 17 00:00:00 2001
+From 5cd460f2fbf6b90d0f6ff0629b99a147d7e0add7 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 10 Jun 2014 16:35:24 -0700
 Subject: [PATCH] Majorly redo events.py, to have a new set of non-irc-specific
@@ -84,7 +84,7 @@ index 5788ff6..5760519 100644
  
          # Run the tasks
 diff --git a/cloudbot/core/connection.py b/cloudbot/core/connection.py
-index 64bb737..3a468aa 100644
+index 64bb737..5eb12b1 100644
 --- a/cloudbot/core/connection.py
 +++ b/cloudbot/core/connection.py
 @@ -6,7 +6,7 @@ import logging
@@ -192,7 +192,7 @@ index 64bb737..3a468aa 100644
                      continue
                  command = noprefix_line_match.group(1)
                  params = noprefix_line_match.group(2)
-@@ -361,24 +382,62 @@ class IRCProtocol(asyncio.Protocol):
+@@ -361,24 +382,68 @@ class IRCProtocol(asyncio.Protocol):
  
              command_params = irc_param_re.findall(params)
  
@@ -238,8 +238,14 @@ index 64bb737..3a468aa 100644
 +            if event_type is EventType.message and content.count("\x01") >= 2 and content.startswith("\x01"):
 +                # Remove the first \x01, then rsplit to remove the last one, and ignore text after the last \x01
 +                ctcp_text = content[1:].rsplit("\x01", 1)[0]
-+                # this shouldn't be considered a regular message
-+                event_type = EventType.other
++                ctcp_text_split = ctcp_text.split(None, 1)
++                if ctcp_text_split[0] == "ACTION":
++                    # this is a CTCP ACTION, set event_type and content accordingly
++                    event_type = EventType.action
++                    content = ctcp_text_split[1]
++                else:
++                    # this shouldn't be considered a regular message
++                    event_type = EventType.other
 +            else:
 +                ctcp_text = None
 +

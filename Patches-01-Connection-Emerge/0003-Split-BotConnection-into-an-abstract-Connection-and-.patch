@@ -1,4 +1,4 @@
-From c7b8ab8aabd486ab9e1b26d2bbc394830278c253 Mon Sep 17 00:00:00 2001
+From c08ef8892f98fbc77deafc3a30b68a2578d08996 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 11 Jun 2014 01:09:52 -0700
 Subject: [PATCH] Split BotConnection into an abstract Connection, and an
@@ -67,7 +67,7 @@ index 5760519..173fc62 100644
                          else:
                              event.notice("Possible matches: {}".format(
 diff --git a/cloudbot/core/connection.py b/cloudbot/core/connection.py
-index 05adfce..3d1c13e 100644
+index be409c7..62cf162 100644
 --- a/cloudbot/core/connection.py
 +++ b/cloudbot/core/connection.py
 @@ -24,45 +24,36 @@ irc_command_to_event_type = {

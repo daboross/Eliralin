@@ -1,11 +1,11 @@
-From cbb6bed527e7471a7e6bff389451a2da4c366955 Mon Sep 17 00:00:00 2001
+From 9926724e27ec80c65f2b6047136129e57712c293 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 10 Jun 2014 17:21:21 -0700
 Subject: [PATCH] Merge IRCConnection into BotConnection
 
 
 diff --git a/cloudbot/core/connection.py b/cloudbot/core/connection.py
-index 3a468aa..05adfce 100644
+index 5eb12b1..be409c7 100644
 --- a/cloudbot/core/connection.py
 +++ b/cloudbot/core/connection.py
 @@ -25,24 +25,27 @@ irc_command_to_event_type = {
@@ -268,7 +268,7 @@ index 3a468aa..05adfce 100644
          return True
  
      @asyncio.coroutine
-@@ -424,7 +379,7 @@ class IRCProtocol(asyncio.Protocol):
+@@ -430,7 +385,7 @@ class IRCProtocol(asyncio.Protocol):
              # TODO: Migrate plugins using chan for storage to use chan.lower() instead so we can pass the original case
              if command_params and (len(command_params) > 2 or not command_params[0].startswith(":")):
  
@@ -277,7 +277,7 @@ index 3a468aa..05adfce 100644
                      # this is a private message - set the channel to the sender's nick
                      channel = nick.lower()
                  else:
-@@ -434,7 +389,7 @@ class IRCProtocol(asyncio.Protocol):
+@@ -440,7 +395,7 @@ class IRCProtocol(asyncio.Protocol):
  
              # Set up parsed message
              # TODO: Do we really want to send the raw `prefix` and `command_params` here?
