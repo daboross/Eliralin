@@ -1,4 +1,4 @@
-From acf073973cd3962202300e04277b10713439bdcf Mon Sep 17 00:00:00 2001
+From c9b887da87ca9b4464945dcbc3e18a6eea5cf2c8 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 10 Jun 2014 16:35:24 -0700
 Subject: [PATCH] Majorly redo events.py, to have a new set of non-irc-specific

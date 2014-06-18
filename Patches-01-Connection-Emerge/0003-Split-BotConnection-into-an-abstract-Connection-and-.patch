@@ -1,4 +1,4 @@
-From 2e942f8b44f31720cdf04279af226d585f8da90f Mon Sep 17 00:00:00 2001
+From c7b8ab8aabd486ab9e1b26d2bbc394830278c253 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 11 Jun 2014 01:09:52 -0700
 Subject: [PATCH] Split BotConnection into an abstract Connection, and an
@@ -553,7 +553,7 @@ index dd55c79..74e4867 100644
          logger.info("[{}] Created permission manager for {}.".format(conn.readable_name, conn.name))
  
 diff --git a/cloudbot/core/pluginmanager.py b/cloudbot/core/pluginmanager.py
-index 2993f0b..36a88e2 100644
+index aca910a..36a88e2 100644
 --- a/cloudbot/core/pluginmanager.py
 +++ b/cloudbot/core/pluginmanager.py
 @@ -286,7 +286,7 @@ class PluginManager:
@@ -565,45 +565,6 @@ index 2993f0b..36a88e2 100644
                  logger.debug("Valid arguments are: {} ({})".format(dir(event), event))
                  return None
          return parameters
-@@ -475,7 +475,7 @@ class Plugin:
-         if self.tables:
-             # if there are any tables
- 
--            bot.logger.info("Registering tables for {}".format(self.title))
-+            logger.info("Registering tables for {}".format(self.title))
- 
-             for table in self.tables:
-                 if not (yield from bot.loop.run_in_executor(None, table.exists, bot.db_engine)):
-@@ -488,7 +488,7 @@ class Plugin:
-         """
-         if self.tables:
-             # if there are any tables
--            bot.logger.info("Unregistering tables for {}".format(self.title))
-+            logger.info("Unregistering tables for {}".format(self.title))
- 
-             for table in self.tables:
-                 bot.db_metadata.remove(table)
-@@ -535,8 +535,7 @@ class Hook:
- 
-         if func_hook.kwargs:
-             # we should have popped all the args, so warn if there are any left
--            logging.getLogger("cloudbot").warning("Ignoring extra args {} from {}".format(
--                func_hook.kwargs, self.description))
-+            logger.warning("Ignoring extra args {} from {}".format(func_hook.kwargs, self.description))
- 
-     @property
-     def description(self):
-@@ -593,8 +592,8 @@ class RegexHook(Hook):
-         super().__init__("regex", plugin, regex_hook)
- 
-     def __repr__(self):
--        return "Regex[regexes: {}, {}]".format([regex.pattern for regex in self.regexes],
--                                               Hook.__repr__(self))
-+        return "Regex[regexes: [{}], {}]".format(", ".join(regex.pattern for regex in self.regexes),
-+                                                 Hook.__repr__(self))
- 
-     def __str__(self):
-         return "regex {} from {}".format(self.function_name, self.plugin.file_name)
 diff --git a/plugins/admin.py b/plugins/admin.py
 index e673370..4ba3007 100644
 --- a/plugins/admin.py
