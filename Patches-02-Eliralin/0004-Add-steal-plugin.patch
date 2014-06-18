@@ -1,4 +1,4 @@
-From 9336ec189928c919184be59c8760339a7a5a07af Mon Sep 17 00:00:00 2001
+From 2f583f939c9f4003f078def7546f87dcca1c676d Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:18:52 -0800
 Subject: [PATCH] Add steal plugin.
@@ -6,7 +6,7 @@ Subject: [PATCH] Add steal plugin.
 
 diff --git a/plugins/steal.py b/plugins/steal.py
 new file mode 100644
-index 0000000..098bf99
+index 0000000..8513d5f
 --- /dev/null
 +++ b/plugins/steal.py
 @@ -0,0 +1,77 @@
@@ -56,7 +56,7 @@ index 0000000..098bf99
 +        pass  # for lack of a better thing to do
 +
 +
-+@hook.command(["steal", "stealit"], autohelp=False)
++@hook.command("steal", "stealit", autohelp=False)
 +def stealit(inp, db, nick, action):
 +    """steal [username [object]] - Steals an object from a user, or a random previously stolen object."""
 +    args = inp.strip().split()

@@ -1,4 +1,4 @@
-From d0b46e885a14f3966b2e6985d8327704764f509a Mon Sep 17 00:00:00 2001
+From 0bc18b5e5b2d27e698083e9a0255c5a01506fc5c Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 16 Jun 2014 22:55:47 -0700
 Subject: [PATCH] Add an EventType enum to BaseEvent for allowing different

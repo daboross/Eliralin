@@ -1,4 +1,4 @@
-From bf6d4bf89afbf5396303a72381b28859f66c281d Mon Sep 17 00:00:00 2001
+From 3a90894d02e0702275518979d69460bff29cd55f Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 16 Jun 2014 22:51:19 -0700
 Subject: [PATCH] Add support for plugins using the old `commandname <args> --

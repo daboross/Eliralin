@@ -1,4 +1,4 @@
-From 33fc396c102007e3d336049ac7aa726ede6a6ae3 Mon Sep 17 00:00:00 2001
+From f6cd0c94f23a74d3e7ff96e9d98a07cf99eb8d0f Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:19:10 -0800
 Subject: [PATCH] Create eliralin_utility.py for extras
@@ -6,7 +6,7 @@ Subject: [PATCH] Create eliralin_utility.py for extras
 
 diff --git a/plugins/eliralin_utility.py b/plugins/eliralin_utility.py
 new file mode 100644
-index 0000000..908fc8b
+index 0000000..77f54b5
 --- /dev/null
 +++ b/plugins/eliralin_utility.py
 @@ -0,0 +1,116 @@
@@ -17,7 +17,7 @@ index 0000000..908fc8b
 +from cloudbot import hook
 +
 +@asyncio.coroutine
-+@hook.command(["josephus", "jose"])
++@hook.command("josephus", "jose")
 +def josephus(text):
 +    """[size] [every x] [starting person] - calculates who dies last """
 +    split = text.split()
@@ -47,7 +47,7 @@ index 0000000..908fc8b
 +
 +
 +@asyncio.coroutine
-+@hook.command(["hug", "huggle"], autohelp=False)
++@hook.command("hug", "huggle", autohelp=False)
 +def huggle(text, action, nick):
 +    """[user] - huggles [user]"""
 +    if text:

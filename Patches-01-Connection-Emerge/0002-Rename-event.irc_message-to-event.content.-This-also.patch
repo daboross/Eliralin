@@ -1,4 +1,4 @@
-From 8d9f33482a08c7a2333c5a062211bd977bb6ad92 Mon Sep 17 00:00:00 2001
+From 173553ca12f99bac51505648b11bc1b778f7dec2 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 10 Jun 2014 16:35:24 -0700
 Subject: [PATCH] Rename event.irc_message to event.content. This also only
