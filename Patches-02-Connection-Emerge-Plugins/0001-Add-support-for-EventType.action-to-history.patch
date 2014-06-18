@@ -1,0 +1,56 @@
+From b66f94cc50918a078fec707abf363cc652e6327e Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Wed, 18 Jun 2014 18:00:38 -0500
+Subject: [PATCH] Add support for EventType.action to history
+
+
+diff --git a/plugins/history.py b/plugins/history.py
+index 7408c5a..f55bd20 100644
+--- a/plugins/history.py
++++ b/plugins/history.py
+@@ -30,8 +30,10 @@ def track_seen(event, db, conn):
+     db_init(db, conn)
+     # keep private messages private
+     if event.chan[:1] == "#" and not re.findall('^s/.*/.*/$', event.content.lower()):
+-        db.execute("insert or replace into seen_user(name, time, quote, chan, host) values(:name,:time,:quote,:chan,:host)",
+-                   {'name': event.nick.lower(), 'time': time.time(), 'quote': event.content, 'chan': event.chan, 'host': event.mask})
++        db.execute(
++            "insert or replace into seen_user(name, time, quote, chan, host) values(:name,:time,:quote,:chan,:host)",
++            {'name': event.nick.lower(), 'time': time.time(), 'quote': event.content, 'chan': event.chan,
++             'host': event.mask})
+         db.commit()
+ 
+ 
+@@ -50,13 +52,19 @@ def track_history(event, message_time, conn):
+     history.append(data)
+ 
+ 
+-@hook.event(EventType.message, ignorebots=False, singlethread=True)
++@hook.event([EventType.message, EventType.action], ignorebots=False, singlethread=True)
+ def chat_tracker(event, db, conn):
+     """
+     :type db: sqlalchemy.orm.Session
+     :type event: cloudbot.events.BaseEvent
+     :type conn: cloudbot.connection.Connection
+     """
++
++    if event.type is EventType.message:
++        event.content = "* {}".format(event.content)
++    elif event.type is EventType.action:
++        event.content = "<{}> {}".format(event.nick, event.content)
++
+     message_time = time.time()
+     track_seen(event, db, conn)
+     track_history(event, message_time, conn)
+@@ -106,6 +114,8 @@ def seen(text, nick, chan, db, event, conn):
+         if last_seen[2][0:1] == "\x01":
+             return '{} was last seen {} ago: * {} {}'.format(text, reltime, text,
+                                                              last_seen[2][8:-1])
++        elif last_seen[2].startswith("* ") or last_seen[2].startswith("<"):  # new format
++            return '{} was last seen {} ago: {}'.format(text, reltime, last_seen[2])
+         else:
+             return '{} was last seen {} ago saying: {}'.format(text, reltime, last_seen[2])
+     else:
+-- 
+2.0.0
+
