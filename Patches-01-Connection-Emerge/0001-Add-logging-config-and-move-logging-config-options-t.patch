@@ -1,0 +1,98 @@
+From 0bee9b09fa11c63770549836b6c40ce9127e20bf Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Tue, 10 Jun 2014 16:24:08 -0700
+Subject: [PATCH] Add logging config and move logging config options to it
+
+
+diff --git a/cloudbot/core/pluginmanager.py b/cloudbot/core/pluginmanager.py
+index 2993f0b..3b8da46 100644
+--- a/cloudbot/core/pluginmanager.py
++++ b/cloudbot/core/pluginmanager.py
+@@ -158,8 +158,7 @@ class PluginManager:
+         for onload_hook in plugin.run_on_load:
+             success = yield from self.launch(onload_hook, events.BaseEvent(bot=self.bot, hook=onload_hook))
+             if not success:
+-                logger.warning(
+-                    "Not registering hooks from plugin {}: onload hook errored".format(plugin.title))
++                logger.warning("Not registering hooks from plugin {}: onload hook errored".format(plugin.title))
+ 
+                 # unregister databases
+                 plugin.unregister_tables(self.bot)
+@@ -258,7 +257,8 @@ class PluginManager:
+         # remove last reference to plugin
+         del self.plugins[plugin.file_name]
+ 
+-        logger.info("Unloaded all plugins from {}".format(plugin.title))
++        if self.bot.config.get("logging", {}).get("show_plugin_loading", True):
++            logger.info("Unloaded all plugins from {}".format(plugin.title))
+ 
+         return True
+ 
+@@ -268,8 +268,9 @@ class PluginManager:
+ 
+         :type hook: Hook
+         """
+-        logger.info("Loaded {}".format(hook))
+-        logger.debug("Loaded {}".format(repr(hook)))
++        if self.bot.config.get("logging", {}).get("show_plugin_loading", True):
++            logger.info("Loaded {}".format(hook))
++            logger.debug("Loaded {}".format(repr(hook)))
+ 
+     def _prepare_parameters(self, hook, event):
+         """
+@@ -593,8 +594,7 @@ class RegexHook(Hook):
+         super().__init__("regex", plugin, regex_hook)
+ 
+     def __repr__(self):
+-        return "Regex[regexes: {}, {}]".format([regex.pattern for regex in self.regexes],
+-                                               Hook.__repr__(self))
++        return "Regex[regexes: [{}], {}]".format(", ".join(regex.pattern for regex in self.regexes), Hook.__repr__(self))
+ 
+     def __str__(self):
+         return "regex {} from {}".format(self.function_name, self.plugin.file_name)
+@@ -621,7 +621,7 @@ class RawHook(Hook):
+         return "Raw[events: {}, {}]".format(list(self.triggers), Hook.__repr__(self))
+ 
+     def __str__(self):
+-        return "events {} ({}) from {}".format(self.function_name, ",".join(self.triggers), self.plugin.file_name)
++        return "irc raw {} ({}) from {}".format(self.function_name, ",".join(self.triggers), self.plugin.file_name)
+ 
+ 
+ class SieveHook(Hook):
+diff --git a/config.default b/config.default
+index 78c7123..9248a53 100644
+--- a/config.default
++++ b/config.default
+@@ -69,6 +69,9 @@
+         "console_debug": false,
+         "file_debug": true
+     },
+-    "skip_motd": false,
+-    "skip_server_info": false
++    "logging": {
++        "show_plugin_loading": true,
++        "show_motd": true,
++        "show_server_info": true
++    }
+ }
+diff --git a/plugins/log.py b/plugins/log.py
+index fbbb1cc..6522fba 100644
+--- a/plugins/log.py
++++ b/plugins/log.py
+@@ -56,10 +56,10 @@ def beautify(event):
+     :type event: cloudbot.core.events.BaseEvent
+     :rtype: str
+     """
+-    if event.bot.config.get("skip_motd", False) and event.irc_command in ["375", "372", "376"]:
++    logging = event.bot.config.get("logging", {})
++    if event.irc_command in ("375", "372", "376") and not logging.get("show_motd", True):
+         return None
+-    if event.bot.config.get("skip_server_info", False) and event.irc_command in ["003", "005", "250", "251", "252",
+-                                                                                 "253", "254", "255", "256"]:
++    if event.irc_command in ("003", "005", "250", "251", "252", "253", "254", "255", "256") and not logging.get("show_server_info", True):
+         return None
+     if event.irc_command == "PING":
+         return None
+-- 
+2.0.0
+

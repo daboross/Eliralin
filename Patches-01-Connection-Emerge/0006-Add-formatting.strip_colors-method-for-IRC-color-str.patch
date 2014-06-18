@@ -1,0 +1,33 @@
+From 400c090bfef6577ffd3ef1ec6d99e39c630bebf9 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Mon, 16 Jun 2014 22:48:37 -0700
+Subject: [PATCH] Add formatting.strip_colors method for IRC color stripping
+
+
+diff --git a/cloudbot/util/formatting.py b/cloudbot/util/formatting.py
+index 41097b5..3f1fb0a 100644
+--- a/cloudbot/util/formatting.py
++++ b/cloudbot/util/formatting.py
+@@ -145,6 +145,19 @@ def truncate_words(content, length=10, suffix='...'):
+         return out + suffix
+ 
+ 
++irc_color_re = re.compile(r"(\x03(\d+,\d+|\d)|[\x0f\x02\x16\x1f])")
++
++
++def strip_colors(text):
++    """
++    :param text: Text to strip
++    :return: Text stripped of IRC colors
++    :type text: str
++    :rtype: str
++    """
++    return irc_color_re.sub('', text)
++
++
+ # from <http://stackoverflow.com/questions/250357/smart-truncate-in-python>
+ def truncate_str(content, length=100, suffix='...'):
+     """Truncates a string after a certain number of chars.
+-- 
+2.0.0
+

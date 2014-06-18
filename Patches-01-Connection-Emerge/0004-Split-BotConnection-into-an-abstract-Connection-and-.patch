@@ -1,0 +1,1052 @@
+From a55c918035e6c2165b93f14670fdb0622130600d Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Wed, 11 Jun 2014 01:09:52 -0700
+Subject: [PATCH] Split BotConnection into an abstract Connection, and an
+ implementation IrcConnection.
+
+Also:
+- Change realname to point to cloudbot.pw
+- Fix QUIT messages not being displayed when being killed
+- Change conn.cmd(name, [arg1, arg2]) to conn.cmd(name, arg1, arg2)
+- Add conn.action and conn.notice for non-irc-specific action/notices
+
+diff --git a/cloudbot/core/bot.py b/cloudbot/core/bot.py
+index 80c21ef..5c267e7 100644
+--- a/cloudbot/core/bot.py
++++ b/cloudbot/core/bot.py
+@@ -10,7 +10,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
+ from sqlalchemy.schema import MetaData
+ 
+ import cloudbot
+-from cloudbot.core.connection import BotConnection
++from cloudbot.core.connection import Connection, IrcConnection
+ from cloudbot.core.config import Config
+ from cloudbot.core.reloader import PluginReloader
+ from cloudbot.core.pluginmanager import PluginManager
+@@ -32,7 +32,7 @@ class CloudBot:
+     """
+     :type start_time: float
+     :type running: bool
+-    :type connections: list[BotConnection]
++    :type connections: list[Connection | IrcConnection]
+     :type data_dir: bytes
+     :type config: core.config.Config
+     :type plugin_manager: PluginManager
+@@ -125,10 +125,9 @@ class CloudBot:
+             server = conf['connection']['server']
+             port = conf['connection'].get('port', 6667)
+ 
+-            self.connections.append(BotConnection(self, name, server, nick, config=conf,
+-                                                  port=port, channels=conf['channels'],
+-                                                  use_ssl=conf['connection'].get('ssl', False),
+-                                                  readable_name=readable_name))
++            self.connections.append(IrcConnection(self, name, nick, config=conf, channels=conf['channels'],
++                                                  readable_name=readable_name, server=server, port=port,
++                                                  use_ssl=conf['connection'].get('ssl', False)))
+             logger.debug("[{}] Created connection.".format(readable_name))
+ 
+     @asyncio.coroutine
+@@ -145,7 +144,7 @@ class CloudBot:
+             self.reloader.stop()
+ 
+         for connection in self.connections:
+-            if not connection._connected:
++            if not connection.connected:
+                 # Don't quit a connection that hasn't connected
+                 continue
+             logger.debug("[{}] Closing connection.".format(connection.readable_name))
+@@ -155,7 +154,7 @@ class CloudBot:
+         yield from asyncio.sleep(1.0)  # wait for 'QUIT' calls to take affect
+ 
+         for connection in self.connections:
+-            if not connection._connected:
++            if not connection.connected:
+                 # Don't close a connection that hasn't connected
+                 continue
+             connection.close()
+@@ -223,7 +222,8 @@ class CloudBot:
+                 command = match.group(1).lower()
+                 if command in self.plugin_manager.commands:
+                     command_hook = self.plugin_manager.commands[command]
+-                    command_event = CommandEvent(hook=command_hook, text=match.group(2).strip(), triggered_command=command, base_event=event)
++                    command_event = CommandEvent(hook=command_hook, text=match.group(2).strip(),
++                                                 triggered_command=command, base_event=event)
+                     tasks.append(self.plugin_manager.launch(command_hook, command_event))
+                 else:
+                     potential_matches = []
+@@ -233,7 +233,8 @@ class CloudBot:
+                     if potential_matches:
+                         if len(potential_matches) == 1:
+                             command_hook = potential_matches[0][1]
+-                            command_event = CommandEvent(hook=command_hook, text=match.group(2).strip(), triggered_command=command, base_event=event)
++                            command_event = CommandEvent(hook=command_hook, text=match.group(2).strip(),
++                                                         triggered_command=command, base_event=event)
+                             tasks.append(self.plugin_manager.launch(command_hook, command_event))
+                         else:
+                             event.notice("Possible matches: {}".format(
+diff --git a/cloudbot/core/connection.py b/cloudbot/core/connection.py
+index a29c0f0..f5a3d14 100644
+--- a/cloudbot/core/connection.py
++++ b/cloudbot/core/connection.py
+@@ -16,45 +16,36 @@ irc_netmask_re = re.compile(r"([^!@]*)!([^@]*)@(.*)")
+ irc_param_re = re.compile(r"(?:^|(?<= ))(:.*|[^ ]+)")
+ 
+ 
+-class BotConnection:
++class Connection:
+     """
+-    A BotConnection represents each connection the bot makes to a single server
++    A Connection representing each connection the bot makes to a single server
+     :type bot: cloudbot.core.bot.CloudBot
+     :type loop: asyncio.events.AbstractEventLoop
+     :type name: str
+     :type readable_name: str
+     :type channels: list[str]
+     :type config: dict[str, unknown]
+-    :type use_ssl: bool
+-    :type server: str
+-    :type port: int
+     :type nick: str
+     :type vars: dict
+     :type history: dict[str, list[tuple]]
+     :type permissions: PermissionManager
+-    :type _connected: bool
+-    :type _ignore_cert_errors: bool
+     """
+ 
+-    def __init__(self, bot, name, server, nick, port=6667, use_ssl=False, channels=None, config=None,
+-                 readable_name=None, ignore_cert_errors=True, timeout=300):
++    def __init__(self, bot, name, nick, *, readable_name, channels=None, config=None):
+         """
+         :type bot: cloudbot.core.bot.CloudBot
+         :type name: str
+-        :type server: str
++        :type readable_name: str
+         :type nick: str
+-        :type port: int
+-        :type use_ssl: bool
+         :type channels: list[str]
+         :type config: dict[str, unknown]
+         """
+         self.bot = bot
+         self.loop = bot.loop
+         self.name = name
+-        if readable_name:
+-            self.readable_name = readable_name
+-        else:
+-            self.readable_name = name
++        self.nick = nick
++        self.readable_name = readable_name
++
+         if channels is None:
+             self.channels = []
+         else:
+@@ -64,18 +55,116 @@ class BotConnection:
+             self.config = {}
+         else:
+             self.config = config
++        self.vars = {}
++        self.history = {}
++
++        # create permissions manager
++        self.permissions = PermissionManager(self)
++
++    def describe_server(self):
++        raise NotImplementedError
++
++    @asyncio.coroutine
++    def connect(self):
++        """
++        Connects to the server, or reconnects if already connected.
++        """
++        raise NotImplementedError
++
++    def quit(self, reason=None):
++        """
++        Gracefully disconnects from the server with reason <reason>, close() should be called shortly after.
++        """
++        raise NotImplementedError
++
++    def close(self):
++        """
++        Disconnects from the server, only for use when this Connection object will *not* ever be connected again
++        """
++        raise NotImplementedError
++
++    def message(self, target, text):
++        """
++        Sends a message to the given target
++        :type target: str
++        :type text: str
++        """
++        raise NotImplementedError
++
++    def action(self, target, text):
++        """
++        Sends an action (or /me) to the given target channel
++        :type target: str
++        :type text: str
++        """
++        raise NotImplementedError
++
++    def notice(self, target, text):
++        """
++        Sends a notice to the given target
++        :type target: str
++        :type text: str
++        """
++        raise NotImplementedError
++
++    def set_nick(self, nick):
++        """
++        Sets the bot's nickname
++        :type nick: str
++        """
++        raise NotImplementedError
++
++    def join(self, channel):
++        """
++        Joins a given channel
++        :type channel: str
++        """
++        raise NotImplementedError
++
++    def part(self, channel):
++        """
++        Parts a given channel
++        :type channel: str
++        """
++        raise NotImplementedError
++
++    @property
++    def connected(self):
++        raise NotImplementedError
++
++
++class IrcConnection(Connection):
++    """
++    An implementation of Connection for IRC.
++    :type use_ssl: bool
++    :type server: str
++    :type port: int
++    :type _connected: bool
++    :type _ignore_cert_errors: bool
++    """
++
++    def __init__(self, bot, name, nick, *, readable_name, channels=None, config=None,
++                 server, port=6667, use_ssl=False, ignore_cert_errors=True, timeout=300):
++        """
++        :type bot: cloudbot.core.bot.CloudBot
++        :type name: str
++        :type readable_name: str
++        :type nick: str
++        :type channels: list[str]
++        :type config: dict[str, unknown]
++        :type server: str
++        :type port: int
++        :type use_ssl: bool
++        :type ignore_cert_errors: bool
++        :type timeout: int
++        """
++        super().__init__(bot, name, nick, readable_name=readable_name, channels=channels, config=config)
+ 
+         self.use_ssl = use_ssl
+         self._ignore_cert_errors = ignore_cert_errors
+         self._timeout = timeout
+         self.server = server
+         self.port = port
+-        self.nick = nick
+-        self.vars = {}
+-        self.history = {}
+-
+-        # create permissions manager
+-        self.permissions = PermissionManager(self)
+ 
+         # create SSL context
+         if self.use_ssl:
+@@ -91,6 +180,7 @@ class BotConnection:
+         self._connected = False
+         # if we've quit
+         self._quit = False
++
+         # transport and protocol
+         self._transport = None
+         self._protocol = None
+@@ -106,11 +196,12 @@ class BotConnection:
+         """
+         Connects to the IRC server, or reconnects if already connected.
+         """
++        # connect to the irc server
+         if self._quit:
+             # we've quit, so close instead (because this has probably been called because of EOF received)
+             self.close()
+             return
+-        # connect to the irc server
++
+         if self._connected:
+             logger.info("[{}] Reconnecting".format(self.readable_name))
+             self._transport.close()
+@@ -119,82 +210,78 @@ class BotConnection:
+             logger.info("[{}] Connecting".format(self.readable_name))
+ 
+         self._transport, self._protocol = yield from self.loop.create_connection(
+-            lambda: IRCProtocol(self), host=self.server, port=self.port, ssl=self.ssl_context,
+-        )
++            lambda: _IrcProtocol(self), host=self.server, port=self.port, ssl=self.ssl_context)
+ 
+         # send the password, nick, and user
+         self.set_pass(self.config["connection"].get("password"))
+         self.set_nick(self.nick)
+-        self.cmd("USER", [self.config.get('user', 'cloudbot'), "3", "*",
+-                          self.config.get('realname', 'CloudBot - http://git.io/cloudbot')])
++        self.cmd("USER", self.config.get('user', 'cloudbot'), "3", "*",
++                 self.config.get('realname', 'CloudBotRefresh - http://cloudbot.pw'))
+ 
+     def quit(self, reason=None):
+         if self._quit:
+             return
+         self._quit = True
+         if reason:
+-            self.cmd("QUIT", [reason])
++            self.cmd("QUIT", reason)
+         else:
+             self.cmd("QUIT")
+ 
+     def close(self):
++        if not self._quit:
++            self.quit()
+         if not self._connected:
+             return
++
+         self._transport.close()
+         self._connected = False
+ 
+-    def set_pass(self, password):
+-        """
+-        :type password: str
+-        """
+-        if password:
+-            self.cmd("PASS", [password])
++    def message(self, target, text):
++        self.cmd("PRIVMSG", target, text)
++
++    def action(self, target, text):
++        self.ctcp(target, "ACTION", text)
++
++    def notice(self, target, text):
++        self.cmd("NOTICE", target, text)
+ 
+     def set_nick(self, nick):
+-        """
+-        :type nick: str
+-        """
+-        self.cmd("NICK", [nick])
++        self.cmd("NICK", nick)
+ 
+     def join(self, channel):
+-        """ makes the bot join a channel
+-        :type channel: str
+-        """
+         self.send("JOIN {}".format(channel))
+         if channel not in self.channels:
+             self.channels.append(channel)
+ 
+     def part(self, channel):
+-        """ makes the bot leave a channel
+-        :type channel: str
+-        """
+-        self.cmd("PART", [channel])
++        self.cmd("PART", channel)
+         if channel in self.channels:
+             self.channels.remove(channel)
+ 
+-    def msg(self, target, text):
+-        """ makes the bot send a PRIVMSG to a target
+-        :type text: str
+-        :type target: str
+-        """
+-        self.cmd("PRIVMSG", [target, text])
++    def set_pass(self, password):
++        if not password:
++            return
++        self.cmd("PASS", password)
+ 
+     def ctcp(self, target, ctcp_type, text):
+-        """ makes the bot send a PRIVMSG CTCP to a target
++        """
++        Makes the bot send a PRIVMSG CTCP of type <ctcp_type> to the target
+         :type ctcp_type: str
+         :type text: str
+         :type target: str
+         """
+         out = "\x01{} {}\x01".format(ctcp_type, text)
+-        self.cmd("PRIVMSG", [target, out])
++        self.cmd("PRIVMSG", target, out)
+ 
+-    def cmd(self, command, params=None):
++    def cmd(self, command, *params):
+         """
++        Sends a raw IRC command of type <command> with params <params>
+         :param command: The IRC command to send
+         :param params: The params to the IRC command
+         :type command: str
+-        :type params: list[str]
++        :type params: (str)
+         """
++        params = list(params)  # turn the tuple of parameters into a list
+         if params:
+             params[-1] = ':' + params[-1]
+             self.send("{} {}".format(command, ' '.join(params)))
+@@ -208,20 +295,30 @@ class BotConnection:
+         """
+         if not self._connected:
+             raise ValueError("Connection must be connected to irc server to use send")
++        self.loop.call_soon_threadsafe(self._send, line)
++
++    def _send(self, line):
++        """
++        Sends a raw IRC line unchecked. Doesn't do connected check, and is *not* threadsafe
++        :type line: str
++        """
+         logger.info("[{}] >> {}".format(self.readable_name, line))
+-        self.loop.call_soon_threadsafe(asyncio.async, self._protocol.send(line))
++        asyncio.async(self._protocol.send(line), loop=self.loop)
+ 
++    @property
++    def connected(self):
++        return self._connected
+ 
+-class IRCProtocol(asyncio.Protocol):
++
++class _IrcProtocol(asyncio.Protocol):
+     def __init__(self, conn):
+         """
+-        :type conn: BotConnection
++        :type conn: IrcConnection
+         """
+         self.loop = conn.loop
+-        self.readable_name = conn.readable_name
+-        self.describe_server = lambda: conn.describe_server()
+-        self.conn = conn
+         self.bot = conn.bot
++        self.conn = conn
++
+         # input buffer
+         self._input_buffer = b""
+         # connected
+@@ -231,7 +328,7 @@ class IRCProtocol(asyncio.Protocol):
+         self.transport = None
+ 
+         # Future that waits until we are connected
+-        self._connected_future = asyncio.Future()
++        self._connected_future = asyncio.Future(loop=self.loop)
+ 
+     def connection_made(self, transport):
+         self.transport = transport
+@@ -243,18 +340,18 @@ class IRCProtocol(asyncio.Protocol):
+     def connection_lost(self, exc):
+         self._connected = False
+         # create a new connected_future for when we are connected.
+-        self._connected_future = asyncio.Future()
++        self._connected_future = asyncio.Future(loop=self.loop)
+         if exc is None:
+             # we've been closed intentionally, so don't reconnect
+             return
+-        logger.exception("[{}] Connection lost.".format(self.readable_name))
++        logger.exception("[{}] Connection lost.".format(self.conn.readable_name))
+         asyncio.async(self.conn.connect(), loop=self.loop)
+ 
+     def eof_received(self):
+         self._connected = False
+         # create a new connected_future for when we are connected.
+-        self._connected_future = asyncio.Future()
+-        logger.info("[{}] EOF received.".format(self.readable_name))
++        self._connected_future = asyncio.Future(loop=self.loop)
++        logger.info("[{}] EOF received.".format(self.conn.readable_name))
+         asyncio.async(self.conn.connect(), loop=self.loop)
+         return True
+ 
+@@ -269,18 +366,18 @@ class IRCProtocol(asyncio.Protocol):
+ 
+     def data_received(self, data):
+         self._input_buffer += data
++
+         while b"\r\n" in self._input_buffer:
+-            line, self._input_buffer = self._input_buffer.split(b"\r\n", 1)
+-            line = line.decode()
++            line_data, self._input_buffer = self._input_buffer.split(b"\r\n", 1)
++            line = line_data.decode()
+ 
+             # parse the line into a message
+             if line.startswith(":"):
+                 prefix_line_match = irc_prefix_re.match(line)
+                 if prefix_line_match is None:
+                     logger.critical("[{}] Received invalid IRC line '{}' from {}".format(
+-                        self.readable_name, line, self.describe_server()
+-                    ))
+-                    continue
++                        self.conn.readable_name, line, self.conn.describe_server()))
++                    return
+ 
+                 netmask_prefix, command, params = prefix_line_match.groups()
+                 prefix = ":" + netmask_prefix  # TODO: Do we need to know this?
+@@ -301,9 +398,8 @@ class IRCProtocol(asyncio.Protocol):
+                 noprefix_line_match = irc_noprefix_re.match(line)
+                 if noprefix_line_match is None:
+                     logger.critical("[{}] Received invalid IRC line '{}' from {}".format(
+-                        self.readable_name, line, self.describe_server()
+-                    ))
+-                    continue
++                        self.conn.readable_name, line, self.conn.describe_server()))
++                    return
+                 command = noprefix_line_match.group(1)
+                 params = noprefix_line_match.group(2)
+                 nick = None
+@@ -324,7 +420,7 @@ class IRCProtocol(asyncio.Protocol):
+ 
+             # Reply to pings immediately
+             if command == "PING":
+-                asyncio.async(self.send("PONG :" + command_params[-1]))
++                asyncio.async(self.send("PONG :" + command_params[-1]), loop=self.loop)
+ 
+             # Set up parsed message
+             # TODO: Do we really want to send the raw `prefix` and `command_params` here?
+@@ -332,4 +428,4 @@ class IRCProtocol(asyncio.Protocol):
+                               irc_raw=line, irc_prefix=prefix, irc_command=command, irc_paramlist=command_params)
+ 
+             # handle the message, async
+-            asyncio.async(self.bot.process(event))
++            asyncio.async(self.bot.process(event), loop=self.loop)
+diff --git a/cloudbot/core/events.py b/cloudbot/core/events.py
+index bcf574b..c0de108 100644
+--- a/cloudbot/core/events.py
++++ b/cloudbot/core/events.py
+@@ -8,7 +8,7 @@ logger = logging.getLogger("cloudbot")
+ class BaseEvent:
+     """
+     :type bot: cloudbot.core.bot.CloudBot
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     :type hook: cloudbot.core.pluginmanager.Hook
+     :type content: str
+     :type nick: str
+@@ -47,7 +47,7 @@ class BaseEvent:
+         :param irc_paramlist: The list of params for the IRC command. If the last param is a content param, the ':'
+                                 should be removed from the front.
+         :type bot: cloudbot.core.bot.CloudBot
+-        :type conn: cloudbot.core.connection.BotConnection
++        :type conn: cloudbot.core.connection.Connection
+         :type hook: cloudbot.core.pluginmanager.Hook
+         :type base_event: cloudbot.core.events.BaseEvent
+         :type content: str
+@@ -173,16 +173,6 @@ class BaseEvent:
+             self.db = None
+ 
+     @property
+-    def server(self):
+-        """
+-        :rtype: str
+-        """
+-        if self.conn is not None:
+-            return self.conn.server
+-        else:
+-            return None
+-
+-    @property
+     def chan(self):
+         """
+         :rtype: str
+@@ -223,7 +213,7 @@ class BaseEvent:
+             if self.chan is None:
+                 raise ValueError("Target must be specified when chan is not assigned")
+             target = self.chan
+-        self.conn.msg(target, message)
++        self.conn.message(target, message)
+ 
+     def reply(self, message, target=None):
+         """sends a message to the current channel/user with a prefix
+@@ -236,9 +226,9 @@ class BaseEvent:
+             target = self.chan
+ 
+         if target == self.nick:
+-            self.conn.msg(target, message)
++            self.conn.message(target, message)
+         else:
+-            self.conn.msg(target, "({}) {}".format(self.nick, message))
++            self.conn.message(target, "({}) {}".format(self.nick, message))
+ 
+     def action(self, message, target=None):
+         """sends an action to the current channel/user or a specific channel/user
+@@ -250,7 +240,7 @@ class BaseEvent:
+                 raise ValueError("Target must be specified when chan is not assigned")
+             target = self.chan
+ 
+-        self.conn.ctcp(target, "ACTION", message)
++        self.conn.action(target, message)
+ 
+     def ctcp(self, message, ctcp_type, target=None):
+         """sends an ctcp to the current channel/user or a specific channel/user
+@@ -262,6 +252,9 @@ class BaseEvent:
+             if self.chan is None:
+                 raise ValueError("Target must be specified when chan is not assigned")
+             target = self.chan
++        if not hasattr(self.conn, "ctcp"):
++            raise ValueError("CTCP can only be used on IRC connections")
++        # noinspection PyUnresolvedReferences
+         self.conn.ctcp(target, ctcp_type, message)
+ 
+     def notice(self, message, target=None):
+@@ -274,7 +267,7 @@ class BaseEvent:
+                 raise ValueError("Target must be specified when nick is not assigned")
+             target = self.nick
+ 
+-        self.conn.cmd('NOTICE', [target, message])
++        self.conn.notice(target, message)
+ 
+     def has_permission(self, permission, notice=True):
+         """ returns whether or not the current user has a given permission
+diff --git a/cloudbot/core/permissions.py b/cloudbot/core/permissions.py
+index dd55c79..74e4867 100644
+--- a/cloudbot/core/permissions.py
++++ b/cloudbot/core/permissions.py
+@@ -16,7 +16,7 @@ class PermissionManager(object):
+ 
+     def __init__(self, conn):
+         """
+-        :type conn: cloudbot.core.connection.BotConnection
++        :type conn: cloudbot.core.connection.Connection
+         """
+         logger.info("[{}] Created permission manager for {}.".format(conn.readable_name, conn.name))
+ 
+diff --git a/cloudbot/core/pluginmanager.py b/cloudbot/core/pluginmanager.py
+index 3b8da46..90eded5 100644
+--- a/cloudbot/core/pluginmanager.py
++++ b/cloudbot/core/pluginmanager.py
+@@ -287,7 +287,7 @@ class PluginManager:
+                 parameters.append(value)
+             else:
+                 logger.error("Plugin {} asked for invalid argument '{}', cancelling execution!"
+-                                      .format(hook.description, required_arg))
++                             .format(hook.description, required_arg))
+                 logger.debug("Valid arguments are: {} ({})".format(dir(event), event))
+                 return None
+         return parameters
+@@ -476,7 +476,7 @@ class Plugin:
+         if self.tables:
+             # if there are any tables
+ 
+-            bot.logger.info("Registering tables for {}".format(self.title))
++            logger.info("Registering tables for {}".format(self.title))
+ 
+             for table in self.tables:
+                 if not (yield from bot.loop.run_in_executor(None, table.exists, bot.db_engine)):
+@@ -489,7 +489,7 @@ class Plugin:
+         """
+         if self.tables:
+             # if there are any tables
+-            bot.logger.info("Unregistering tables for {}".format(self.title))
++            logger.info("Unregistering tables for {}".format(self.title))
+ 
+             for table in self.tables:
+                 bot.db_metadata.remove(table)
+@@ -536,8 +536,7 @@ class Hook:
+ 
+         if func_hook.kwargs:
+             # we should have popped all the args, so warn if there are any left
+-            logging.getLogger("cloudbot").warning("Ignoring extra args {} from {}".format(
+-                func_hook.kwargs, self.description))
++            logger.warning("Ignoring extra args {} from {}".format(func_hook.kwargs, self.description))
+ 
+     @property
+     def description(self):
+@@ -594,7 +593,8 @@ class RegexHook(Hook):
+         super().__init__("regex", plugin, regex_hook)
+ 
+     def __repr__(self):
+-        return "Regex[regexes: [{}], {}]".format(", ".join(regex.pattern for regex in self.regexes), Hook.__repr__(self))
++        return "Regex[regexes: [{}], {}]".format(", ".join(regex.pattern for regex in self.regexes),
++                                                 Hook.__repr__(self))
+ 
+     def __str__(self):
+         return "regex {} from {}".format(self.function_name, self.plugin.file_name)
+diff --git a/config.default b/config.default
+index 9248a53..29a3b86 100644
+--- a/config.default
++++ b/config.default
+@@ -11,7 +11,7 @@
+             },
+             "nick": "MyCloudBot",
+             "user": "cloudbot",
+-            "real_name": "CloudBot - http://git.io/refresh",
++            "real_name": "CloudBotRefresh - http://cloudbot.pw",
+             "channels": ["#cloudbot", "#cloudbot2"],
+             "disabled_commands": [],
+             "acls": {},
+diff --git a/plugins/admin.py b/plugins/admin.py
+index e673370..4ba3007 100644
+--- a/plugins/admin.py
++++ b/plugins/admin.py
+@@ -8,7 +8,7 @@ from cloudbot import hook
+ @hook.command("groups", "listgroups", "permgroups", permissions=["permissions_users"], autohelp=False)
+ def get_permission_groups(conn):
+     """- lists all valid groups
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     """
+     return "Valid groups: {}".format(conn.permissions.get_groups())
+ 
+@@ -18,7 +18,7 @@ def get_permission_groups(conn):
+ def get_group_permissions(text, conn, notice):
+     """<group> - lists permissions given to <group>
+     :type text: str
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     """
+     group = text.strip().lower()
+     permission_manager = conn.permissions
+@@ -37,7 +37,7 @@ def get_group_permissions(text, conn, notice):
+ def get_group_users(text, conn, notice):
+     """<group> - lists users in <group>
+     :type text: str
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     """
+     group = text.strip().lower()
+     permission_manager = conn.permissions
+@@ -56,7 +56,7 @@ def get_group_users(text, conn, notice):
+ def get_user_permissions(text, conn, mask, has_permission, notice):
+     """[user] - lists all permissions given to [user], or the caller if no user is specified
+     :type text: str
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     :type mask: str
+     """
+     if text:
+@@ -81,7 +81,7 @@ def get_user_permissions(text, conn, mask, has_permission, notice):
+ def get_user_groups(text, conn, mask, has_permission, notice):
+     """[user] - lists all permissions given to [user], or the caller if no user is specified
+     :type text: str
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     :type mask: str
+     """
+     if text:
+@@ -107,7 +107,7 @@ def remove_permission_user(text, bot, conn, notice, reply):
+     """<user> [group] - removes <user> from [group], or from all groups if no group is specified
+     :type text: str
+     :type bot: cloudbot.core.bot.CloudBot
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     """
+     split = text.split()
+     if len(split) > 2:
+@@ -162,7 +162,7 @@ def remove_permission_user(text, bot, conn, notice, reply):
+ def add_permissions_user(text, conn, bot, notice, reply):
+     """<user> <group> - adds <user> to <group>
+     :type text: str
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     :type bot: cloudbot.core.bot.CloudBot
+     """
+     split = text.split()
+@@ -229,7 +229,7 @@ def restart(text, bot):
+ def join(text, conn, notice):
+     """<channel> - joins <channel>
+     :type text: str
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     """
+     for target in text.split():
+         if not target.startswith("#"):
+@@ -243,7 +243,7 @@ def join(text, conn, notice):
+ def part(text, conn, chan, notice):
+     """[#channel] - parts [#channel], or the caller's channel if no channel is specified
+     :type text: str
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     :type chan: str
+     """
+     if text:
+@@ -262,7 +262,7 @@ def part(text, conn, chan, notice):
+ def cycle(text, conn, chan, notice):
+     """[#channel] - cycles [#channel], or the caller's channel if no channel is specified
+     :type text: str
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     :type chan: str
+     """
+     if text:
+@@ -282,7 +282,7 @@ def cycle(text, conn, chan, notice):
+ def nick(text, conn, notice):
+     """<nick> - changes my nickname to <nick>
+     :type text: str
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     """
+     if not re.match("^[a-z0-9_|.-\]\[]*$", text.lower()):
+         notice("Invalid username '{}'".format(text))
+@@ -296,7 +296,7 @@ def nick(text, conn, notice):
+ def raw(text, conn, notice):
+     """<command> - sends <command> as a raw IRC command
+     :type text: str
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     """
+     notice("Raw command sent.")
+     conn.send(text)
+@@ -307,7 +307,7 @@ def raw(text, conn, notice):
+ def say(text, conn, chan):
+     """[#channel] <message> - says <message> to [#channel], or to the caller's channel if no channel is specified
+     :type text: str
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     :type chan: str
+     """
+     text = text.strip()
+@@ -318,7 +318,7 @@ def say(text, conn, chan):
+     else:
+         channel = chan
+         text = text
+-    conn.msg(channel, text)
++    conn.message(channel, text)
+ 
+ 
+ @asyncio.coroutine
+@@ -326,12 +326,12 @@ def say(text, conn, chan):
+ def message(text, conn):
+     """<name> <message> - says <message> to <name>
+     :type text: str
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     """
+     split = text.split(None, 1)
+     channel = split[0]
+     text = split[1]
+-    conn.msg(channel, text)
++    conn.message(channel, text)
+ 
+ 
+ @asyncio.coroutine
+@@ -339,7 +339,7 @@ def message(text, conn):
+ def me(text, conn, chan):
+     """[#channel] <action> - acts out <action> in a [#channel], or in the current channel of none is specified
+     :type text: str
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     :type chan: str
+     """
+     text = text.strip()
+diff --git a/plugins/attacks.py b/plugins/attacks.py
+index 72d6973..a5c739c 100644
+--- a/plugins/attacks.py
++++ b/plugins/attacks.py
+@@ -31,7 +31,7 @@ def load_attacks(bot):
+ 
+ def is_self(conn, target):
+     """
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     :type target: str
+     """
+     if re.search("(^..?.?.?self|{})".format(re.escape(conn.nick.lower())), target.lower()):
+@@ -45,7 +45,7 @@ def is_self(conn, target):
+ def lart(text, conn, nick, notice, action):
+     """<user> - LARTs <user>
+     :type text: str
+-    :type conn: cloudbot.core.irc.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     :type nick: str
+     """
+     target = text.strip()
+@@ -69,7 +69,7 @@ def lart(text, conn, nick, notice, action):
+ def insult(text, conn, nick, notice, message):
+     """<user> - insults <user>
+     :type text: str
+-    :type conn: core.irc.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     :type nick: str
+     """
+     target = text.strip()
+@@ -90,7 +90,7 @@ def insult(text, conn, nick, notice, message):
+ def flirt(text, conn, nick, notice, message):
+     """<user> - flirts with <user>
+     :type text: str
+-    :type conn: core.irc.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     :type nick: str
+     """
+     target = text.strip()
+@@ -111,7 +111,7 @@ def flirt(text, conn, nick, notice, message):
+ def kill(text, conn, nick, notice, action):
+     """<user> - kills <user>
+     :type text: str
+-    :type conn: core.irc.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     :type nick: str
+     """
+     target = text.strip()
+diff --git a/plugins/core_misc.py b/plugins/core_misc.py
+index 6fab459..e8a24bf 100644
+--- a/plugins/core_misc.py
++++ b/plugins/core_misc.py
+@@ -12,7 +12,7 @@ socket.setdefaulttimeout(10)
+ def invite(irc_paramlist, conn):
+     """
+     :type irc_paramlist: list[str]
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     """
+     invite_join = conn.config.get('invite_join', True)
+     if invite_join:
+@@ -24,7 +24,7 @@ def invite(irc_paramlist, conn):
+ @hook.irc_raw('004')
+ def onjoin(conn, bot):
+     """
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.IrcConnection
+     :type bot: cloudbot.core.bot.CloudBot
+     """
+     bot.logger.info("ONJOIN hook triggered.")
+@@ -38,9 +38,9 @@ def onjoin(conn, bot):
+             if "censored_strings" in bot.config and nickserv_password in bot.config['censored_strings']:
+                 bot.config['censored_strings'].remove(nickserv_password)
+             if nickserv_account_name:
+-                conn.msg(nickserv_name, "{} {} {}".format(nickserv_command, nickserv_account_name, nickserv_password))
++                conn.message(nickserv_name, "{} {} {}".format(nickserv_command, nickserv_account_name, nickserv_password))
+             else:
+-                conn.msg(nickserv_name, "{} {}".format(nickserv_command, nickserv_password))
++                conn.message(nickserv_name, "{} {}".format(nickserv_command, nickserv_password))
+             if "censored_strings" in bot.config:
+                 bot.config['censored_strings'].append(nickserv_password)
+             yield from asyncio.sleep(1)
+@@ -49,7 +49,7 @@ def onjoin(conn, bot):
+     mode = conn.config.get('mode')
+     if mode:
+         bot.logger.info('Setting bot mode: "{}"'.format(mode))
+-        conn.cmd('MODE', [conn.nick, mode])
++        conn.cmd('MODE', conn.nick, mode)
+ 
+     # Join config-defined channels
+     bot.logger.info('Joining channels.')
+@@ -64,10 +64,10 @@ def onjoin(conn, bot):
+ @hook.irc_raw('004')
+ def keep_alive(conn):
+     """
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.IrcConnection
+     """
+     keepalive = conn.config.get('keep_alive', False)
+     if keepalive:
+         while True:
+-            conn.cmd('PING', [conn.nick])
++            conn.cmd('PING', conn.nick)
+             yield from asyncio.sleep(60)
+diff --git a/plugins/core_tracker.py b/plugins/core_tracker.py
+index 6509dde..0f7ae77 100644
+--- a/plugins/core_tracker.py
++++ b/plugins/core_tracker.py
+@@ -15,7 +15,7 @@ nick_re = re.compile(":(.+?)!")
+ @hook.irc_raw("KICK")
+ def on_kick(conn, chan, nick):
+     """
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     :type chan: str
+     :type nick: str
+     """
+@@ -32,7 +32,7 @@ def on_kick(conn, chan, nick):
+ def on_nick(irc_paramlist, conn, irc_raw):
+     """
+     :type irc_paramlist: list[str]
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     :type irc_raw: str
+     """
+     old_nick = nick_re.search(irc_raw).group(1)
+@@ -48,7 +48,7 @@ def on_nick(irc_paramlist, conn, irc_raw):
+ @hook.irc_raw("JOIN")
+ def on_join(conn, chan, nick):
+     """
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     :type chan: str
+     :type nick: str
+     """
+diff --git a/plugins/help.py b/plugins/help.py
+index 30029f6..958c9d0 100644
+--- a/plugins/help.py
++++ b/plugins/help.py
+@@ -10,7 +10,7 @@ from cloudbot import hook
+ def help_command(text, conn, bot, notice, has_permission):
+     """[command] - gives help for [command], or lists all available commands if no command is specified
+     :type text: str
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     :type bot: cloudbot.core.bot.CloudBot
+     """
+     if text:
+diff --git a/plugins/history.py b/plugins/history.py
+index 4865ffc..6a09488 100644
+--- a/plugins/history.py
++++ b/plugins/history.py
+@@ -23,7 +23,7 @@ def track_seen(event, db, conn):
+     """ Tracks messages for the .seen command
+     :type event: cloudbot.core.events.BaseEvent
+     :type db: sqlalchemy.orm.Session
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     """
+     db_init(db, conn)
+     # keep private messages private
+@@ -36,7 +36,7 @@ def track_seen(event, db, conn):
+ def track_history(event, message_time, conn):
+     """
+     :type event: cloudbot.core.events.BaseEvent
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     """
+     try:
+         history = conn.history[event.chan]
+@@ -53,7 +53,7 @@ def chat_tracker(event, db, conn):
+     """
+     :type db: sqlalchemy.orm.Session
+     :type event: cloudbot.core.events.BaseEvent
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     """
+     message_time = time.time()
+     track_seen(event, db, conn)
+@@ -65,7 +65,7 @@ def chat_tracker(event, db, conn):
+ def resethistory(event, conn):
+     """- resets chat history for the current channel
+     :type event: cloudbot.core.events.BaseEvent
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     """
+     try:
+         conn.history[event.chan].clear()
+@@ -80,7 +80,7 @@ def seen(text, nick, chan, db, event, conn):
+     """<nick> <channel> - tells when a nickname was last in active in one of my channels
+     :type db: sqlalchemy.orm.Session
+     :type event: cloudbot.core.events.BaseEvent
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.Connection
+     """
+ 
+     if event.conn.nick.lower() == text.lower():
+diff --git a/plugins/tell.py b/plugins/tell.py
+index 8a8e5e1..8b90ce7 100644
+--- a/plugins/tell.py
++++ b/plugins/tell.py
+@@ -74,7 +74,7 @@ def add_tell(db, server, sender, target, message):
+ def tellinput(event, conn, db, nick, notice):
+     """
+     :type event: cloudbot.core.events.BaseEvent
+-    :type conn: cloudbot.core.connection.BotConnection
++    :type conn: cloudbot.core.connection.IrcConnection
+     :type db: sqlalchemy.orm.Session
+     """
+     if 'showtells' in event.content.lower():
+-- 
+2.0.0
+

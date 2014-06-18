@@ -1,0 +1,30 @@
+From b2695cd8c8e706c56f6da3396e2afde7b9d84f97 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Mon, 16 Jun 2014 22:57:04 -0700
+Subject: [PATCH] Use EventType in ignore plugin
+
+
+diff --git a/plugins/ignore.py b/plugins/ignore.py
+index 61cedd8..a065146 100644
+--- a/plugins/ignore.py
++++ b/plugins/ignore.py
+@@ -2,6 +2,7 @@ import asyncio
+ from fnmatch import fnmatch
+ 
+ from cloudbot import hook
++from cloudbot.core.events import EventType
+ 
+ 
+ @hook.onload
+@@ -35,7 +36,7 @@ def ignore_sieve(bot, event, _hook):
+         return event
+ 
+     # don't block an event that could be unignoring
+-    if event.content is not None and event.content[1:] == "unignore":
++    if event.type is EventType.message and event.content[1:] == "unignore":
+         return event
+ 
+     if event.mask is None:
+-- 
+2.0.0
+
