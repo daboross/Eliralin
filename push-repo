@@ -3,20 +3,28 @@
 declare -r SCRIPT="$([[ $0 = /* ]] && echo "$0" || echo "$PWD/${0#./}")"
 declare -r BASE_DIR="$(dirname $SCRIPT)"
 
+declare -r RED="$(tput setaf 1)"
+declare -r GREEN="$(tput setaf 2)"
+declare -r NORMAL="$(tput sgr0)"
+
+function log {
+    echo "${RED}#${GREEN} ${1}${NORMAL}"
+}
+
 function update {
     local -r ORIGIN=$1          ; shift
     local -r ORIGIN_BRANCH=$1   ; shift
     local -r TARGET=$1          ; shift
     local -r TARGET_BRANCH=$1   ; shift
 
-    echo "Pushing $ORIGIN/$ORIGIN_BRANCH to $TARGET/$TARGET_BRANCH"
+    log "Pushing $ORIGIN/$ORIGIN_BRANCH to $TARGET/$TARGET_BRANCH"
 
     cd "$BASE_DIR/$ORIGIN"
     git push "$TARGET" "$ORIGIN_BRANCH":"$TARGET_BRANCH" -f
 }
 
 # Refresh/connection-emerge -> CloudBotRefresh/connection-emerge
-update Refresh connection-emerge https://github.com/CloudBotIRC/CloudBotRefresh.git connection-emerge
+update Refresh connection-emerge git@github.com:CloudBotIRC/CloudBotRefresh.git connection-emerge
 
 # Eliralin/master -> EliRefresh/master
 update Eliralin master git@github.com:daboross/EliRefresh.git master

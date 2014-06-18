@@ -3,13 +3,20 @@
 declare -r SCRIPT="$([[ $0 = /* ]] && echo "$0" || echo "$PWD/${0#./}")"
 declare -r BASE_DIR="$(dirname $SCRIPT)"
 
+declare -r RED="$(tput setaf 1)"
+declare -r GREEN="$(tput setaf 2)"
+declare -r NORMAL="$(tput sgr0)"
+
+function log {
+    echo "${RED}#${GREEN} ${1}${NORMAL}"
+}
+
 function save_patches {
     local -r TARGET="$1"        ; shift
     local -r TARGET_BRANCH="$1" ; shift
     local -r PATCH_DIR="$1"     ; shift
-    echo "# +---"
-    echo "# | Saving patches for $TARGET/$TARGET_BRANCH to $PATCH_DIR"
-    echo "# +---"
+
+    log "Saving patches for $TARGET/$TARGET_BRANCH to $PATCH_DIR"
 
     cd "$BASE_DIR/$TARGET"
 
@@ -18,9 +25,7 @@ function save_patches {
 
     git format-patch --no-stat -N -o "$BASE_DIR/$PATCH_DIR" "$UPSTREAM_REMOTE_AND_BRANCH"
 
-    echo "# +---"
-    echo "# | Patches for $TARGET/$TARGET_BRANCH saved to $PATCH_DIR"
-    echo "# +---"
+    log "Patches for $TARGET/$TARGET_BRANCH saved to $PATCH_DIR"
 }
 
 save_patches Refresh connection-emerge Patches-01-Connection-Emerge

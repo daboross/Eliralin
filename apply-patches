@@ -3,6 +3,17 @@
 declare -r SCRIPT="$([[ $0 = /* ]] && echo "$0" || echo "$PWD/${0#./}")"
 declare -r BASE_DIR="$(dirname $SCRIPT)"
 
+declare -r RED="$(tput setaf 1)"
+declare -r GREEN="$(tput setaf 2)"
+declare -r NORMAL="$(tput sgr0)"
+
+function log {
+    echo "${RED}#${GREEN} ${1}${NORMAL}"
+}
+function log_fail {
+    echo "${GREEN}#${RED} ${1}${NORMAL}"
+}
+
 function apply_patches {
     local -r ORIGIN="$1"        ; shift
     local -r ORIGIN_BRANCH="$1" ; shift
@@ -22,9 +33,7 @@ function apply_patches {
 
     cd "$BASE_DIR/$TARGET"
 
-    echo "# +---"
-    echo "# | Resetting $TARGET/$TARGET_BRANCH to $ORIGIN/$ORIGIN_BRANCH"
-    echo "# +---"
+    log "Resetting $TARGET/$TARGET_BRANCH to $ORIGIN/$ORIGIN_BRANCH"
 
     if [[ "$TARGET" == "$ORIGIN" ]]; then
         git checkout -B "$TARGET_BRANCH" --track "$ORIGIN_BRANCH"
@@ -33,27 +42,20 @@ function apply_patches {
         git checkout -B "$TARGET_BRANCH" --track "upstream/$ORIGIN_BRANCH"
     fi
 
-    echo "# +---"
-    echo "# | Applying patches to $TARGET/$TARGET_BRANCH from $PATCH_DIR"
-    echo "# +---"
+    log "Applying patches to $TARGET/$TARGET_BRANCH from $PATCH_DIR"
 
     git am --abort
     git am --3way "$BASE_DIR/$PATCH_DIR/"*.patch
-    if [[ "$?" != "0" ]]; then
-        echo "# +---"
-        echo "# | Something did not apply cleanly to $TARGET/$TARGET_BRANCH."
-        echo "# | Please review above details and finish the apply then"
-        echo "# | save the changes with \`rebuild-patches\`"
-        echo "# +---"
+    if (( "$?" )); then # if return code is not 0
+        log_fail "Something did not apply cleanly to $TARGET/$TARGET_BRANCH."
+        log_fail "Please review above details and finish the apply then save the changes with \`rebuild-patches\`"
         return 1
     else
-        echo "# +---"
-        echo "# | Patches applied cleanly to $target"
-        echo "# +---"
+        log "Patches applied cleanly to $target"
     fi
 }
 
 # Refresh/master  + Patches-01-Connection-Emerge -> Refresh/connection-emerge
-apply_patches Refresh master Refresh connection-emerge Patches-01-Connection-Emerge
+apply_patches Refresh master Refresh connection-emerge Patches-01-Connection-Emerge &&
 # Refresh/connection-emerge + Patches-02-Eliralin -> Eliralin/master
 apply_patches Refresh connection-emerge Eliralin master Patches-02-Eliralin

@@ -3,12 +3,18 @@
 declare -r SCRIPT="$([[ $0 = /* ]] && echo "$0" || echo "$PWD/${0#./}")"
 declare -r BASE_DIR="$(dirname $SCRIPT)"
 
+declare -r RED="$(tput setaf 1)"
+declare -r GREEN="$(tput setaf 2)"
+declare -r NORMAL="$(tput sgr0)"
+
+function log {
+    echo "${RED}#${GREEN} ${1}${NORMAL}"
+}
+
 function reorder_patches {
     local -r PATCH_DIR="$1" ; shift
 
-    echo "# +---"
-    echo "# | Reordering patches in $PATCH_DIR"
-    echo "# +---"
+    log "Reordering patches in $PATCH_DIR"
 
     cd "$BASE_DIR/$PATCH_DIR"
 
