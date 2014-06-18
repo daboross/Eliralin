@@ -24,7 +24,7 @@ function apply_patches {
     cd "$BASE_DIR"
 
     if [[ ! -d  "$BASE_DIR/$TARGET" ]]; then
-        git clone "$ORIGIN" "$TARGET" -b "$ORIGIN_BRANCH"
+        git clone "$ORIGIN" "$TARGET" -b "$ORIGIN_BRANCH" -o upstream
     fi
 
     cd "$BASE_DIR/$TARGET"
