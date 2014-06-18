@@ -21,10 +21,6 @@ function apply_patches {
     local -r TARGET_BRANCH="$1" ; shift
     local -r PATCH_DIR="$1"     ; shift
 
-    cd "$BASE_DIR/$ORIGIN"
-
-    git checkout "$ORIGIN_BRANCH"
-
     cd "$BASE_DIR"
 
     if [[ ! -d  "$BASE_DIR/$TARGET" ]]; then
@@ -53,6 +49,7 @@ function apply_patches {
     else
         log "Patches applied cleanly to $target"
         if [[ "$TARGET" == "$ORIGIN" ]]; then
+            log "Checking out $ORIGIN to $ORIGIN_BRANCH"
             git checkout "$ORIGIN_BRANCH"
         fi
     fi
