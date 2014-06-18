@@ -32,5 +32,6 @@ function reorder_patches {
     done
 }
 
-reorder_patches Patches-01-Connection-Emerge
-reorder_patches Patches-02-Eliralin
+for PATCHES_DIR in Patches-*; do
+    reorder_patches "$PATCHES_DIR"
+done

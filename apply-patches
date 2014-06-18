@@ -55,7 +55,13 @@ function apply_patches {
     fi
 }
 
-# Refresh/master  + Patches-01-Connection-Emerge -> Refresh/connection-emerge
-apply_patches Refresh master Refresh connection-emerge Patches-01-Connection-Emerge &&
+# Refresh/master  + Patches-01-Connection-Emerge -> Refresh/connection-emerge-no-plugins
+apply_patches Refresh master Refresh connection-emerge-no-plugins Patches-01-Connection-Emerge &&
+# Refresh/connection-emerge-no-plugins + Patches-02-Connection-Emerge-Plugins -> Refresh/connection-emerge
+apply_patches Refresh connection-emerge-no-plugins Refresh connection-emerge Patches-02-Connection-Emerge-Plugins &&
 # Refresh/connection-emerge + Patches-02-Eliralin -> Eliralin/master
-apply_patches Refresh connection-emerge Eliralin master Patches-02-Eliralin
+apply_patches Refresh connection-emerge Eliralin master Patches-03-Eliralin
+
+# Make sure we're checked out to master
+cd "$BASE_DIR/Refresh"
+git checkout master
