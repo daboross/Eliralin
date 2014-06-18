@@ -1,11 +1,11 @@
-From 2fd40e12dffbad4f38f92bda58ce1b44b1588d20 Mon Sep 17 00:00:00 2001
+From cf6382ac35abac398067c28be3e97075947fc806 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 18 Jun 2014 18:00:38 -0500
 Subject: [PATCH] Add support for EventType.action to history
 
 
 diff --git a/plugins/history.py b/plugins/history.py
-index 7408c5a..f55bd20 100644
+index 7408c5a..b2eccad 100644
 --- a/plugins/history.py
 +++ b/plugins/history.py
 @@ -30,8 +30,10 @@ def track_seen(event, db, conn):
@@ -35,9 +35,9 @@ index 7408c5a..f55bd20 100644
      """
 +
 +    if event.type is EventType.message:
-+        event.content = "* {}".format(event.content)
-+    elif event.type is EventType.action:
 +        event.content = "<{}> {}".format(event.nick, event.content)
++    elif event.type is EventType.action:
++        event.content = "* {}".format(event.content)
 +
      message_time = time.time()
      track_seen(event, db, conn)
