@@ -52,6 +52,9 @@ function apply_patches {
         return 1
     else
         log "Patches applied cleanly to $target"
+        if [[ "$TARGET" == "$ORIGIN" ]]; then
+            git checkout "$ORIGIN_BRANCH"
+        fi
     fi
 }
 
