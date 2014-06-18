@@ -1,4 +1,4 @@
-From 6d9b7224cdf51e348421080458b49b19959d8376 Mon Sep 17 00:00:00 2001
+From c04e4eea45df9b7339a4bed0a5cbd069d1c253c0 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 16 Jun 2014 22:48:37 -0700
 Subject: [PATCH] Add formatting.strip_colors method for IRC color stripping

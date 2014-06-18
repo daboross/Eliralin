@@ -1,4 +1,4 @@
-From f3277c9638eb301b7887772b7531c15c00a3c665 Mon Sep 17 00:00:00 2001
+From 37f58623683cb8807bec351f6c972ead56995a45 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 16 Jun 2014 22:57:04 -0700
 Subject: [PATCH] Use EventType in ignore plugin

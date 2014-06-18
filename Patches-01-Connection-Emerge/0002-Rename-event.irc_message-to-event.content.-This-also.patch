@@ -1,4 +1,4 @@
-From 173553ca12f99bac51505648b11bc1b778f7dec2 Mon Sep 17 00:00:00 2001
+From 270281353e17b79acaa1249287c0cfa2249a8235 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 10 Jun 2014 16:35:24 -0700
 Subject: [PATCH] Rename event.irc_message to event.content. This also only
@@ -74,7 +74,7 @@ index 64bb737..b47c387 100644
  
              # handle the message, async
 diff --git a/cloudbot/core/events.py b/cloudbot/core/events.py
-index 2f5324c..bcf574b 100644
+index 949a597..20376e7 100644
 --- a/cloudbot/core/events.py
 +++ b/cloudbot/core/events.py
 @@ -10,23 +10,26 @@ class BaseEvent:
@@ -185,7 +185,7 @@ index 2f5324c..bcf574b 100644
          self.hook = hook
          self.text = text
          self.triggered_command = triggered_command
-@@ -337,13 +341,13 @@ class RegexEvent(BaseEvent):
+@@ -343,13 +347,13 @@ class RegexEvent(BaseEvent):
      :type match: re.__Match
      """
  

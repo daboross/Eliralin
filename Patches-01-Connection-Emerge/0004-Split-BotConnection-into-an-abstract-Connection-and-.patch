@@ -1,4 +1,4 @@
-From b65c7e2a60e57e96f06204a4a9ff2089b4a69c2f Mon Sep 17 00:00:00 2001
+From 01f40ae6c019dcb39d06e3373e729d1b278845df Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 11 Jun 2014 01:09:52 -0700
 Subject: [PATCH] Split BotConnection into an abstract Connection, and an
@@ -518,7 +518,7 @@ index a29c0f0..f5a3d14 100644
 -            asyncio.async(self.bot.process(event))
 +            asyncio.async(self.bot.process(event), loop=self.loop)
 diff --git a/cloudbot/core/events.py b/cloudbot/core/events.py
-index bcf574b..c0de108 100644
+index 20376e7..7ba49f9 100644
 --- a/cloudbot/core/events.py
 +++ b/cloudbot/core/events.py
 @@ -8,7 +8,7 @@ logger = logging.getLogger("cloudbot")
@@ -973,7 +973,7 @@ index 6509dde..0f7ae77 100644
      :type nick: str
      """
 diff --git a/plugins/help.py b/plugins/help.py
-index 30029f6..958c9d0 100644
+index ecbb930..31677f0 100644
 --- a/plugins/help.py
 +++ b/plugins/help.py
 @@ -10,7 +10,7 @@ from cloudbot import hook
