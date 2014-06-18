@@ -47,7 +47,7 @@ function apply_patches {
         log_fail "Please review above details and finish the apply then save the changes with \`rebuild-patches\`"
         return 1
     else
-        log "Patches applied cleanly to $target"
+        log "Patches applied cleanly to $TARGET/$TARGET_BRANCH"
         if [[ "$TARGET" == "$ORIGIN" ]]; then
             log "Checking out $ORIGIN to $ORIGIN_BRANCH"
             git checkout "$ORIGIN_BRANCH"
