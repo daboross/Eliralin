@@ -1,4 +1,4 @@
-From 2fd39352a30b3e33db071b0cac78af10ec6d84f7 Mon Sep 17 00:00:00 2001
+From 521363d54ee79a4b98d353739f7d119ba819541c Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 29 Apr 2014 02:58:21 -0700
 Subject: [PATCH] Add per-channel command prefixes
@@ -6,7 +6,7 @@ Subject: [PATCH] Add per-channel command prefixes
 
 diff --git a/plugins/prefixes.py b/plugins/prefixes.py
 new file mode 100644
-index 0000000..3187301
+index 0000000..3c08ac0
 --- /dev/null
 +++ b/plugins/prefixes.py
 @@ -0,0 +1,137 @@
@@ -15,9 +15,9 @@ index 0000000..3187301
 +
 +from sqlalchemy import Table, Column, String, UniqueConstraint
 +
-+from cloudbot import hook, botvars
++from cloudbot import hook
 +from cloudbot.events import CommandEvent
-+from cloudbot.util import formatting
++from cloudbot.util import formatting, botvars
 +
 +
 +table = Table(

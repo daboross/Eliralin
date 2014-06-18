@@ -1,4 +1,4 @@
-From b2fc03a3dd643dc4ee3f04d1265fea794ecb2200 Mon Sep 17 00:00:00 2001
+From f6b55ebec13ed13055cd0d094ba487048b695771 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:18:52 -0800
 Subject: [PATCH] Add steal plugin.
@@ -6,16 +6,17 @@ Subject: [PATCH] Add steal plugin.
 
 diff --git a/plugins/steal.py b/plugins/steal.py
 new file mode 100644
-index 0000000..8513d5f
+index 0000000..52e93ed
 --- /dev/null
 +++ b/plugins/steal.py
-@@ -0,0 +1,77 @@
+@@ -0,0 +1,78 @@
 +from random import randint
 +
 +from sqlalchemy import Table, Column, String
 +from sqlalchemy.exc import IntegrityError
 +
-+from cloudbot import hook, botvars
++from cloudbot import hook
++from cloudbot.util import botvars
 +
 +table = Table(
 +    'stolen',
