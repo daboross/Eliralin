@@ -49,26 +49,13 @@ function apply_patches {
             return 1
         else
             log "Patches applied cleanly to $TARGET/$TARGET_BRANCH"
-            if [[ "$TARGET" == "$ORIGIN" ]]; then
-                log "Checking out $ORIGIN to $ORIGIN_BRANCH"
-                git checkout "$ORIGIN_BRANCH"
-            fi
-        fi
-    else
-        if [[ "$TARGET" == "$ORIGIN" ]]; then
-            log "Checking out $ORIGIN to $ORIGIN_BRANCH"
-            git checkout "$ORIGIN_BRANCH"
         fi
     fi
 }
 
-# Refresh/master  + Patches-01-Connection-Emerge -> Refresh/connection-emerge-no-plugins
-apply_patches Refresh master Refresh connection-emerge-no-plugins Patches-01-Connection-Emerge &&
-# Refresh/connection-emerge-no-plugins + Patches-02-Connection-Emerge-Plugins -> Refresh/connection-emerge
-apply_patches Refresh connection-emerge-no-plugins Refresh connection-emerge Patches-02-Connection-Emerge-Plugins &&
-# Refresh/connection-emerge + Patches-02-Eliralin -> Eliralin/master
-apply_patches Refresh connection-emerge Eliralin master Patches-03-Eliralin
-
-# Make sure we're checked out to master
-cd "$BASE_DIR/Refresh"
-git checkout master
+# Refresh-origin/master  + Patches-01-Connection-Emerge -> Refresh-connection-emerge/connection-emerge-no-plugins
+apply_patches Refresh-origin master Refresh-connection-emerge connection-emerge-no-plugins Patches-01-Connection-Emerge &&
+# Refresh-connection-emerge/connection-emerge-no-plugins + Patches-02-Connection-Emerge-Plugins -> Refresh-connection-emerge/connection-emerge
+apply_patches Refresh-connection-emerge connection-emerge-no-plugins Refresh-connection-emerge connection-emerge Patches-02-Connection-Emerge-Plugins &&
+# Refresh-connection-emerge/connection-emerge + Patches-02-Eliralin -> Eliralin/master
+apply_patches Refresh-connection-emerge connection-emerge Eliralin master Patches-03-Eliralin

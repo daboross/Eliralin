@@ -8,13 +8,15 @@ function update {
     local -r ORIGIN_BRANCH="$1"     ; shift
     local -r UPSTREAM="$1"          ; shift
     local -r UPSTREAM_BRANCH="$1"   ; shift
+    local -r FIXED_COMMIT="$1"      ; shift
 
     cd "$BASE_DIR/$ORIGIN"
     git fetch "$UPSTREAM"
     git checkout -B "$ORIGIN_BRANCH" --track "$UPSTREAM/$UPSTREAM_BRANCH"
+    if [[ "$FIXED_COMMIT" ]]; then
+        git reset --hard "$FIXED_COMMIT"
+    fi
 }
 
-update Refresh master origin python3.4
-# This is just a small hack to not merge the latest changes
-cd "$BASE_DIR/Refresh"
-git reset --hard f8e1b4e68cb48a3af399c27604c8cc106958f02b
+# The f8e1b4e68cb48a3af399c27604c8cc106958f02b is to fix commit to not merge the latest changes
+update Refresh-origin master origin python3.4 f8e1b4e68cb48a3af399c27604c8cc106958f02b

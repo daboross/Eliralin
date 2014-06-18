@@ -23,8 +23,8 @@ function update {
     git push "$TARGET" "$ORIGIN_BRANCH":"$TARGET_BRANCH" -f
 }
 
-# Refresh/connection-emerge -> CloudBotRefresh/connection-emerge
-update Refresh connection-emerge git@github.com:daboross/EliRefresh.git connection-emerge
+# Refresh-connection-emerge/connection-emerge -> CloudBotRefresh/connection-emerge
+update Refresh-connection-emerge connection-emerge git@github.com:daboross/EliRefresh.git connection-emerge
 
 # Eliralin/master -> EliRefresh/master
 update Eliralin master git@github.com:daboross/EliRefresh.git master

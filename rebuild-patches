@@ -27,6 +27,6 @@ function save_patches {
     log "Patches for $TARGET/$TARGET_BRANCH saved to $PATCH_DIR"
 }
 
-save_patches Refresh connection-emerge-no-plugins Patches-01-Connection-Emerge
-save_patches Refresh connection-emerge Patches-02-Connection-Emerge-Plugins
+save_patches Refresh-connection-emerge connection-emerge-no-plugins Patches-01-Connection-Emerge
+save_patches Refresh-connection-emerge connection-emerge Patches-02-Connection-Emerge-Plugins
 save_patches Eliralin master Patches-03-Eliralin
