@@ -1,81 +1,14 @@
-From 394d14e9b149862fc515b4cd31e5ba861c2199b9 Mon Sep 17 00:00:00 2001
+From 08009420e4df9520cb3680f4f4cab2c989c800a2 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 10 Jun 2014 17:21:21 -0700
 Subject: [PATCH] Merge IRCConnection into BotConnection
 
 
-diff --git a/cloudbot/core/bot.py b/cloudbot/core/bot.py
-index 8bdc59e..80c21ef 100644
---- a/cloudbot/core/bot.py
-+++ b/cloudbot/core/bot.py
-@@ -145,7 +145,7 @@ class CloudBot:
-             self.reloader.stop()
- 
-         for connection in self.connections:
--            if not connection.connected:
-+            if not connection._connected:
-                 # Don't quit a connection that hasn't connected
-                 continue
-             logger.debug("[{}] Closing connection.".format(connection.readable_name))
-@@ -155,7 +155,7 @@ class CloudBot:
-         yield from asyncio.sleep(1.0)  # wait for 'QUIT' calls to take affect
- 
-         for connection in self.connections:
--            if not connection.connected:
-+            if not connection._connected:
-                 # Don't close a connection that hasn't connected
-                 continue
-             connection.close()
-@@ -203,12 +203,12 @@ class CloudBot:
-             # run catch-all coroutine hooks before all others - TODO: Make this a plugin argument
-             if not raw_hook.threaded:
-                 run_before_tasks.append(
--                    self.plugin_manager.launch(raw_hook, BaseEvent(bot=self, hook=raw_hook, base_event=event)))
-+                    self.plugin_manager.launch(raw_hook, BaseEvent(hook=raw_hook, base_event=event)))
-             else:
--                tasks.append(self.plugin_manager.launch(raw_hook, BaseEvent(bot=self, hook=raw_hook, base_event=event)))
-+                tasks.append(self.plugin_manager.launch(raw_hook, BaseEvent(hook=raw_hook, base_event=event)))
-         if event.irc_command in self.plugin_manager.raw_triggers:
-             for raw_hook in self.plugin_manager.raw_triggers[event.irc_command]:
--                tasks.append(self.plugin_manager.launch(raw_hook, BaseEvent(bot=self, hook=raw_hook, base_event=event)))
-+                tasks.append(self.plugin_manager.launch(raw_hook, BaseEvent(hook=raw_hook, base_event=event)))
- 
-         if event.content is not None:
-             # Commands
-@@ -223,8 +223,7 @@ class CloudBot:
-                 command = match.group(1).lower()
-                 if command in self.plugin_manager.commands:
-                     command_hook = self.plugin_manager.commands[command]
--                    command_event = CommandEvent(bot=self, hook=command_hook, text=match.group(2).strip(),
--                                                 triggered_command=command, base_event=event)
-+                    command_event = CommandEvent(hook=command_hook, text=match.group(2).strip(), triggered_command=command, base_event=event)
-                     tasks.append(self.plugin_manager.launch(command_hook, command_event))
-                 else:
-                     potential_matches = []
-@@ -234,8 +233,7 @@ class CloudBot:
-                     if potential_matches:
-                         if len(potential_matches) == 1:
-                             command_hook = potential_matches[0][1]
--                            command_event = CommandEvent(bot=self, hook=command_hook, text=match.group(2).strip(),
--                                                         triggered_command=command, base_event=event)
-+                            command_event = CommandEvent(hook=command_hook, text=match.group(2).strip(), triggered_command=command, base_event=event)
-                             tasks.append(self.plugin_manager.launch(command_hook, command_event))
-                         else:
-                             event.notice("Possible matches: {}".format(
-@@ -245,7 +243,7 @@ class CloudBot:
-             for regex, regex_hook in self.plugin_manager.regex_hooks:
-                 match = regex.search(event.content)
-                 if match:
--                    regex_event = RegexEvent(bot=self, hook=regex_hook, match=match, base_event=event)
-+                    regex_event = RegexEvent(hook=regex_hook, match=match, base_event=event)
-                     tasks.append(self.plugin_manager.launch(regex_hook, regex_event))
- 
-         # Run the tasks
 diff --git a/cloudbot/core/connection.py b/cloudbot/core/connection.py
-index b47c387..a29c0f0 100644
+index 3a468aa..05adfce 100644
 --- a/cloudbot/core/connection.py
 +++ b/cloudbot/core/connection.py
-@@ -17,24 +17,27 @@ irc_param_re = re.compile(r"(?:^|(?<= ))(:.*|[^ ]+)")
+@@ -25,24 +25,27 @@ irc_command_to_event_type = {
  
  
  class BotConnection:
@@ -108,7 +41,7 @@ index b47c387..a29c0f0 100644
          """
          :type bot: cloudbot.core.bot.CloudBot
          :type name: str
-@@ -62,7 +65,9 @@ class BotConnection:
+@@ -70,7 +73,9 @@ class BotConnection:
          else:
              self.config = config
  
@@ -119,7 +52,7 @@ index b47c387..a29c0f0 100644
          self.server = server
          self.port = port
          self.nick = nick
-@@ -72,26 +77,50 @@ class BotConnection:
+@@ -80,26 +85,50 @@ class BotConnection:
          # create permissions manager
          self.permissions = PermissionManager(self)
  
@@ -177,7 +110,7 @@ index b47c387..a29c0f0 100644
  
          # send the password, nick, and user
          self.set_pass(self.config["connection"].get("password"))
-@@ -109,7 +138,10 @@ class BotConnection:
+@@ -117,7 +146,10 @@ class BotConnection:
              self.cmd("QUIT")
  
      def close(self):
@@ -189,7 +122,7 @@ index b47c387..a29c0f0 100644
  
      def set_pass(self, password):
          """
-@@ -174,102 +206,22 @@ class BotConnection:
+@@ -182,90 +214,14 @@ class BotConnection:
          Sends a raw IRC line
          :type line: str
          """
@@ -198,13 +131,13 @@ index b47c387..a29c0f0 100644
              raise ValueError("Connection must be connected to irc server to use send")
          logger.info("[{}] >> {}".format(self.readable_name, line))
 -        self.loop.call_soon_threadsafe(asyncio.async, self.connection.send(line))
--
++        self.loop.call_soon_threadsafe(asyncio.async, self._protocol.send(line))
+ 
 -
 -class IRCConnection:
 -    """
 -    Handles an IRC Connection to a specific IRC server.
-+        self.loop.call_soon_threadsafe(asyncio.async, self._protocol.send(line))
- 
+-
 -    :type readable_name: str
 -    :type host: str
 -    :type port: int
@@ -215,18 +148,16 @@ index b47c387..a29c0f0 100644
 -    :type _connected: bool
 -    :type _protocol: IRCProtocol
 -    """
- 
+-
 -    def __init__(self, conn, ignore_cert_errors=True, timeout=300):
-+class IRCProtocol(asyncio.Protocol):
-+    def __init__(self, conn):
-         """
-         :type conn: BotConnection
-         """
+-        """
+-        :type conn: BotConnection
+-        """
 -        self.readable_name = conn.readable_name
 -        self.host = conn.server
 -        self.port = conn.port
 -        self.use_ssl = conn.ssl
-         self.loop = conn.loop
+-        self.loop = conn.loop
 -        self.botconn = conn
 -
 -        if self.use_ssl:
@@ -281,26 +212,46 @@ index b47c387..a29c0f0 100644
 -            return
 -        self._transport.close()
 -        self._connected = False
--
--
--class IRCProtocol(asyncio.Protocol):
++    @property
++    def connected(self):
++        return self._connected
+ 
+ 
+ class IRCProtocol(asyncio.Protocol):
+@@ -273,7 +229,7 @@ class IRCProtocol(asyncio.Protocol):
+     :type loop: asyncio.events.AbstractEventLoop
+     :type readable_name: str
+     :type describe_server: lambda
+-    :type botconn: cloudbot.core.connection.BotConnection
++    :type conn: BotConnection
+     :type bot: cloudbot.core.bot.CloudBot
+     :type _input_buffer: bytes
+     :type _connected: bool
+@@ -281,16 +237,15 @@ class IRCProtocol(asyncio.Protocol):
+     :type _connected_future: asyncio.Future
+     """
+ 
 -    def __init__(self, ircconn):
--        """
++    def __init__(self, conn):
+         """
 -        :type ircconn: IRCConnection
--        """
++        :type conn: BotConnection
+         """
 -        self.loop = ircconn.loop
 -        self.readable_name = ircconn.readable_name
 -        self.describe_server = lambda: ircconn.describe_server()
 -        self.botconn = ircconn.botconn
 -        self.bot = ircconn.botconn.bot
+-
++        self.loop = conn.loop
 +        self.readable_name = conn.readable_name
 +        self.describe_server = lambda: conn.describe_server()
 +        self.conn = conn
 +        self.bot = conn.bot
          # input buffer
          self._input_buffer = b""
-         # connected
-@@ -296,14 +248,14 @@ class IRCProtocol(asyncio.Protocol):
+ 
+@@ -318,14 +273,14 @@ class IRCProtocol(asyncio.Protocol):
              # we've been closed intentionally, so don't reconnect
              return
          logger.exception("[{}] Connection lost.".format(self.readable_name))
@@ -317,18 +268,24 @@ index b47c387..a29c0f0 100644
          return True
  
      @asyncio.coroutine
-@@ -376,9 +328,8 @@ class IRCProtocol(asyncio.Protocol):
+@@ -424,7 +379,7 @@ class IRCProtocol(asyncio.Protocol):
+             # TODO: Migrate plugins using chan for storage to use chan.lower() instead so we can pass the original case
+             if command_params and (len(command_params) > 2 or not command_params[0].startswith(":")):
+ 
+-                if command_params[0].lower() == self.botconn.nick.lower():
++                if command_params[0].lower() == self.conn.nick.lower():
+                     # this is a private message - set the channel to the sender's nick
+                     channel = nick.lower()
+                 else:
+@@ -434,7 +389,7 @@ class IRCProtocol(asyncio.Protocol):
  
              # Set up parsed message
              # TODO: Do we really want to send the raw `prefix` and `command_params` here?
--            event = BaseEvent(conn=self.botconn, irc_raw=line, irc_prefix=prefix, irc_command=command,
--                              irc_paramlist=command_params, content=content, nick=nick, user=user, host=host,
--                              mask=mask)
-+            event = BaseEvent(bot=self.bot, conn=self.conn, content=content, nick=nick, user=user, host=host, mask=mask,
-+                              irc_raw=line, irc_prefix=prefix, irc_command=command, irc_paramlist=command_params)
- 
-             # handle the message, async
-             asyncio.async(self.bot.process(event))
+-            event = BaseEvent(bot=self.bot, conn=self.botconn, event_type=event_type, content=content, target=target,
++            event = BaseEvent(bot=self.bot, conn=self.conn, event_type=event_type, content=content, target=target,
+                               channel=channel, nick=nick, user=user, host=host, mask=mask, irc_raw=line,
+                               irc_prefix=prefix, irc_command=command, irc_paramlist=command_params,
+                               irc_ctcp_text=ctcp_text)
 -- 
 2.0.0
 

@@ -1,4 +1,4 @@
-From 01f40ae6c019dcb39d06e3373e729d1b278845df Mon Sep 17 00:00:00 2001
+From 5436e2c4663b568e1874b3648a229b879d178488 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 11 Jun 2014 01:09:52 -0700
 Subject: [PATCH] Split BotConnection into an abstract Connection, and an
@@ -11,7 +11,7 @@ Also:
 - Add conn.action and conn.notice for non-irc-specific action/notices
 
 diff --git a/cloudbot/core/bot.py b/cloudbot/core/bot.py
-index 80c21ef..5c267e7 100644
+index 5760519..173fc62 100644
 --- a/cloudbot/core/bot.py
 +++ b/cloudbot/core/bot.py
 @@ -10,7 +10,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
@@ -46,24 +46,6 @@ index 80c21ef..5c267e7 100644
              logger.debug("[{}] Created connection.".format(readable_name))
  
      @asyncio.coroutine
-@@ -145,7 +144,7 @@ class CloudBot:
-             self.reloader.stop()
- 
-         for connection in self.connections:
--            if not connection._connected:
-+            if not connection.connected:
-                 # Don't quit a connection that hasn't connected
-                 continue
-             logger.debug("[{}] Closing connection.".format(connection.readable_name))
-@@ -155,7 +154,7 @@ class CloudBot:
-         yield from asyncio.sleep(1.0)  # wait for 'QUIT' calls to take affect
- 
-         for connection in self.connections:
--            if not connection._connected:
-+            if not connection.connected:
-                 # Don't close a connection that hasn't connected
-                 continue
-             connection.close()
 @@ -223,7 +222,8 @@ class CloudBot:
                  command = match.group(1).lower()
                  if command in self.plugin_manager.commands:
@@ -85,11 +67,11 @@ index 80c21ef..5c267e7 100644
                          else:
                              event.notice("Possible matches: {}".format(
 diff --git a/cloudbot/core/connection.py b/cloudbot/core/connection.py
-index a29c0f0..f5a3d14 100644
+index 05adfce..3d1c13e 100644
 --- a/cloudbot/core/connection.py
 +++ b/cloudbot/core/connection.py
-@@ -16,45 +16,36 @@ irc_netmask_re = re.compile(r"([^!@]*)!([^@]*)@(.*)")
- irc_param_re = re.compile(r"(?:^|(?<= ))(:.*|[^ ]+)")
+@@ -24,45 +24,36 @@ irc_command_to_event_type = {
+ }
  
  
 -class BotConnection:
@@ -141,7 +123,7 @@ index a29c0f0..f5a3d14 100644
          if channels is None:
              self.channels = []
          else:
-@@ -64,18 +55,116 @@ class BotConnection:
+@@ -72,18 +63,116 @@ class BotConnection:
              self.config = {}
          else:
              self.config = config
@@ -264,7 +246,7 @@ index a29c0f0..f5a3d14 100644
  
          # create SSL context
          if self.use_ssl:
-@@ -91,6 +180,7 @@ class BotConnection:
+@@ -99,6 +188,7 @@ class BotConnection:
          self._connected = False
          # if we've quit
          self._quit = False
@@ -272,7 +254,7 @@ index a29c0f0..f5a3d14 100644
          # transport and protocol
          self._transport = None
          self._protocol = None
-@@ -106,11 +196,12 @@ class BotConnection:
+@@ -114,11 +204,12 @@ class BotConnection:
          """
          Connects to the IRC server, or reconnects if already connected.
          """
@@ -286,7 +268,7 @@ index a29c0f0..f5a3d14 100644
          if self._connected:
              logger.info("[{}] Reconnecting".format(self.readable_name))
              self._transport.close()
-@@ -119,82 +210,78 @@ class BotConnection:
+@@ -127,82 +218,78 @@ class BotConnection:
              logger.info("[{}] Connecting".format(self.readable_name))
  
          self._transport, self._protocol = yield from self.loop.create_connection(
@@ -397,7 +379,7 @@ index a29c0f0..f5a3d14 100644
          if params:
              params[-1] = ':' + params[-1]
              self.send("{} {}".format(command, ' '.join(params)))
-@@ -208,20 +295,30 @@ class BotConnection:
+@@ -216,20 +303,25 @@ class BotConnection:
          """
          if not self._connected:
              raise ValueError("Connection must be connected to irc server to use send")
@@ -412,13 +394,24 @@ index a29c0f0..f5a3d14 100644
 -        self.loop.call_soon_threadsafe(asyncio.async, self._protocol.send(line))
 +        asyncio.async(self._protocol.send(line), loop=self.loop)
  
-+    @property
-+    def connected(self):
-+        return self._connected
+     @property
+     def connected(self):
+         return self._connected
+ 
  
 -class IRCProtocol(asyncio.Protocol):
-+
 +class _IrcProtocol(asyncio.Protocol):
+     """
+     :type loop: asyncio.events.AbstractEventLoop
+-    :type readable_name: str
+-    :type describe_server: lambda
+-    :type conn: BotConnection
++    :type conn: IrcConnection
+     :type bot: cloudbot.core.bot.CloudBot
+     :type _input_buffer: bytes
+     :type _connected: bool
+@@ -239,13 +331,12 @@ class IRCProtocol(asyncio.Protocol):
+ 
      def __init__(self, conn):
          """
 -        :type conn: BotConnection
@@ -433,17 +426,8 @@ index a29c0f0..f5a3d14 100644
 +
          # input buffer
          self._input_buffer = b""
-         # connected
-@@ -231,7 +328,7 @@ class IRCProtocol(asyncio.Protocol):
-         self.transport = None
  
-         # Future that waits until we are connected
--        self._connected_future = asyncio.Future()
-+        self._connected_future = asyncio.Future(loop=self.loop)
- 
-     def connection_made(self, transport):
-         self.transport = transport
-@@ -243,18 +340,18 @@ class IRCProtocol(asyncio.Protocol):
+@@ -268,18 +359,18 @@ class IRCProtocol(asyncio.Protocol):
      def connection_lost(self, exc):
          self._connected = False
          # create a new connected_future for when we are connected.
@@ -466,97 +450,47 @@ index a29c0f0..f5a3d14 100644
          asyncio.async(self.conn.connect(), loop=self.loop)
          return True
  
-@@ -269,18 +366,18 @@ class IRCProtocol(asyncio.Protocol):
- 
-     def data_received(self, data):
-         self._input_buffer += data
-+
-         while b"\r\n" in self._input_buffer:
--            line, self._input_buffer = self._input_buffer.split(b"\r\n", 1)
--            line = line.decode()
-+            line_data, self._input_buffer = self._input_buffer.split(b"\r\n", 1)
-+            line = line_data.decode()
- 
-             # parse the line into a message
-             if line.startswith(":"):
+@@ -304,7 +395,7 @@ class IRCProtocol(asyncio.Protocol):
                  prefix_line_match = irc_prefix_re.match(line)
                  if prefix_line_match is None:
                      logger.critical("[{}] Received invalid IRC line '{}' from {}".format(
--                        self.readable_name, line, self.describe_server()
--                    ))
--                    continue
+-                        self.readable_name, line, self.describe_server()))
 +                        self.conn.readable_name, line, self.conn.describe_server()))
-+                    return
+                     continue
  
                  netmask_prefix, command, params = prefix_line_match.groups()
-                 prefix = ":" + netmask_prefix  # TODO: Do we need to know this?
-@@ -301,9 +398,8 @@ class IRCProtocol(asyncio.Protocol):
+@@ -326,7 +417,7 @@ class IRCProtocol(asyncio.Protocol):
                  noprefix_line_match = irc_noprefix_re.match(line)
                  if noprefix_line_match is None:
                      logger.critical("[{}] Received invalid IRC line '{}' from {}".format(
--                        self.readable_name, line, self.describe_server()
--                    ))
--                    continue
+-                        self.readable_name, line, self.describe_server()))
 +                        self.conn.readable_name, line, self.conn.describe_server()))
-+                    return
+                     continue
                  command = noprefix_line_match.group(1)
                  params = noprefix_line_match.group(2)
-                 nick = None
-@@ -324,7 +420,7 @@ class IRCProtocol(asyncio.Protocol):
- 
-             # Reply to pings immediately
-             if command == "PING":
--                asyncio.async(self.send("PONG :" + command_params[-1]))
-+                asyncio.async(self.send("PONG :" + command_params[-1]), loop=self.loop)
- 
-             # Set up parsed message
-             # TODO: Do we really want to send the raw `prefix` and `command_params` here?
-@@ -332,4 +428,4 @@ class IRCProtocol(asyncio.Protocol):
-                               irc_raw=line, irc_prefix=prefix, irc_command=command, irc_paramlist=command_params)
- 
-             # handle the message, async
--            asyncio.async(self.bot.process(event))
-+            asyncio.async(self.bot.process(event), loop=self.loop)
 diff --git a/cloudbot/core/events.py b/cloudbot/core/events.py
-index 20376e7..7ba49f9 100644
+index 62830c5..c4eb41e 100644
 --- a/cloudbot/core/events.py
 +++ b/cloudbot/core/events.py
-@@ -8,7 +8,7 @@ logger = logging.getLogger("cloudbot")
+@@ -21,7 +21,7 @@ class EventType(enum.Enum):
  class BaseEvent:
      """
      :type bot: cloudbot.core.bot.CloudBot
 -    :type conn: cloudbot.core.connection.BotConnection
 +    :type conn: cloudbot.core.connection.Connection
      :type hook: cloudbot.core.pluginmanager.Hook
+     :type type: EventType
      :type content: str
-     :type nick: str
-@@ -47,7 +47,7 @@ class BaseEvent:
-         :param irc_paramlist: The list of params for the IRC command. If the last param is a content param, the ':'
+@@ -69,7 +69,7 @@ class BaseEvent:
                                  should be removed from the front.
+         :param irc_ctcp_text: CTCP text if this message is a CTCP command
          :type bot: cloudbot.core.bot.CloudBot
 -        :type conn: cloudbot.core.connection.BotConnection
 +        :type conn: cloudbot.core.connection.Connection
          :type hook: cloudbot.core.pluginmanager.Hook
          :type base_event: cloudbot.core.events.BaseEvent
          :type content: str
-@@ -173,16 +173,6 @@ class BaseEvent:
-             self.db = None
- 
-     @property
--    def server(self):
--        """
--        :rtype: str
--        """
--        if self.conn is not None:
--            return self.conn.server
--        else:
--            return None
--
--    @property
-     def chan(self):
-         """
-         :rtype: str
-@@ -223,7 +213,7 @@ class BaseEvent:
+@@ -233,7 +233,7 @@ class BaseEvent:
              if self.chan is None:
                  raise ValueError("Target must be specified when chan is not assigned")
              target = self.chan
@@ -565,7 +499,7 @@ index 20376e7..7ba49f9 100644
  
      def reply(self, message, target=None):
          """sends a message to the current channel/user with a prefix
-@@ -236,9 +226,9 @@ class BaseEvent:
+@@ -246,9 +246,9 @@ class BaseEvent:
              target = self.chan
  
          if target == self.nick:
@@ -577,7 +511,7 @@ index 20376e7..7ba49f9 100644
  
      def action(self, message, target=None):
          """sends an action to the current channel/user or a specific channel/user
-@@ -250,7 +240,7 @@ class BaseEvent:
+@@ -260,7 +260,7 @@ class BaseEvent:
                  raise ValueError("Target must be specified when chan is not assigned")
              target = self.chan
  
@@ -586,7 +520,7 @@ index 20376e7..7ba49f9 100644
  
      def ctcp(self, message, ctcp_type, target=None):
          """sends an ctcp to the current channel/user or a specific channel/user
-@@ -262,6 +252,9 @@ class BaseEvent:
+@@ -272,6 +272,9 @@ class BaseEvent:
              if self.chan is None:
                  raise ValueError("Target must be specified when chan is not assigned")
              target = self.chan
@@ -596,7 +530,7 @@ index 20376e7..7ba49f9 100644
          self.conn.ctcp(target, ctcp_type, message)
  
      def notice(self, message, target=None):
-@@ -274,7 +267,7 @@ class BaseEvent:
+@@ -284,7 +287,7 @@ class BaseEvent:
                  raise ValueError("Target must be specified when nick is not assigned")
              target = self.nick
  
@@ -669,19 +603,6 @@ index 3b8da46..90eded5 100644
  
      def __str__(self):
          return "regex {} from {}".format(self.function_name, self.plugin.file_name)
-diff --git a/config.default b/config.default
-index 9248a53..29a3b86 100644
---- a/config.default
-+++ b/config.default
-@@ -11,7 +11,7 @@
-             },
-             "nick": "MyCloudBot",
-             "user": "cloudbot",
--            "real_name": "CloudBot - http://git.io/refresh",
-+            "real_name": "CloudBotRefresh - http://cloudbot.pw",
-             "channels": ["#cloudbot", "#cloudbot2"],
-             "disabled_commands": [],
-             "acls": {},
 diff --git a/plugins/admin.py b/plugins/admin.py
 index e673370..4ba3007 100644
 --- a/plugins/admin.py

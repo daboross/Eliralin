@@ -16,7 +16,7 @@ function reorder_patches {
 
     log "Reordering patches in $PATCH_DIR"
 
-    cd "$BASE_DIR/$PATCH_DIR"
+    cd "$PATCH_DIR"
 
     local -i NUM=1
     for NAME in *; do
@@ -32,6 +32,6 @@ function reorder_patches {
     done
 }
 
-for PATCHES_DIR in Patches-*; do
+for PATCHES_DIR in "$BASE_DIR/Patches-"*; do
     reorder_patches "$PATCHES_DIR"
 done
