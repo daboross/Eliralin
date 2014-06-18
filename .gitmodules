@@ -1,3 +1,3 @@
 [submodule "Refresh-origin"]
 	path = Refresh-origin
-	url = /home/daboross/Projects/Python/CloudBot
+	url = https://github.com/CloudBotIRC/CloudBotRefresh.git
