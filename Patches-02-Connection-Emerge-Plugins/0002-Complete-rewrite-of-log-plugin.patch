@@ -1,4 +1,4 @@
-From c2af65f37b8ad3da9cddceb8f0b1ab3c3e0396fe Mon Sep 17 00:00:00 2001
+From 8bb4d3310501dabfa75f4006f1da7efaf2496a47 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 17 Jun 2014 23:54:41 -0500
 Subject: [PATCH] Complete rewrite of log plugin

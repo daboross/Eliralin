@@ -1,4 +1,4 @@
-From c08ef8892f98fbc77deafc3a30b68a2578d08996 Mon Sep 17 00:00:00 2001
+From d74f7acfed2f8a98984fd966e68c374afa963018 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 11 Jun 2014 01:09:52 -0700
 Subject: [PATCH] Split BotConnection into an abstract Connection, and an
