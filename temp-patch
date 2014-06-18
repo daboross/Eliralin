@@ -1,32 +1,47 @@
 #!/bin/bash
 
+declare -r SCRIPT="$([[ $0 = /* ]] && echo "$0" || echo "$PWD/${0#./}")"
+declare -r BASE_DIR="$(dirname $SCRIPT)"
+declare -r TARGET="$(basename $PWD)"
+declare -r TEMP_DIR="$TARGET-temp"
+declare -r PATCH_DIR="temp-patches/$(basename $PWD)"
+
+declare -r RED="$(tput setaf 1)"
+declare -r GREEN="$(tput setaf 2)"
+declare -r NORMAL="$(tput sgr0)"
+
+function log {
+    echo "${RED}#${GREEN} ${1}${NORMAL}"
+}
+
 create() {
-    if [[ -a temp-patches/ ]]; then
-        rm -r temp-patches/
+    local -r GIT_HASH="$1"  ; shift
+    if [[ -a "$PATCH_DIR" ]]; then
+        rm -r "$PATCH_DIR"
     fi
-    mkdir temp-patches
-    rsync -a ./Eliralin/ ./Eliralin-temp/
-    cd Eliralin
-    git format-patch -o ../temp-patches/ "$1"
-    git reset --hard "$1"
-    cd ../
+    mkdir -p "$PATCH_DIR"
+    log "Saving temp state of $TARGET to $TEMP_DIR"
+    rsync -a "$BASE_DIR/$TARGET" "$BASE_DIR/$TEMP_DIR"
+
+    cd "$BASE_DIR/$TARGET"
+    log "Saving patches from $TARGET/$GIT_HASH to $PATCH_DIR"
+    git format-patch -o "$(readlink -f $BASE_DIR/$PATCH_DIR)" "$GIT_HASH"
+    git reset --hard "$GIT_HASH"
 }
 
 restore() {
-    cd Eliralin
-    git am --3way ../temp-patches/*
-    cd ../
+    log "Applying patches from $PATCH_DIR to $TARGET"
+    cd "$BASE_DIR/$TARGET"
+    git am --3way "$PATCH_DIR/"*.patch
 }
 
 cd "$(dirname "$([[ $0 = /* ]] && echo "$0" || echo "$PWD/${0#./}")")"
 
 case "$1" in
-    create)
-        create "${@:2}" ;;
     restore)
         restore "${@:2}" ;;
     help)
-        echo "$0 <create|restore> <specifier>" ;;
+        echo "$0 <restore|<git hash>>" ;;
     *)
         create "$@" ;;
 esac
