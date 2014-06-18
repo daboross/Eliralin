@@ -1,11 +1,11 @@
-From 934595c4d6c51988d35b5ba46f850a87feafd476 Mon Sep 17 00:00:00 2001
+From ea6c262cd772287893e9022095e33d25636e8119 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 10 Jun 2014 16:24:08 -0700
 Subject: [PATCH] Add logging config and move logging config options to it
 
 
 diff --git a/cloudbot/core/pluginmanager.py b/cloudbot/core/pluginmanager.py
-index 2993f0b..3b8da46 100644
+index 36a88e2..90eded5 100644
 --- a/cloudbot/core/pluginmanager.py
 +++ b/cloudbot/core/pluginmanager.py
 @@ -158,8 +158,7 @@ class PluginManager:
@@ -40,17 +40,7 @@ index 2993f0b..3b8da46 100644
  
      def _prepare_parameters(self, hook, event):
          """
-@@ -593,8 +594,7 @@ class RegexHook(Hook):
-         super().__init__("regex", plugin, regex_hook)
- 
-     def __repr__(self):
--        return "Regex[regexes: {}, {}]".format([regex.pattern for regex in self.regexes],
--                                               Hook.__repr__(self))
-+        return "Regex[regexes: [{}], {}]".format(", ".join(regex.pattern for regex in self.regexes), Hook.__repr__(self))
- 
-     def __str__(self):
-         return "regex {} from {}".format(self.function_name, self.plugin.file_name)
-@@ -621,7 +621,7 @@ class RawHook(Hook):
+@@ -620,7 +621,7 @@ class RawHook(Hook):
          return "Raw[events: {}, {}]".format(list(self.triggers), Hook.__repr__(self))
  
      def __str__(self):
@@ -60,7 +50,7 @@ index 2993f0b..3b8da46 100644
  
  class SieveHook(Hook):
 diff --git a/config.default b/config.default
-index 78c7123..9248a53 100644
+index 238d3b1..29a3b86 100644
 --- a/config.default
 +++ b/config.default
 @@ -69,6 +69,9 @@

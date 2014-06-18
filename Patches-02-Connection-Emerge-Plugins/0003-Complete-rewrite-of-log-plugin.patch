@@ -1,11 +1,11 @@
-From 926e3255fae9be85f761fbe0f953343f1840aaac Mon Sep 17 00:00:00 2001
+From bd64bc469ae68326ff09df18e4b04791f763e88d Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
-Date: Mon, 16 Jun 2014 22:57:29 -0700
+Date: Tue, 17 Jun 2014 23:54:41 -0500
 Subject: [PATCH] Complete rewrite of log plugin
 
 
 diff --git a/plugins/log.py b/plugins/log.py
-index d3390c3..b0c9697 100644
+index 6522fba..b0c9697 100644
 --- a/plugins/log.py
 +++ b/plugins/log.py
 @@ -1,95 +1,171 @@
@@ -130,7 +130,7 @@ index d3390c3..b0c9697 100644
  
      args = {
 -        "server": event.conn.readable_name, "param_tail": " ".join(event.irc_paramlist[1:]),
--        "message": irc_color_re.sub("", event.content or event.irc_paramlist[-1]), "nick": event.nick, "chan": event.chan,
+-        "message": irc_color_re.sub("", event.irc_message), "nick": event.nick, "chan": event.chan,
 +        "server": event.conn.readable_name, "target": event.target, "channel": event.chan, "nick": event.nick,
          "user": event.user, "host": event.host
      }
@@ -150,8 +150,8 @@ index d3390c3..b0c9697 100644
 +    if event.type in base_formats:
 +        return base_formats[event.type].format(**args)
  
--    if event.content is not None and event.content.count("\x01") >= 2:
--        ctcp_split = event.content.split("\x01", 2)[1].split(' ', 1)
+-    if event.irc_command == "PRIVMSG" and event.irc_message.count("\x01") >= 2:
+-        ctcp_split = event.irc_message.split("\x01", 2)[1].split(' ', 1)
 +    # Try formatting with IRC-formats, if this is an IRC event
 +    if event.irc_command is not None:
 +        return format_irc_event(event, args)

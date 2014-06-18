@@ -1,4 +1,4 @@
-From 5436e2c4663b568e1874b3648a229b879d178488 Mon Sep 17 00:00:00 2001
+From 0a7edada96295dba8e84f7876014377a8128c9cc Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 11 Jun 2014 01:09:52 -0700
 Subject: [PATCH] Split BotConnection into an abstract Connection, and an
@@ -553,10 +553,10 @@ index dd55c79..74e4867 100644
          logger.info("[{}] Created permission manager for {}.".format(conn.readable_name, conn.name))
  
 diff --git a/cloudbot/core/pluginmanager.py b/cloudbot/core/pluginmanager.py
-index 3b8da46..90eded5 100644
+index 2993f0b..36a88e2 100644
 --- a/cloudbot/core/pluginmanager.py
 +++ b/cloudbot/core/pluginmanager.py
-@@ -287,7 +287,7 @@ class PluginManager:
+@@ -286,7 +286,7 @@ class PluginManager:
                  parameters.append(value)
              else:
                  logger.error("Plugin {} asked for invalid argument '{}', cancelling execution!"
@@ -565,7 +565,7 @@ index 3b8da46..90eded5 100644
                  logger.debug("Valid arguments are: {} ({})".format(dir(event), event))
                  return None
          return parameters
-@@ -476,7 +476,7 @@ class Plugin:
+@@ -475,7 +475,7 @@ class Plugin:
          if self.tables:
              # if there are any tables
  
@@ -574,7 +574,7 @@ index 3b8da46..90eded5 100644
  
              for table in self.tables:
                  if not (yield from bot.loop.run_in_executor(None, table.exists, bot.db_engine)):
-@@ -489,7 +489,7 @@ class Plugin:
+@@ -488,7 +488,7 @@ class Plugin:
          """
          if self.tables:
              # if there are any tables
@@ -583,7 +583,7 @@ index 3b8da46..90eded5 100644
  
              for table in self.tables:
                  bot.db_metadata.remove(table)
-@@ -536,8 +536,7 @@ class Hook:
+@@ -535,8 +535,7 @@ class Hook:
  
          if func_hook.kwargs:
              # we should have popped all the args, so warn if there are any left
@@ -593,11 +593,12 @@ index 3b8da46..90eded5 100644
  
      @property
      def description(self):
-@@ -594,7 +593,8 @@ class RegexHook(Hook):
+@@ -593,8 +592,8 @@ class RegexHook(Hook):
          super().__init__("regex", plugin, regex_hook)
  
      def __repr__(self):
--        return "Regex[regexes: [{}], {}]".format(", ".join(regex.pattern for regex in self.regexes), Hook.__repr__(self))
+-        return "Regex[regexes: {}, {}]".format([regex.pattern for regex in self.regexes],
+-                                               Hook.__repr__(self))
 +        return "Regex[regexes: [{}], {}]".format(", ".join(regex.pattern for regex in self.regexes),
 +                                                 Hook.__repr__(self))
  

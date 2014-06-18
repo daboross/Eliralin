@@ -1,11 +1,11 @@
-From 278905f02fe994a36c0d5d2d5f759351533bfb64 Mon Sep 17 00:00:00 2001
+From 2db015c39b9ef48342064be7a2fa052433b136e0 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 17 Jun 2014 23:30:33 -0500
 Subject: [PATCH] Change default realname to CloudBotRefresh, using cloudbot.pw
 
 
 diff --git a/config.default b/config.default
-index 9248a53..29a3b86 100644
+index 78c7123..238d3b1 100644
 --- a/config.default
 +++ b/config.default
 @@ -11,7 +11,7 @@

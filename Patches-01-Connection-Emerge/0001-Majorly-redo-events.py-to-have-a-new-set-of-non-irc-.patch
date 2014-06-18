@@ -1,4 +1,4 @@
-From 233910191ced7a91d5d9fb962c60de1a96997233 Mon Sep 17 00:00:00 2001
+From 4704d61819ebd2c8b4eba4cd14bce38f872302bf Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 10 Jun 2014 16:35:24 -0700
 Subject: [PATCH] Majorly redo events.py, to have a new set of non-irc-specific
@@ -529,30 +529,6 @@ index fed4128..a065146 100644
          return event
  
      if event.mask is None:
-diff --git a/plugins/log.py b/plugins/log.py
-index 6522fba..d3390c3 100644
---- a/plugins/log.py
-+++ b/plugins/log.py
-@@ -69,7 +69,7 @@ def beautify(event):
- 
-     args = {
-         "server": event.conn.readable_name, "param_tail": " ".join(event.irc_paramlist[1:]),
--        "message": irc_color_re.sub("", event.irc_message), "nick": event.nick, "chan": event.chan,
-+        "message": irc_color_re.sub("", event.content or event.irc_paramlist[-1]), "nick": event.nick, "chan": event.chan,
-         "user": event.user, "host": event.host
-     }
- 
-@@ -78,8 +78,8 @@ def beautify(event):
-         args["param" + str(n)] = p
-         args["param_" + str(abs(n - _len))] = p
- 
--    if event.irc_command == "PRIVMSG" and event.irc_message.count("\x01") >= 2:
--        ctcp_split = event.irc_message.split("\x01", 2)[1].split(' ', 1)
-+    if event.content is not None and event.content.count("\x01") >= 2:
-+        ctcp_split = event.content.split("\x01", 2)[1].split(' ', 1)
- 
-         args["ctcpcmd"] = ctcp_split[0]
-         if len(ctcp_split) < 2:
 diff --git a/plugins/tell.py b/plugins/tell.py
 index 046e2b9..8a8e5e1 100644
 --- a/plugins/tell.py

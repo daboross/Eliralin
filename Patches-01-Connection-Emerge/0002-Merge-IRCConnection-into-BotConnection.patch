@@ -1,4 +1,4 @@
-From 08009420e4df9520cb3680f4f4cab2c989c800a2 Mon Sep 17 00:00:00 2001
+From 44147cdd989dd4f18900141e3175b86b764fe315 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Tue, 10 Jun 2014 17:21:21 -0700
 Subject: [PATCH] Merge IRCConnection into BotConnection
