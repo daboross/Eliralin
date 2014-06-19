@@ -1,0 +1,26 @@
+From cae9b36a70d9160324c4b57b8ff0e6bddc713c6d Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Wed, 18 Jun 2014 19:59:16 -0500
+Subject: [PATCH] Correction fix for history fix
+
+
+diff --git a/plugins/correction.py b/plugins/correction.py
+index 674f4fe..12604f2 100644
+--- a/plugins/correction.py
++++ b/plugins/correction.py
+@@ -30,9 +30,9 @@ def correction(match, conn, chan, message):
+             if find_nick != nick.lower():
+                 continue
+         if find_re.search(msg):
+-            if "\x01ACTION" in msg:
+-                msg = msg.replace("\x01ACTION ", "/me ").replace("\x01", "")
+-            message("Correction, <{}> {}".format(nick, find_re.sub("\x02" + replacement + "\x02", msg)))
++            if msg.startswith("* "):
++                msg = "/me" + msg[1:]
++            message("Correction, {}".format(find_re.sub("\x02" + replacement + "\x02", msg)))
+             return
+         else:
+             continue
+-- 
+2.0.0
+

@@ -1,4 +1,4 @@
-From 6dd726017861431c88320e3dd13592a009fb501d Mon Sep 17 00:00:00 2001
+From 68541eb55e88c60a9d012a23383da40751e2a143 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 18 Jun 2014 18:45:51 -0500
 Subject: [PATCH] Move IrcConnection to cloudbot/implementations/irc.py

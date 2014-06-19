@@ -1,4 +1,4 @@
-From cf6382ac35abac398067c28be3e97075947fc806 Mon Sep 17 00:00:00 2001
+From da3346fc2425a4b58cc173a580e26df52ce37e1c Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 18 Jun 2014 18:00:38 -0500
 Subject: [PATCH] Add support for EventType.action to history
