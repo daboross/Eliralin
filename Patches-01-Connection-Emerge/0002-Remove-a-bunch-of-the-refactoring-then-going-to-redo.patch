@@ -1,4 +1,4 @@
-From d25689a1a388055a7f439984d2c40e3bc8673a20 Mon Sep 17 00:00:00 2001
+From bc4cd972814e4976d4d53988a3614bb2cb7cb2d5 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 18 Jun 2014 17:18:01 -0500
 Subject: [PATCH] Remove a bunch of the refactoring, then going to redo it.

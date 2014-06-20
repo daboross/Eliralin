@@ -1,4 +1,4 @@
-From 0b21391b688943d96d10fc010bee395e987e357d Mon Sep 17 00:00:00 2001
+From 137d94d7021ac1cdf3d51371fef9f9c5c88c22d8 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Fri, 20 Jun 2014 12:43:17 -0500
 Subject: [PATCH] Rename Connection to Client and IrcConnection to IrcClient,
