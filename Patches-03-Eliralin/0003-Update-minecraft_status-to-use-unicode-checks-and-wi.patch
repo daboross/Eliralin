@@ -1,4 +1,4 @@
-From ab7a4266de96e23f0845e0b50f531dff4b9b35b0 Mon Sep 17 00:00:00 2001
+From ad9803c21244a3a9fa4101d3ed40f0fdd82c5475 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 13 Jan 2014 23:05:12 -0800
 Subject: [PATCH] Update minecraft_status to use unicode checks, and with a new

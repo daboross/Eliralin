@@ -1,4 +1,4 @@
-From e4db87bdf2e68d4edd1fd690beb882b9cc15d3ac Mon Sep 17 00:00:00 2001
+From 5cf1aa9be8f38f84f00a35744c3ee49078eacbd3 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Fri, 20 Jun 2014 13:38:49 -0500
 Subject: [PATCH] Rename cloudbot.events to cloudbot.event

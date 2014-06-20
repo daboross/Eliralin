@@ -1,4 +1,4 @@
-From 36c9bae4404092c77669df91173e839027df5a33 Mon Sep 17 00:00:00 2001
+From 2f8e4fae69e025d681ea435ab99f4bd9a52adf76 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Fri, 20 Jun 2014 13:54:48 -0500
 Subject: [PATCH] Rename cloudbot.pluginmanager to cloudbot.plugin
