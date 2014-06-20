@@ -24,7 +24,7 @@ function update {
 }
 
 # Refresh-rerefactoring/re-refactoring -> CloudBotRefresh/re-refactoring
-update Refresh-refactoring re-refactoring git@github.com:CloudBotIRC/CloudBotRefresh.git re-refactoring
+update Refresh-rerefactoring re-refactoring git@github.com:CloudBotIRC/CloudBotRefresh.git re-refactoring
 
 # Refresh-connection-emerge/connection-emerge -> EliRefresh/connection-emerge
 update Refresh-connection-emerge connection-emerge git@github.com:daboross/EliRefresh.git connection-emerge

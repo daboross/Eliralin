@@ -47,6 +47,8 @@ function apply_patches {
     log "Applying patches to $TARGET/$TARGET_BRANCH from $PATCH_DIR"
 
     git am --abort
+    git add -A  # in case there are any files that were created that were left by git am, we need to add them then reset
+    git reset --hard HEAD
     if [[ "$(ls -A "$BASE_DIR/$PATCH_DIR/")" ]]; then
         git am --3way "$BASE_DIR/$PATCH_DIR/"*.patch
         if (( "$?" )); then # if return code is not 0

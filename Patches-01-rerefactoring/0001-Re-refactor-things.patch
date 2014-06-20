@@ -1,0 +1,3382 @@
+From 178cd8e080ca11b8d64f2ef95bbcf687d2dc112b Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Fri, 20 Jun 2014 14:26:25 -0500
+Subject: [PATCH] Re-refactor things
+
+Changes:
+- Move cloudbot/util/hook to cloudbot/
+- Remove cloudbot/util/* aliases in cloudbot/
+- Merge cloudbot/dialect/irc/protocol.py and cloudbot/dialect/irc/client.py into cloudbot/clients/irc.py
+- Re-add cloudbot/client.py
+- Fix a few refactoring errors in plugins/minecraft_ping.py
+
+diff --git a/cloudbot/__init__.py b/cloudbot/__init__.py
+index f033189..6e1578a 100644
+--- a/cloudbot/__init__.py
++++ b/cloudbot/__init__.py
+@@ -10,12 +10,9 @@ import logging.config
+ import logging
+ import os
+ 
+-from .util import botvars, bucket, formatting, hook, http, textgen, timeformat, timesince, urlnorm, web
+-
+ __version__ = "0.1.1.dev0"
+ 
+-__all__ = ["core", "util", "bot", "config", "permissions", "pluginmanager", "events", "botvars", "bucket",
+-           "formatting", "hook", "http", "textgen", "timeformat", "timesince", "urlnorm", "web", "dev_mode", "log_dir"]
++__all__ = ["util", "bot", "connection", "config", "permissions", "plugin", "event", "hook", "dev_mode", "log_dir"]
+ 
+ 
+ def _setup():
+diff --git a/cloudbot/bot.py b/cloudbot/bot.py
+index e388c2f..4b93f48 100644
+--- a/cloudbot/bot.py
++++ b/cloudbot/bot.py
+@@ -4,19 +4,19 @@ import logging
+ import re
+ import os
+ import gc
+-
+ from sqlalchemy import create_engine
++
+ from sqlalchemy.orm import scoped_session, sessionmaker
+ from sqlalchemy.schema import MetaData
+ 
+ import cloudbot
++from cloudbot.client import Client
+ from cloudbot.config import Config
+ from cloudbot.reloader import PluginReloader
+ from cloudbot.plugin import PluginManager
+ from cloudbot.event import Event, CommandEvent, RegexEvent, EventType
+-from cloudbot.dialect.irc.client import IRCClient
+ from cloudbot.util import botvars, formatting
+-
++from cloudbot.clients.irc import IrcClient
+ 
+ logger = logging.getLogger("cloudbot")
+ 
+@@ -33,7 +33,7 @@ class CloudBot:
+     """
+     :type start_time: float
+     :type running: bool
+-    :type connections: list[Connection | IRCClient]
++    :type connections: list[Client | IrcClient]
+     :type data_dir: bytes
+     :type config: core.config.Config
+     :type plugin_manager: PluginManager
+@@ -126,9 +126,9 @@ class CloudBot:
+             server = conf['connection']['server']
+             port = conf['connection'].get('port', 6667)
+ 
+-            self.connections.append(IRCClient(self, name, nick, config=conf, channels=conf['channels'],
+-                                                  readable_name=readable_name, server=server, port=port,
+-                                                  use_ssl=conf['connection'].get('ssl', False)))
++            self.connections.append(IrcClient(self, name, nick, config=conf, channels=conf['channels'],
++                                              readable_name=readable_name, server=server, port=port,
++                                              use_ssl=conf['connection'].get('ssl', False)))
+             logger.debug("[{}] Created connection.".format(readable_name))
+ 
+     @asyncio.coroutine
+diff --git a/cloudbot/client.py b/cloudbot/client.py
+new file mode 100644
+index 0000000..7909fd6
+--- /dev/null
++++ b/cloudbot/client.py
+@@ -0,0 +1,123 @@
++import asyncio
++import logging
++
++from cloudbot.permissions import PermissionManager
++
++logger = logging.getLogger("cloudbot")
++
++
++class Client:
++    """
++    A Client representing each connection the bot makes to a single server
++    :type bot: cloudbot.bot.CloudBot
++    :type loop: asyncio.events.AbstractEventLoop
++    :type name: str
++    :type readable_name: str
++    :type channels: list[str]
++    :type config: dict[str, unknown]
++    :type nick: str
++    :type vars: dict
++    :type history: dict[str, list[tuple]]
++    :type permissions: PermissionManager
++    """
++
++    def __init__(self, bot, name, nick, *, readable_name, channels=None, config=None):
++        """
++        :type bot: cloudbot.bot.CloudBot
++        :type name: str
++        :type readable_name: str
++        :type nick: str
++        :type channels: list[str]
++        :type config: dict[str, unknown]
++        """
++        self.bot = bot
++        self.loop = bot.loop
++        self.name = name
++        self.nick = nick
++        self.readable_name = readable_name
++
++        if channels is None:
++            self.channels = []
++        else:
++            self.channels = channels
++
++        if config is None:
++            self.config = {}
++        else:
++            self.config = config
++        self.vars = {}
++        self.history = {}
++
++        # create permissions manager
++        self.permissions = PermissionManager(self)
++
++    def describe_server(self):
++        raise NotImplementedError
++
++    @asyncio.coroutine
++    def connect(self):
++        """
++        Connects to the server, or reconnects if already connected.
++        """
++        raise NotImplementedError
++
++    def quit(self, reason=None):
++        """
++        Gracefully disconnects from the server with reason <reason>, close() should be called shortly after.
++        """
++        raise NotImplementedError
++
++    def close(self):
++        """
++        Disconnects from the server, only for use when this Client object will *not* ever be connected again
++        """
++        raise NotImplementedError
++
++    def message(self, target, text):
++        """
++        Sends a message to the given target
++        :type target: str
++        :type text: str
++        """
++        raise NotImplementedError
++
++    def action(self, target, text):
++        """
++        Sends an action (or /me) to the given target channel
++        :type target: str
++        :type text: str
++        """
++        raise NotImplementedError
++
++    def notice(self, target, text):
++        """
++        Sends a notice to the given target
++        :type target: str
++        :type text: str
++        """
++        raise NotImplementedError
++
++    def set_nick(self, nick):
++        """
++        Sets the bot's nickname
++        :type nick: str
++        """
++        raise NotImplementedError
++
++    def join(self, channel):
++        """
++        Joins a given channel
++        :type channel: str
++        """
++        raise NotImplementedError
++
++    def part(self, channel):
++        """
++        Parts a given channel
++        :type channel: str
++        """
++        raise NotImplementedError
++
++    @property
++    def connected(self):
++        raise NotImplementedError
+diff --git a/cloudbot/clients/__init__.py b/cloudbot/clients/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/cloudbot/clients/irc.py b/cloudbot/clients/irc.py
+new file mode 100644
+index 0000000..27ecfe1
+--- /dev/null
++++ b/cloudbot/clients/irc.py
+@@ -0,0 +1,377 @@
++from _ssl import PROTOCOL_SSLv23
++import asyncio
++import re
++import ssl
++import logging
++from ssl import SSLContext
++
++from cloudbot.client import Client
++from cloudbot.event import Event, EventType
++
++logger = logging.getLogger("cloudbot")
++
++irc_prefix_re = re.compile(r":([^ ]*) ([^ ]*) (.*)")
++irc_noprefix_re = re.compile(r"([^ ]*) (.*)")
++irc_netmask_re = re.compile(r"([^!@]*)!([^@]*)@(.*)")
++irc_param_re = re.compile(r"(?:^|(?<= ))(:.*|[^ ]+)")
++
++irc_command_to_event_type = {
++    "PRIVMSG": EventType.message,
++    "JOIN": EventType.join,
++    "PART": EventType.part,
++    "KICK": EventType.kick,
++    "NOTICE": EventType.notice
++}
++
++
++class IrcClient(Client):
++    """
++    An implementation of Client for IRC.
++    :type use_ssl: bool
++    :type server: str
++    :type port: int
++    :type _connected: bool
++    :type _ignore_cert_errors: bool
++    """
++
++    def __init__(self, bot, name, nick, *, readable_name, channels=None, config=None,
++                 server, port=6667, use_ssl=False, ignore_cert_errors=True, timeout=300):
++        """
++        :type bot: cloudbot.bot.CloudBot
++        :type name: str
++        :type readable_name: str
++        :type nick: str
++        :type channels: list[str]
++        :type config: dict[str, unknown]
++        :type server: str
++        :type port: int
++        :type use_ssl: bool
++        :type ignore_cert_errors: bool
++        :type timeout: int
++        """
++        super().__init__(bot, name, nick, readable_name=readable_name, channels=channels, config=config)
++
++        self.use_ssl = use_ssl
++        self._ignore_cert_errors = ignore_cert_errors
++        self._timeout = timeout
++        self.server = server
++        self.port = port
++
++        # create SSL context
++        if self.use_ssl:
++            self.ssl_context = SSLContext(PROTOCOL_SSLv23)
++            if self._ignore_cert_errors:
++                self.ssl_context.verify_mode = ssl.CERT_NONE
++            else:
++                self.ssl_context.verify_mode = ssl.CERT_REQUIRED
++        else:
++            self.ssl_context = None
++
++        # if we're connected
++        self._connected = False
++        # if we've quit
++        self._quit = False
++
++        # transport and protocol
++        self._transport = None
++        self._protocol = None
++
++    def describe_server(self):
++        if self.use_ssl:
++            return "+{}:{}".format(self.server, self.port)
++        else:
++            return "{}:{}".format(self.server, self.port)
++
++    @asyncio.coroutine
++    def connect(self):
++        """
++        Connects to the IRC server, or reconnects if already connected.
++        """
++        # connect to the irc server
++        if self._quit:
++            # we've quit, so close instead (because this has probably been called because of EOF received)
++            self.close()
++            return
++
++        if self._connected:
++            logger.info("[{}] Reconnecting".format(self.readable_name))
++            self._transport.close()
++        else:
++            self._connected = True
++            logger.info("[{}] Connecting".format(self.readable_name))
++
++        self._transport, self._protocol = yield from self.loop.create_connection(
++            lambda: _IrcProtocol(self), host=self.server, port=self.port, ssl=self.ssl_context)
++
++        # send the password, nick, and user
++        self.set_pass(self.config["connection"].get("password"))
++        self.set_nick(self.nick)
++        self.cmd("USER", self.config.get('user', 'cloudbot'), "3", "*",
++                 self.config.get('realname', 'CloudBotRefresh - http://cloudbot.pw'))
++
++    def quit(self, reason=None):
++        if self._quit:
++            return
++        self._quit = True
++        if reason:
++            self.cmd("QUIT", reason)
++        else:
++            self.cmd("QUIT")
++
++    def close(self):
++        if not self._quit:
++            self.quit()
++        if not self._connected:
++            return
++
++        self._transport.close()
++        self._connected = False
++
++    def message(self, target, text):
++        self.cmd("PRIVMSG", target, text)
++
++    def action(self, target, text):
++        self.ctcp(target, "ACTION", text)
++
++    def notice(self, target, text):
++        self.cmd("NOTICE", target, text)
++
++    def set_nick(self, nick):
++        self.cmd("NICK", nick)
++
++    def join(self, channel):
++        self.send("JOIN {}".format(channel))
++        if channel not in self.channels:
++            self.channels.append(channel)
++
++    def part(self, channel):
++        self.cmd("PART", channel)
++        if channel in self.channels:
++            self.channels.remove(channel)
++
++    def set_pass(self, password):
++        if not password:
++            return
++        self.cmd("PASS", password)
++
++    def ctcp(self, target, ctcp_type, text):
++        """
++        Makes the bot send a PRIVMSG CTCP of type <ctcp_type> to the target
++        :type ctcp_type: str
++        :type text: str
++        :type target: str
++        """
++        out = "\x01{} {}\x01".format(ctcp_type, text)
++        self.cmd("PRIVMSG", target, out)
++
++    def cmd(self, command, *params):
++        """
++        Sends a raw IRC command of type <command> with params <params>
++        :param command: The IRC command to send
++        :param params: The params to the IRC command
++        :type command: str
++        :type params: (str)
++        """
++        params = list(params)  # turn the tuple of parameters into a list
++        if params:
++            params[-1] = ':' + params[-1]
++            self.send("{} {}".format(command, ' '.join(params)))
++        else:
++            self.send(command)
++
++    def send(self, line):
++        """
++        Sends a raw IRC line
++        :type line: str
++        """
++        if not self._connected:
++            raise ValueError("Client must be connected to irc server to use send")
++        self.loop.call_soon_threadsafe(self._send, line)
++
++    def _send(self, line):
++        """
++        Sends a raw IRC line unchecked. Doesn't do connected check, and is *not* threadsafe
++        :type line: str
++        """
++        logger.info("[{}] >> {}".format(self.readable_name, line))
++        asyncio.async(self._protocol.send(line), loop=self.loop)
++
++    @property
++    def connected(self):
++        return self._connected
++
++
++class _IrcProtocol(asyncio.Protocol):
++    """
++    :type loop: asyncio.events.AbstractEventLoop
++    :type conn: IrcClient
++    :type bot: cloudbot.bot.CloudBot
++    :type _input_buffer: bytes
++    :type _connected: bool
++    :type _transport: asyncio.transports.Transport
++    :type _connected_future: asyncio.Future
++    """
++
++    def __init__(self, conn):
++        """
++        :type conn: IrcClient
++        """
++        self.loop = conn.loop
++        self.bot = conn.bot
++        self.conn = conn
++
++        # input buffer
++        self._input_buffer = b""
++
++        # connected
++        self._connected = False
++
++        # transport
++        self._transport = None
++
++        # Future that waits until we are connected
++        self._connected_future = asyncio.Future(loop=self.loop)
++
++    def connection_made(self, transport):
++        self._transport = transport
++        self._connected = True
++        self._connected_future.set_result(None)
++        # we don't need the _connected_future, everything uses it will check _connected first.
++        del self._connected_future
++
++    def connection_lost(self, exc):
++        self._connected = False
++        # create a new connected_future for when we are connected.
++        self._connected_future = asyncio.Future(loop=self.loop)
++        if exc is None:
++            # we've been closed intentionally, so don't reconnect
++            return
++        logger.exception("[{}] Connection lost.".format(self.conn.readable_name))
++        asyncio.async(self.conn.connect(), loop=self.loop)
++
++    def eof_received(self):
++        self._connected = False
++        # create a new connected_future for when we are connected.
++        self._connected_future = asyncio.Future(loop=self.loop)
++        logger.info("[{}] EOF received.".format(self.conn.readable_name))
++        asyncio.async(self.conn.connect(), loop=self.loop)
++        return True
++
++    @asyncio.coroutine
++    def send(self, line):
++        # make sure we are connected before sending
++        if not self._connected:
++            yield from self._connected_future
++        line = line.splitlines()[0][:500] + "\r\n"
++        data = line.encode("utf-8", "replace")
++        self._transport.write(data)
++
++    def data_received(self, data):
++        self._input_buffer += data
++
++        while b"\r\n" in self._input_buffer:
++            line_data, self._input_buffer = self._input_buffer.split(b"\r\n", 1)
++            line = line_data.decode()
++
++            # parse the line into a message
++            if line.startswith(":"):
++                prefix_line_match = irc_prefix_re.match(line)
++                if prefix_line_match is None:
++                    logger.critical("[{}] Received invalid IRC line '{}' from {}".format(
++                        self.conn.readable_name, line, self.conn.describe_server()))
++                    continue
++
++                netmask_prefix, command, params = prefix_line_match.groups()
++                prefix = ":" + netmask_prefix  # TODO: Do we need to know this?
++                netmask_match = irc_netmask_re.match(netmask_prefix)
++                if netmask_match is None:
++                    # This isn't in the format of a netmask
++                    nick = netmask_prefix
++                    user = None
++                    host = None
++                    mask = netmask_prefix
++                else:
++                    nick = netmask_match.group(1)
++                    user = netmask_match.group(2)
++                    host = netmask_match.group(3)
++                    mask = netmask_prefix
++            else:
++                prefix = None
++                noprefix_line_match = irc_noprefix_re.match(line)
++                if noprefix_line_match is None:
++                    logger.critical("[{}] Received invalid IRC line '{}' from {}".format(
++                        self.conn.readable_name, line, self.conn.describe_server()))
++                    continue
++                command = noprefix_line_match.group(1)
++                params = noprefix_line_match.group(2)
++                nick = None
++                user = None
++                host = None
++                mask = None
++
++            command_params = irc_param_re.findall(params)
++
++            # Reply to pings immediately
++
++            if command == "PING":
++                asyncio.async(self.send("PONG " + command_params[-1]), loop=self.loop)
++
++            # Parse the command and params
++
++            # Content
++            if command_params and command_params[-1].startswith(":"):
++                # If the last param is in the format of `:content` remove the `:` from it, and set content from it
++                content = command_params[-1][1:]
++            else:
++                content = None
++
++            # Event type
++            if command in irc_command_to_event_type:
++                event_type = irc_command_to_event_type[command]
++            else:
++                event_type = EventType.other
++
++            # Target (for KICK, INVITE)
++            if event_type is EventType.kick:
++                target = command_params[1]
++            elif command == "INVITE":
++                target = command_params[0]
++            else:
++                # TODO: Find more commands which give a target
++                target = None
++
++            # Parse for CTCP
++            if event_type is EventType.message and content.count("\x01") >= 2 and content.startswith("\x01"):
++                # Remove the first \x01, then rsplit to remove the last one, and ignore text after the last \x01
++                ctcp_text = content[1:].rsplit("\x01", 1)[0]
++                ctcp_text_split = ctcp_text.split(None, 1)
++                if ctcp_text_split[0] == "ACTION":
++                    # this is a CTCP ACTION, set event_type and content accordingly
++                    event_type = EventType.action
++                    content = ctcp_text_split[1]
++                else:
++                    # this shouldn't be considered a regular message
++                    event_type = EventType.other
++            else:
++                ctcp_text = None
++
++            # Channel
++            # TODO: Migrate plugins using chan for storage to use chan.lower() instead so we can pass the original case
++            if command_params and (len(command_params) > 2 or not command_params[0].startswith(":")):
++
++                if command_params[0].lower() == self.conn.nick.lower():
++                    # this is a private message - set the channel to the sender's nick
++                    channel = nick.lower()
++                else:
++                    channel = command_params[0].lower()
++            else:
++                channel = None
++
++            # Set up parsed message
++            # TODO: Do we really want to send the raw `prefix` and `command_params` here?
++            event = Event(bot=self.bot, conn=self.conn, event_type=event_type, content=content, target=target,
++                          channel=channel, nick=nick, user=user, host=host, mask=mask, irc_raw=line, irc_prefix=prefix,
++                          irc_command=command, irc_paramlist=command_params, irc_ctcp_text=ctcp_text)
++
++            # handle the message, async
++            asyncio.async(self.bot.process(event), loop=self.loop)
+diff --git a/cloudbot/config.py b/cloudbot/config.py
+index 22f2062..0a582f1 100644
+--- a/cloudbot/config.py
++++ b/cloudbot/config.py
+@@ -6,6 +6,7 @@ import logging
+ 
+ from watchdog.observers import Observer
+ from watchdog.tricks import Trick
++
+ import cloudbot
+ 
+ logger = logging.getLogger("cloudbot")
+@@ -15,14 +16,14 @@ class Config(dict):
+     """
+     :type filename: str
+     :type path: str
+-    :type bot: cloudbot.core.bot.CloudBot
++    :type bot: cloudbot.bot.CloudBot
+     :type observer: Observer
+     :type event_handler: ConfigEventHandler
+     """
+ 
+     def __init__(self, bot, *args, **kwargs):
+         """
+-        :type bot: cloudbot.core.bot.CloudBot
++        :type bot: cloudbot.bot.CloudBot
+         :type args: list
+         :type kwargs: dict
+         """
+@@ -78,19 +79,18 @@ class Config(dict):
+ 
+ class ConfigEventHandler(Trick):
+     """
+-    :type bot: cloudbot.core.bot.CloudBot
++    :type bot: cloudbot.bot.CloudBot
+     :type config: core.config.Config
+     :type logger: logging.Logger
+     """
+ 
+     def __init__(self, bot, config, *args, **kwargs):
+         """
+-        :type bot: cloudbot.core.bot.CloudBot
++        :type bot: cloudbot.bot.CloudBot
+         :type config: Config
+         """
+         self.bot = bot
+         self.config = config
+-        logger = config.logger
+         Trick.__init__(self, *args, **kwargs)
+ 
+     def on_any_event(self, event):
+diff --git a/cloudbot/dialect/__init__.py b/cloudbot/dialect/__init__.py
+deleted file mode 100644
+index ad25671..0000000
+--- a/cloudbot/dialect/__init__.py
++++ /dev/null
+@@ -1 +0,0 @@
+-__author__ = 'Luke'
+diff --git a/cloudbot/dialect/irc/__init__.py b/cloudbot/dialect/irc/__init__.py
+deleted file mode 100644
+index ad25671..0000000
+--- a/cloudbot/dialect/irc/__init__.py
++++ /dev/null
+@@ -1 +0,0 @@
+-__author__ = 'Luke'
+diff --git a/cloudbot/dialect/irc/client.py b/cloudbot/dialect/irc/client.py
+deleted file mode 100644
+index 1218dd3..0000000
+--- a/cloudbot/dialect/irc/client.py
++++ /dev/null
+@@ -1,188 +0,0 @@
+-from _ssl import PROTOCOL_SSLv23
+-import asyncio
+-import ssl
+-import logging
+-from ssl import SSLContext
+-
+-from cloudbot.client import Client
+-from cloudbot.dialect.irc.protocol import IRCProtocol
+-
+-
+-logger = logging.getLogger("cloudbot")
+-
+-
+-class IRCClient(Client):
+-    """
+-    An implementation of Client for IRC.
+-    :type use_ssl: bool
+-    :type server: str
+-    :type port: int
+-    :type _connected: bool
+-    :type _ignore_cert_errors: bool
+-    """
+-
+-    def __init__(self, bot, name, nick, *, readable_name, channels=None, config=None,
+-                 server, port=6667, use_ssl=False, ignore_cert_errors=True, timeout=300):
+-        """
+-        :type bot: cloudbot.core.bot.CloudBot
+-        :type name: str
+-        :type readable_name: str
+-        :type nick: str
+-        :type channels: list[str]
+-        :type config: dict[str, unknown]
+-        :type server: str
+-        :type port: int
+-        :type use_ssl: bool
+-        :type ignore_cert_errors: bool
+-        :type timeout: int
+-        """
+-        super().__init__(bot, name, nick, readable_name=readable_name, channels=channels, config=config)
+-
+-        self.use_ssl = use_ssl
+-        self._ignore_cert_errors = ignore_cert_errors
+-        self._timeout = timeout
+-        self.server = server
+-        self.port = port
+-
+-        # create SSL context
+-        if self.use_ssl:
+-            self.ssl_context = SSLContext(PROTOCOL_SSLv23)
+-            if self._ignore_cert_errors:
+-                self.ssl_context.verify_mode = ssl.CERT_NONE
+-            else:
+-                self.ssl_context.verify_mode = ssl.CERT_REQUIRED
+-        else:
+-            self.ssl_context = None
+-
+-        # if we're connected
+-        self._connected = False
+-        # if we've quit
+-        self._quit = False
+-
+-        # transport and protocol
+-        self._transport = None
+-        self._protocol = None
+-
+-    def describe_server(self):
+-        if self.use_ssl:
+-            return "+{}:{}".format(self.server, self.port)
+-        else:
+-            return "{}:{}".format(self.server, self.port)
+-
+-    @asyncio.coroutine
+-    def connect(self):
+-        """
+-        Connects to the IRC server, or reconnects if already connected.
+-        """
+-        # connect to the irc server
+-        if self._quit:
+-            # we've quit, so close instead (because this has probably been called because of EOF received)
+-            self.close()
+-            return
+-
+-        if self._connected:
+-            logger.info("[{}] Reconnecting".format(self.readable_name))
+-            self._transport.close()
+-        else:
+-            self._connected = True
+-            logger.info("[{}] Connecting".format(self.readable_name))
+-
+-        self._transport, self._protocol = yield from self.loop.create_connection(
+-            lambda: IRCProtocol(self), host=self.server, port=self.port, ssl=self.ssl_context)
+-
+-        # send the password, nick, and user
+-        self.set_pass(self.config["connection"].get("password"))
+-        self.set_nick(self.nick)
+-        self.cmd("USER", self.config.get('user', 'cloudbot'), "3", "*",
+-                 self.config.get('realname', 'CloudBotRefresh - http://cloudbot.pw'))
+-
+-    def quit(self, reason=None):
+-        if self._quit:
+-            return
+-        self._quit = True
+-        if reason:
+-            self.cmd("QUIT", reason)
+-        else:
+-            self.cmd("QUIT")
+-
+-    def close(self):
+-        if not self._quit:
+-            self.quit()
+-        if not self._connected:
+-            return
+-
+-        self._transport.close()
+-        self._connected = False
+-
+-    def message(self, target, text):
+-        self.cmd("PRIVMSG", target, text)
+-
+-    def action(self, target, text):
+-        self.ctcp(target, "ACTION", text)
+-
+-    def notice(self, target, text):
+-        self.cmd("NOTICE", target, text)
+-
+-    def set_nick(self, nick):
+-        self.cmd("NICK", nick)
+-
+-    def join(self, channel):
+-        self.send("JOIN {}".format(channel))
+-        if channel not in self.channels:
+-            self.channels.append(channel)
+-
+-    def part(self, channel):
+-        self.cmd("PART", channel)
+-        if channel in self.channels:
+-            self.channels.remove(channel)
+-
+-    def set_pass(self, password):
+-        if not password:
+-            return
+-        self.cmd("PASS", password)
+-
+-    def ctcp(self, target, ctcp_type, text):
+-        """
+-        Makes the bot send a PRIVMSG CTCP of type <ctcp_type> to the target
+-        :type ctcp_type: str
+-        :type text: str
+-        :type target: str
+-        """
+-        out = "\x01{} {}\x01".format(ctcp_type, text)
+-        self.cmd("PRIVMSG", target, out)
+-
+-    def cmd(self, command, *params):
+-        """
+-        Sends a raw IRC command of type <command> with params <params>
+-        :param command: The IRC command to send
+-        :param params: The params to the IRC command
+-        :type command: str
+-        :type params: (str)
+-        """
+-        params = list(params)  # turn the tuple of parameters into a list
+-        if params:
+-            params[-1] = ':' + params[-1]
+-            self.send("{} {}".format(command, ' '.join(params)))
+-        else:
+-            self.send(command)
+-
+-    def send(self, line):
+-        """
+-        Sends a raw IRC line
+-        :type line: str
+-        """
+-        if not self._connected:
+-            raise ValueError("Client must be connected to irc server to use send")
+-        self.loop.call_soon_threadsafe(self._send, line)
+-
+-    def _send(self, line):
+-        """
+-        Sends a raw IRC line unchecked. Doesn't do connected check, and is *not* threadsafe
+-        :type line: str
+-        """
+-        logger.info("[{}] >> {}".format(self.readable_name, line))
+-        asyncio.async(self._protocol.send(line), loop=self.loop)
+-
+-    @property
+-    def connected(self):
+-        return self._connected
+diff --git a/cloudbot/dialect/irc/protocol.py b/cloudbot/dialect/irc/protocol.py
+deleted file mode 100644
+index a8f6da1..0000000
+--- a/cloudbot/dialect/irc/protocol.py
++++ /dev/null
+@@ -1,198 +0,0 @@
+-import asyncio
+-import logging
+-import re
+-
+-from cloudbot.event import EventType, Event
+-
+-
+-logger = logging.getLogger("cloudbot")
+-
+-irc_prefix_re = re.compile(r":([^ ]*) ([^ ]*) (.*)")
+-irc_noprefix_re = re.compile(r"([^ ]*) (.*)")
+-irc_netmask_re = re.compile(r"([^!@]*)!([^@]*)@(.*)")
+-irc_param_re = re.compile(r"(?:^|(?<= ))(:.*|[^ ]+)")
+-
+-irc_command_to_event_type = {
+-    "PRIVMSG": EventType.message,
+-    "JOIN": EventType.join,
+-    "PART": EventType.part,
+-    "KICK": EventType.kick,
+-    "NOTICE": EventType.notice
+-}
+-
+-
+-class IRCProtocol(asyncio.Protocol):
+-    """
+-    :type loop: asyncio.events.AbstractEventLoop
+-    :type conn: IRCClient
+-    :type bot: cloudbot.core.bot.CloudBot
+-    :type _input_buffer: bytes
+-    :type _connected: bool
+-    :type _transport: asyncio.transports.Transport
+-    :type _connected_future: asyncio.Future
+-    """
+-
+-    def __init__(self, conn):
+-        """
+-        :type conn: IRCClient
+-        """
+-        self.loop = conn.loop
+-        self.bot = conn.bot
+-        self.conn = conn
+-
+-        # input buffer
+-        self._input_buffer = b""
+-
+-        # connected
+-        self._connected = False
+-
+-        # transport
+-        self._transport = None
+-
+-        # Future that waits until we are connected
+-        self._connected_future = asyncio.Future(loop=self.loop)
+-
+-    def connection_made(self, transport):
+-        self._transport = transport
+-        self._connected = True
+-        self._connected_future.set_result(None)
+-        # we don't need the _connected_future, everything uses it will check _connected first.
+-        del self._connected_future
+-
+-    def connection_lost(self, exc):
+-        self._connected = False
+-        # create a new connected_future for when we are connected.
+-        self._connected_future = asyncio.Future(loop=self.loop)
+-        if exc is None:
+-            # we've been closed intentionally, so don't reconnect
+-            return
+-        logger.exception("[{}] Client lost.".format(self.conn.readable_name))
+-        asyncio.async(self.conn.connect(), loop=self.loop)
+-
+-    def eof_received(self):
+-        self._connected = False
+-        # create a new connected_future for when we are connected.
+-        self._connected_future = asyncio.Future(loop=self.loop)
+-        logger.info("[{}] EOF received.".format(self.conn.readable_name))
+-        asyncio.async(self.conn.connect(), loop=self.loop)
+-        return True
+-
+-    @asyncio.coroutine
+-    def send(self, line):
+-        # make sure we are connected before sending
+-        if not self._connected:
+-            yield from self._connected_future
+-        line = line.splitlines()[0][:500] + "\r\n"
+-        data = line.encode("utf-8", "replace")
+-        self._transport.write(data)
+-
+-    def data_received(self, data):
+-        self._input_buffer += data
+-
+-        while b"\r\n" in self._input_buffer:
+-            line_data, self._input_buffer = self._input_buffer.split(b"\r\n", 1)
+-            line = line_data.decode()
+-
+-            # parse the line into a message
+-            if line.startswith(":"):
+-                prefix_line_match = irc_prefix_re.match(line)
+-                if prefix_line_match is None:
+-                    logger.critical("[{}] Received invalid IRC line '{}' from {}".format(
+-                        self.conn.readable_name, line, self.conn.describe_server()))
+-                    continue
+-
+-                netmask_prefix, command, params = prefix_line_match.groups()
+-                prefix = ":" + netmask_prefix  # TODO: Do we need to know this?
+-                netmask_match = irc_netmask_re.match(netmask_prefix)
+-                if netmask_match is None:
+-                    # This isn't in the format of a netmask
+-                    nick = netmask_prefix
+-                    user = None
+-                    host = None
+-                    mask = netmask_prefix
+-                else:
+-                    nick = netmask_match.group(1)
+-                    user = netmask_match.group(2)
+-                    host = netmask_match.group(3)
+-                    mask = netmask_prefix
+-            else:
+-                prefix = None
+-                noprefix_line_match = irc_noprefix_re.match(line)
+-                if noprefix_line_match is None:
+-                    logger.critical("[{}] Received invalid IRC line '{}' from {}".format(
+-                        self.conn.readable_name, line, self.conn.describe_server()))
+-                    continue
+-                command = noprefix_line_match.group(1)
+-                params = noprefix_line_match.group(2)
+-                nick = None
+-                user = None
+-                host = None
+-                mask = None
+-
+-            command_params = irc_param_re.findall(params)
+-
+-            # Reply to pings immediately
+-
+-            if command == "PING":
+-                asyncio.async(self.send("PONG " + command_params[-1]), loop=self.loop)
+-
+-            # Parse the command and params
+-
+-            # Content
+-            if command_params and command_params[-1].startswith(":"):
+-                # If the last param is in the format of `:content` remove the `:` from it, and set content from it
+-                content = command_params[-1][1:]
+-            else:
+-                content = None
+-
+-            # Event type
+-            if command in irc_command_to_event_type:
+-                event_type = irc_command_to_event_type[command]
+-            else:
+-                event_type = EventType.other
+-
+-            # Target (for KICK, INVITE)
+-            if event_type is EventType.kick:
+-                target = command_params[1]
+-            elif command == "INVITE":
+-                target = command_params[0]
+-            else:
+-                # TODO: Find more commands which give a target
+-                target = None
+-
+-            # Parse for CTCP
+-            if event_type is EventType.message and content.count("\x01") >= 2 and content.startswith("\x01"):
+-                # Remove the first \x01, then rsplit to remove the last one, and ignore text after the last \x01
+-                ctcp_text = content[1:].rsplit("\x01", 1)[0]
+-                ctcp_text_split = ctcp_text.split(None, 1)
+-                if ctcp_text_split[0] == "ACTION":
+-                    # this is a CTCP ACTION, set event_type and content accordingly
+-                    event_type = EventType.action
+-                    content = ctcp_text_split[1]
+-                else:
+-                    # this shouldn't be considered a regular message
+-                    event_type = EventType.other
+-            else:
+-                ctcp_text = None
+-
+-            # Channel
+-            # TODO: Migrate plugins using chan for storage to use chan.lower() instead so we can pass the original case
+-            if command_params and (len(command_params) > 2 or not command_params[0].startswith(":")):
+-
+-                if command_params[0].lower() == self.conn.nick.lower():
+-                    # this is a private message - set the channel to the sender's nick
+-                    channel = nick.lower()
+-                else:
+-                    channel = command_params[0].lower()
+-            else:
+-                channel = None
+-
+-            # Set up parsed message
+-            # TODO: Do we really want to send the raw `prefix` and `command_params` here?
+-            event = Event(bot=self.bot, conn=self.conn, event_type=event_type, content=content, target=target,
+-                          channel=channel, nick=nick, user=user, host=host, mask=mask, irc_raw=line,
+-                          irc_prefix=prefix, irc_command=command, irc_paramlist=command_params,
+-                          irc_ctcp_text=ctcp_text)
+-
+-            # handle the message, async
+-            asyncio.async(self.bot.process(event), loop=self.loop)
+diff --git a/cloudbot/event.py b/cloudbot/event.py
+index 0cb3a27..f35b1e6 100644
+--- a/cloudbot/event.py
++++ b/cloudbot/event.py
+@@ -20,9 +20,9 @@ class EventType(enum.Enum):
+ 
+ class Event:
+     """
+-    :type bot: cloudbot.core.bot.CloudBot
+-    :type conn: cloudbot.core.connection.Client
+-    :type hook: cloudbot.core.pluginmanager.Hook
++    :type bot: cloudbot.bot.CloudBot
++    :type conn: cloudbot.client.Client
++    :type hook: cloudbot.plugin.Hook
+     :type type: EventType
+     :type content: str
+     :type target: str
+@@ -68,10 +68,10 @@ class Event:
+         :param irc_paramlist: The list of params for the IRC command. If the last param is a content param, the ':'
+                                 should be removed from the front.
+         :param irc_ctcp_text: CTCP text if this message is a CTCP command
+-        :type bot: cloudbot.core.bot.CloudBot
+-        :type conn: cloudbot.core.connection.Client
+-        :type hook: cloudbot.core.pluginmanager.Hook
+-        :type base_event: cloudbot.core.events.Event
++        :type bot: cloudbot.bot.CloudBot
++        :type conn: cloudbot.client.Client
++        :type hook: cloudbot.plugin.Hook
++        :type base_event: cloudbot.event.Event
+         :type content: str
+         :type target: str
+         :type event_type: EventType
+@@ -209,7 +209,7 @@ class Event:
+     @property
+     def event(self):
+         """
+-        :rtype; cloudbot.core.events.Event
++        :rtype: Event
+         """
+         return self
+ 
+@@ -313,7 +313,7 @@ class Event:
+ 
+ class CommandEvent(Event):
+     """
+-    :type hook: cloudbot.core.pluginmanager.CommandHook
++    :type hook: cloudbot.plugin.CommandHook
+     :type text: str
+     :type triggered_command: str
+     """
+@@ -356,7 +356,7 @@ class CommandEvent(Event):
+ 
+ class RegexEvent(Event):
+     """
+-    :type hook: cloudbot.core.pluginmanager.RegexHook
++    :type hook: cloudbot.plugin.RegexHook
+     :type match: re.__Match
+     """
+ 
+diff --git a/cloudbot/hook.py b/cloudbot/hook.py
+new file mode 100644
+index 0000000..1c67d13
+--- /dev/null
++++ b/cloudbot/hook.py
+@@ -0,0 +1,297 @@
++import inspect
++import re
++import collections
++
++from cloudbot.event import EventType
++
++valid_command_re = re.compile(r"^\w+$")
++
++
++class _Hook():
++    """
++    :type function: function
++    :type type: str
++    :type kwargs: dict[str, unknown]
++    """
++
++    def __init__(self, function, _type):
++        """
++        :type function: function
++        :type _type: str
++        """
++        self.function = function
++        self.type = _type
++        self.kwargs = {}
++
++    def _add_hook(self, kwargs):
++        """
++        :type kwargs: dict[str, unknown]
++        """
++        # update kwargs, overwriting duplicates
++        self.kwargs.update(kwargs)
++
++
++class _CommandHook(_Hook):
++    """
++    :type main_alias: str
++    :type aliases: set[str]
++    """
++
++    def __init__(self, function):
++        """
++        :type function: function
++        """
++        _Hook.__init__(self, function, "command")
++        self.aliases = set()
++        self.main_alias = None
++
++        if function.__doc__:
++            self.doc = function.__doc__.split('\n', 1)[0]
++        else:
++            self.doc = None
++
++    def add_hook(self, alias_param, kwargs):
++        """
++        :type alias_param: list[str] | str
++        """
++        self._add_hook(kwargs)
++
++        if not alias_param:
++            alias_param = self.function.__name__
++        if isinstance(alias_param, str):
++            alias_param = [alias_param]
++        if not self.main_alias:
++            self.main_alias = alias_param[0]
++        for alias in alias_param:
++            if not valid_command_re.match(alias):
++                raise ValueError("Invalid command name {}".format(alias))
++        self.aliases.update(alias_param)
++
++
++class _RegexHook(_Hook):
++    """
++    :type regexes: list[re.__Regex]
++    """
++
++    def __init__(self, function):
++        """
++        :type function: function
++        """
++        _Hook.__init__(self, function, "regex")
++        self.regexes = []
++
++    def add_hook(self, regex_param, kwargs):
++        """
++        :type regex_param: Iterable[str | re.__Regex] | str | re.__Regex
++        :type kwargs: dict[str, unknown]
++        """
++        self._add_hook(kwargs)
++        # add all regex_parameters to valid regexes
++        if isinstance(regex_param, str):
++            # if the parameter is a string, compile and add
++            self.regexes.append(re.compile(regex_param))
++        elif hasattr(regex_param, "search"):
++            # if the parameter is an re.__Regex, just add it
++            # we only use regex.search anyways, so this is a good determiner
++            self.regexes.append(regex_param)
++        else:
++            assert isinstance(regex_param, collections.Iterable)
++            # if the parameter is a list, add each one
++            for re_to_match in regex_param:
++                if isinstance(re_to_match, str):
++                    re_to_match = re.compile(re_to_match)
++                else:
++                    # make sure that the param is either a compiled regex, or has a search attribute.
++                    assert hasattr(regex_param, "search")
++                self.regexes.append(re_to_match)
++
++
++class _RawHook(_Hook):
++    """
++    :type triggers: set[str]
++    """
++
++    def __init__(self, function):
++        """
++        :type function: function
++        """
++        _Hook.__init__(self, function, "irc_raw")
++        self.triggers = set()
++
++    def add_hook(self, trigger_param, kwargs):
++        """
++        :type trigger_param: list[str] | str
++        :type kwargs: dict[str, unknown]
++        """
++        self._add_hook(kwargs)
++
++        if isinstance(trigger_param, str):
++            self.triggers.add(trigger_param)
++        else:
++            # it's a list
++            self.triggers.update(trigger_param)
++
++
++class _EventHook(_Hook):
++    """
++    :type types: set[cloudbot.event.EventType]
++    """
++
++    def __init__(self, function):
++        """
++        :type function: function
++        """
++        _Hook.__init__(self, function, "event")
++        self.types = set()
++
++    def add_hook(self, trigger_param, kwargs):
++        """
++        :type trigger_param: cloudbot.event.EventType | list[cloudbot.event.EventType]
++        :type kwargs: dict[str, unknown]
++        """
++        self._add_hook(kwargs)
++
++        if isinstance(trigger_param, EventType):
++            self.types.add(trigger_param)
++        else:
++            # it's a list
++            self.types.update(trigger_param)
++
++
++def _add_hook(func, hook):
++    if not hasattr(func, "_cloudbot_hook"):
++        func._cloudbot_hook = {}
++    else:
++        assert hook.type not in func._cloudbot_hook  # in this case the hook should be using the add_hook method
++    func._cloudbot_hook[hook.type] = hook
++
++
++def _get_hook(func, hook_type):
++    if hasattr(func, "_cloudbot_hook") and hook_type in func._cloudbot_hook:
++        return func._cloudbot_hook[hook_type]
++
++    return None
++
++
++def command(*args, **kwargs):
++    """External command decorator. Can be used directly as a decorator, or with args to return a decorator.
++    :type param: str | list[str] | function
++    """
++
++    def _command_hook(func, alias_param=None):
++        hook = _get_hook(func, "command")
++        if hook is None:
++            hook = _CommandHook(func)
++            _add_hook(func, hook)
++
++        hook.add_hook(alias_param, kwargs)
++        return func
++
++    if len(args) == 1 and callable(args[0]):  # this decorator is being used directly
++        return _command_hook(args[0])
++    else:  # this decorator is being used indirectly, so return a decorator function
++        return lambda func: _command_hook(func, alias_param=args)
++
++
++def irc_raw(triggers_param, **kwargs):
++    """External raw decorator. Must be used as a function to return a decorator
++    :type triggers_param: str | list[str]
++    """
++
++    def _raw_hook(func):
++        hook = _get_hook(func, "irc_raw")
++        if hook is None:
++            hook = _RawHook(func)
++            _add_hook(func, hook)
++
++        hook.add_hook(triggers_param, kwargs)
++        return func
++
++    if callable(triggers_param):  # this decorator is being used directly, which isn't good
++        raise TypeError("@irc_raw() must be used as a function that returns a decorator")
++    else:  # this decorator is being used as a function, so return a decorator
++        return lambda func: _raw_hook(func)
++
++
++def event(types_param, **kwargs):
++    """External event decorator. Must be used as a function to return a decorator
++    :type types_param: cloudbot.event.EventType | list[cloudbot.event.EventType]
++    """
++
++    def _event_hook(func):
++        hook = _get_hook(func, "event")
++        if hook is None:
++            hook = _EventHook(func)
++            _add_hook(func, hook)
++
++        hook.add_hook(types_param, kwargs)
++        return func
++
++    if callable(types_param):  # this decorator is being used directly, which isn't good
++        raise TypeError("@irc_raw() must be used as a function that returns a decorator")
++    else:  # this decorator is being used as a function, so return a decorator
++        return lambda func: _event_hook(func)
++
++
++def regex(regex_param, **kwargs):
++    """External regex decorator. Must be used as a function to return a decorator.
++    :type regex_param: str | re.__Regex | list[str | re.__Regex]
++    :type flags: int
++    """
++
++    def _regex_hook(func):
++        hook = _get_hook(func, "regex")
++        if hook is None:
++            hook = _RegexHook(func)
++            _add_hook(func, hook)
++
++        hook.add_hook(regex_param, kwargs)
++        return func
++
++    if callable(regex_param):  # this decorator is being used directly, which isn't good
++        raise TypeError("@regex() hook must be used as a function that returns a decorator")
++    else:  # this decorator is being used as a function, so return a decorator
++        return lambda func: _regex_hook(func)
++
++
++def sieve(param=None, **kwargs):
++    """External sieve decorator. Can be used directly as a decorator, or with args to return a decorator
++    :type param: function | None
++    """
++
++    def _sieve_hook(func):
++        assert len(inspect.getargspec(func).args) == 3, \
++            "Sieve plugin has incorrect argument count. Needs params: bot, input, plugin"
++
++        hook = _get_hook(func, "sieve")
++        if hook is None:
++            hook = _Hook(func, "sieve")  # there's no need to have a specific SieveHook object
++            _add_hook(func, hook)
++
++        hook._add_hook(kwargs)
++        return func
++
++    if callable(param):
++        return _sieve_hook(param)
++    else:
++        return lambda func: _sieve_hook(func)
++
++
++def onload(param=None, **kwargs):
++    """External onload decorator. Can be used directly as a decorator, or with args to return a decorator
++    :type param: function | None
++    """
++
++    def _onload_hook(func):
++        hook = _get_hook(func, "onload")
++        if hook is None:
++            hook = _Hook(func, "onload")
++            _add_hook(func, hook)
++
++        hook._add_hook(kwargs)
++        return func
++
++    if callable(param):
++        return _onload_hook(param)
++    else:
++        return lambda func: _onload_hook(func)
+diff --git a/cloudbot/permissions.py b/cloudbot/permissions.py
+index 4e42ec1..e2db5af 100644
+--- a/cloudbot/permissions.py
++++ b/cloudbot/permissions.py
+@@ -16,7 +16,7 @@ class PermissionManager(object):
+ 
+     def __init__(self, conn):
+         """
+-        :type conn: cloudbot.core.connection.Client
++        :type conn: cloudbot.client.Client
+         """
+         logger.info("[{}] Created permission manager for {}.".format(conn.readable_name, conn.name))
+ 
+diff --git a/cloudbot/plugin.py b/cloudbot/plugin.py
+index 29b6936..e6719b8 100644
+--- a/cloudbot/plugin.py
++++ b/cloudbot/plugin.py
+@@ -8,7 +8,7 @@ import re
+ 
+ import sqlalchemy
+ 
+-from cloudbot import event
++from cloudbot.event import Event
+ from cloudbot.util import botvars
+ 
+ logger = logging.getLogger("cloudbot")
+@@ -71,20 +71,20 @@ class PluginManager:
+     - RegexPlugin loads a regex parameter, and executes on irc lines which match the regex
+     - SievePlugin is a catch-all sieve, which all other plugins go through before being executed.
+ 
+-    :type bot: cloudbot.core.bot.CloudBot
++    :type bot: cloudbot.bot.CloudBot
+     :type plugins: dict[str, Plugin]
+     :type commands: dict[str, CommandHook]
+     :type raw_triggers: dict[str, list[RawHook]]
+     :type catch_all_triggers: list[RawHook]
+-    :type event_type_hooks: dict[cloudbot.core.events.EventType, list[EventHook]]
++    :type event_type_hooks: dict[cloudbot.event.EventType, list[EventHook]]
+     :type regex_hooks: list[(re.__Regex, RegexHook)]
+     :type sieves: list[SieveHook]
+     """
+ 
+     def __init__(self, bot):
+         """
+-        Creates a new PluginManager. You generally only need to do this from inside cloudbot.core.bot.CloudBot
+-        :type bot: cloudbot.core.bot.CloudBot
++        Creates a new PluginManager. You generally only need to do this from inside cloudbot.bot.CloudBot
++        :type bot: cloudbot.bot.CloudBot
+         """
+         self.bot = bot
+ 
+@@ -159,7 +159,7 @@ class PluginManager:
+ 
+         # run onload hooks
+         for onload_hook in plugin.run_on_load:
+-            success = yield from self.launch(onload_hook, event.Event(bot=self.bot, hook=onload_hook))
++            success = yield from self.launch(onload_hook, Event(bot=self.bot, hook=onload_hook))
+             if not success:
+                 logger.warning("Not registering hooks from plugin {}: onload hook errored".format(plugin.title))
+ 
+@@ -298,8 +298,8 @@ class PluginManager:
+         """
+         Prepares arguments for the given hook
+ 
+-        :type hook: cloudbot.core.pluginmanager.Hook
+-        :type event: cloudbot.core.events.Event
++        :type hook: cloudbot.plugin.Hook
++        :type event: cloudbot.event.Event
+         :rtype: list
+         """
+         parameters = []
+@@ -317,7 +317,7 @@ class PluginManager:
+     def _execute_hook_threaded(self, hook, event):
+         """
+         :type hook: Hook
+-        :type event: cloudbot.core.events.Event
++        :type event: cloudbot.event.Event
+         """
+         event.prepare_threaded()
+ 
+@@ -334,7 +334,7 @@ class PluginManager:
+     def _execute_hook_sync(self, hook, event):
+         """
+         :type hook: Hook
+-        :type event: cloudbot.core.events.Event
++        :type event: cloudbot.event.Event
+         """
+         yield from event.prepare()
+ 
+@@ -354,8 +354,8 @@ class PluginManager:
+ 
+         Returns False if the hook errored, True otherwise.
+ 
+-        :type hook: cloudbot.core.pluginmanager.Hook
+-        :type event: cloudbot.core.events.Event
++        :type hook: cloudbot.plugin.Hook
++        :type event: cloudbot.event.Event
+         :rtype: bool
+         """
+         try:
+@@ -382,10 +382,10 @@ class PluginManager:
+     @asyncio.coroutine
+     def _sieve(self, sieve, event, hook):
+         """
+-        :type sieve: cloudbot.core.pluginmanager.Hook
+-        :type event: cloudbot.core.events.Event
+-        :type hook: cloudbot.core.pluginmanager.Hook
+-        :rtype: cloudbot.core.events.Event
++        :type sieve: cloudbot.plugin.Hook
++        :type event: cloudbot.event.Event
++        :type hook: cloudbot.plugin.Hook
++        :rtype: cloudbot.event.Event
+         """
+         try:
+             if sieve.threaded:
+@@ -405,8 +405,8 @@ class PluginManager:
+ 
+         Returns False if the hook didn't run successfully, and True if it ran successfully.
+ 
+-        :type event: cloudbot.core.events.Event | cloudbot.core.events.CommandEvent
+-        :type hook: cloudbot.core.pluginmanager.Hook | cloudbot.core.pluginmanager.CommandHook
++        :type event: cloudbot.event.Event | cloudbot.event.CommandEvent
++        :type hook: cloudbot.plugin.Hook | cloudbot.plugin.CommandHook
+         :rtype: bool
+         """
+         if hook.type != "onload":  # we don't need sieves on onload hooks.
+@@ -494,7 +494,7 @@ class Plugin:
+         """
+         Creates all sqlalchemy Tables that are registered in this plugin
+ 
+-        :type bot: cloudbot.core.bot.CloudBot
++        :type bot: cloudbot.bot.CloudBot
+         """
+         if self.tables:
+             # if there are any tables
+@@ -508,7 +508,7 @@ class Plugin:
+     def unregister_tables(self, bot):
+         """
+         Unregisters all sqlalchemy Tables registered to the global metadata by this plugin
+-        :type bot: cloudbot.core.bot.CloudBot
++        :type bot: cloudbot.bot.CloudBot
+         """
+         if self.tables:
+             # if there are any tables
+@@ -665,7 +665,7 @@ class SieveHook(Hook):
+ 
+ class EventHook(Hook):
+     """
+-    :type types: set[cloudbot.core.events.EventType]
++    :type types: set[cloudbot.event.EventType]
+     """
+ 
+     def __init__(self, plugin, event_hook):
+diff --git a/cloudbot/reloader.py b/cloudbot/reloader.py
+index 44fdef9..49ef886 100644
+--- a/cloudbot/reloader.py
++++ b/cloudbot/reloader.py
+@@ -7,7 +7,7 @@ from watchdog.tricks import Trick
+ class PluginReloader(object):
+     def __init__(self, bot):
+         """
+-        :type bot: cloudbot.core.bot.CloudBot
++        :type bot: cloudbot.bot.CloudBot
+         """
+         self.observer = Observer()
+         self.bot = bot
+diff --git a/cloudbot/util/hook.py b/cloudbot/util/hook.py
+deleted file mode 100644
+index 43b4690..0000000
+--- a/cloudbot/util/hook.py
++++ /dev/null
+@@ -1,298 +0,0 @@
+-import inspect
+-import re
+-import collections
+-
+-from cloudbot.event import EventType
+-
+-
+-valid_command_re = re.compile(r"^\w+$")
+-
+-
+-class _Hook():
+-    """
+-    :type function: function
+-    :type type: str
+-    :type kwargs: dict[str, unknown]
+-    """
+-
+-    def __init__(self, function, _type):
+-        """
+-        :type function: function
+-        :type _type: str
+-        """
+-        self.function = function
+-        self.type = _type
+-        self.kwargs = {}
+-
+-    def _add_hook(self, kwargs):
+-        """
+-        :type kwargs: dict[str, unknown]
+-        """
+-        # update kwargs, overwriting duplicates
+-        self.kwargs.update(kwargs)
+-
+-
+-class _CommandHook(_Hook):
+-    """
+-    :type main_alias: str
+-    :type aliases: set[str]
+-    """
+-
+-    def __init__(self, function):
+-        """
+-        :type function: function
+-        """
+-        _Hook.__init__(self, function, "command")
+-        self.aliases = set()
+-        self.main_alias = None
+-
+-        if function.__doc__:
+-            self.doc = function.__doc__.split('\n', 1)[0]
+-        else:
+-            self.doc = None
+-
+-    def add_hook(self, alias_param, kwargs):
+-        """
+-        :type alias_param: list[str] | str
+-        """
+-        self._add_hook(kwargs)
+-
+-        if not alias_param:
+-            alias_param = self.function.__name__
+-        if isinstance(alias_param, str):
+-            alias_param = [alias_param]
+-        if not self.main_alias:
+-            self.main_alias = alias_param[0]
+-        for alias in alias_param:
+-            if not valid_command_re.match(alias):
+-                raise ValueError("Invalid command name {}".format(alias))
+-        self.aliases.update(alias_param)
+-
+-
+-class _RegexHook(_Hook):
+-    """
+-    :type regexes: list[re.__Regex]
+-    """
+-
+-    def __init__(self, function):
+-        """
+-        :type function: function
+-        """
+-        _Hook.__init__(self, function, "regex")
+-        self.regexes = []
+-
+-    def add_hook(self, regex_param, kwargs):
+-        """
+-        :type regex_param: Iterable[str | re.__Regex] | str | re.__Regex
+-        :type kwargs: dict[str, unknown]
+-        """
+-        self._add_hook(kwargs)
+-        # add all regex_parameters to valid regexes
+-        if isinstance(regex_param, str):
+-            # if the parameter is a string, compile and add
+-            self.regexes.append(re.compile(regex_param))
+-        elif hasattr(regex_param, "search"):
+-            # if the parameter is an re.__Regex, just add it
+-            # we only use regex.search anyways, so this is a good determiner
+-            self.regexes.append(regex_param)
+-        else:
+-            assert isinstance(regex_param, collections.Iterable)
+-            # if the parameter is a list, add each one
+-            for re_to_match in regex_param:
+-                if isinstance(re_to_match, str):
+-                    re_to_match = re.compile(re_to_match)
+-                else:
+-                    # make sure that the param is either a compiled regex, or has a search attribute.
+-                    assert hasattr(regex_param, "search")
+-                self.regexes.append(re_to_match)
+-
+-
+-class _RawHook(_Hook):
+-    """
+-    :type triggers: set[str]
+-    """
+-
+-    def __init__(self, function):
+-        """
+-        :type function: function
+-        """
+-        _Hook.__init__(self, function, "irc_raw")
+-        self.triggers = set()
+-
+-    def add_hook(self, trigger_param, kwargs):
+-        """
+-        :type trigger_param: list[str] | str
+-        :type kwargs: dict[str, unknown]
+-        """
+-        self._add_hook(kwargs)
+-
+-        if isinstance(trigger_param, str):
+-            self.triggers.add(trigger_param)
+-        else:
+-            # it's a list
+-            self.triggers.update(trigger_param)
+-
+-
+-class _EventHook(_Hook):
+-    """
+-    :type types: set[cloudbot.core.events.EventType]
+-    """
+-
+-    def __init__(self, function):
+-        """
+-        :type function: function
+-        """
+-        _Hook.__init__(self, function, "event")
+-        self.types = set()
+-
+-    def add_hook(self, trigger_param, kwargs):
+-        """
+-        :type trigger_param: cloudbot.core.events.EventType | list[cloudbot.core.events.EventType]
+-        :type kwargs: dict[str, unknown]
+-        """
+-        self._add_hook(kwargs)
+-
+-        if isinstance(trigger_param, EventType):
+-            self.types.add(trigger_param)
+-        else:
+-            # it's a list
+-            self.types.update(trigger_param)
+-
+-
+-def _add_hook(func, hook):
+-    if not hasattr(func, "_cloudbot_hook"):
+-        func._cloudbot_hook = {}
+-    else:
+-        assert hook.type not in func._cloudbot_hook  # in this case the hook should be using the add_hook method
+-    func._cloudbot_hook[hook.type] = hook
+-
+-
+-def _get_hook(func, hook_type):
+-    if hasattr(func, "_cloudbot_hook") and hook_type in func._cloudbot_hook:
+-        return func._cloudbot_hook[hook_type]
+-
+-    return None
+-
+-
+-def command(*args, **kwargs):
+-    """External command decorator. Can be used directly as a decorator, or with args to return a decorator.
+-    :type param: str | list[str] | function
+-    """
+-
+-    def _command_hook(func, alias_param=None):
+-        hook = _get_hook(func, "command")
+-        if hook is None:
+-            hook = _CommandHook(func)
+-            _add_hook(func, hook)
+-
+-        hook.add_hook(alias_param, kwargs)
+-        return func
+-
+-    if len(args) == 1 and callable(args[0]):  # this decorator is being used directly
+-        return _command_hook(args[0])
+-    else:  # this decorator is being used indirectly, so return a decorator function
+-        return lambda func: _command_hook(func, alias_param=args)
+-
+-
+-def irc_raw(triggers_param, **kwargs):
+-    """External raw decorator. Must be used as a function to return a decorator
+-    :type triggers_param: str | list[str]
+-    """
+-
+-    def _raw_hook(func):
+-        hook = _get_hook(func, "irc_raw")
+-        if hook is None:
+-            hook = _RawHook(func)
+-            _add_hook(func, hook)
+-
+-        hook.add_hook(triggers_param, kwargs)
+-        return func
+-
+-    if callable(triggers_param):  # this decorator is being used directly, which isn't good
+-        raise TypeError("@irc_raw() must be used as a function that returns a decorator")
+-    else:  # this decorator is being used as a function, so return a decorator
+-        return lambda func: _raw_hook(func)
+-
+-
+-def event(types_param, **kwargs):
+-    """External event decorator. Must be used as a function to return a decorator
+-    :type types_param: cloudbot.core.events.EventType | list[cloudbot.core.events.EventType]
+-    """
+-
+-    def _event_hook(func):
+-        hook = _get_hook(func, "event")
+-        if hook is None:
+-            hook = _EventHook(func)
+-            _add_hook(func, hook)
+-
+-        hook.add_hook(types_param, kwargs)
+-        return func
+-
+-    if callable(types_param):  # this decorator is being used directly, which isn't good
+-        raise TypeError("@irc_raw() must be used as a function that returns a decorator")
+-    else:  # this decorator is being used as a function, so return a decorator
+-        return lambda func: _event_hook(func)
+-
+-
+-def regex(regex_param, **kwargs):
+-    """External regex decorator. Must be used as a function to return a decorator.
+-    :type regex_param: str | re.__Regex | list[str | re.__Regex]
+-    :type flags: int
+-    """
+-
+-    def _regex_hook(func):
+-        hook = _get_hook(func, "regex")
+-        if hook is None:
+-            hook = _RegexHook(func)
+-            _add_hook(func, hook)
+-
+-        hook.add_hook(regex_param, kwargs)
+-        return func
+-
+-    if callable(regex_param):  # this decorator is being used directly, which isn't good
+-        raise TypeError("@regex() hook must be used as a function that returns a decorator")
+-    else:  # this decorator is being used as a function, so return a decorator
+-        return lambda func: _regex_hook(func)
+-
+-
+-def sieve(param=None, **kwargs):
+-    """External sieve decorator. Can be used directly as a decorator, or with args to return a decorator
+-    :type param: function | None
+-    """
+-
+-    def _sieve_hook(func):
+-        assert len(inspect.getargspec(func).args) == 3, \
+-            "Sieve plugin has incorrect argument count. Needs params: bot, input, plugin"
+-
+-        hook = _get_hook(func, "sieve")
+-        if hook is None:
+-            hook = _Hook(func, "sieve")  # there's no need to have a specific SieveHook object
+-            _add_hook(func, hook)
+-
+-        hook._add_hook(kwargs)
+-        return func
+-
+-    if callable(param):
+-        return _sieve_hook(param)
+-    else:
+-        return lambda func: _sieve_hook(func)
+-
+-
+-def onload(param=None, **kwargs):
+-    """External onload decorator. Can be used directly as a decorator, or with args to return a decorator
+-    :type param: function | None
+-    """
+-
+-    def _onload_hook(func):
+-        hook = _get_hook(func, "onload")
+-        if hook is None:
+-            hook = _Hook(func, "onload")
+-            _add_hook(func, hook)
+-
+-        hook._add_hook(kwargs)
+-        return func
+-
+-    if callable(param):
+-        return _onload_hook(param)
+-    else:
+-        return lambda func: _onload_hook(func)
+diff --git a/plugins/admin.py b/plugins/admin.py
+index def13a9..effb0d5 100644
+--- a/plugins/admin.py
++++ b/plugins/admin.py
+@@ -8,7 +8,7 @@ from cloudbot import hook
+ @hook.command("groups", "listgroups", "permgroups", permissions=["permissions_users"], autohelp=False)
+ def get_permission_groups(conn):
+     """- lists all valid groups
+-    :type conn: cloudbot.core.connection.Client
++    :type conn: cloudbot.client.Client
+     """
+     return "Valid groups: {}".format(conn.permissions.get_groups())
+ 
+@@ -18,7 +18,7 @@ def get_permission_groups(conn):
+ def get_group_permissions(text, conn, notice):
+     """<group> - lists permissions given to <group>
+     :type text: str
+-    :type conn: cloudbot.core.connection.Client
++    :type conn: cloudbot.client.Client
+     """
+     group = text.strip().lower()
+     permission_manager = conn.permissions
+@@ -37,7 +37,7 @@ def get_group_permissions(text, conn, notice):
+ def get_group_users(text, conn, notice):
+     """<group> - lists users in <group>
+     :type text: str
+-    :type conn: cloudbot.core.connection.Client
++    :type conn: cloudbot.client.Client
+     """
+     group = text.strip().lower()
+     permission_manager = conn.permissions
+@@ -56,7 +56,7 @@ def get_group_users(text, conn, notice):
+ def get_user_permissions(text, conn, mask, has_permission, notice):
+     """[user] - lists all permissions given to [user], or the caller if no user is specified
+     :type text: str
+-    :type conn: cloudbot.core.connection.Client
++    :type conn: cloudbot.client.Client
+     :type mask: str
+     """
+     if text:
+@@ -81,7 +81,7 @@ def get_user_permissions(text, conn, mask, has_permission, notice):
+ def get_user_groups(text, conn, mask, has_permission, notice):
+     """[user] - lists all permissions given to [user], or the caller if no user is specified
+     :type text: str
+-    :type conn: cloudbot.core.connection.Client
++    :type conn: cloudbot.client.Client
+     :type mask: str
+     """
+     if text:
+@@ -106,8 +106,8 @@ def get_user_groups(text, conn, mask, has_permission, notice):
+ def remove_permission_user(text, bot, conn, notice, reply):
+     """<user> [group] - removes <user> from [group], or from all groups if no group is specified
+     :type text: str
+-    :type bot: cloudbot.core.bot.CloudBot
+-    :type conn: cloudbot.core.connection.Client
++    :type bot: cloudbot.bot.CloudBot
++    :type conn: cloudbot.client.Client
+     """
+     split = text.split()
+     if len(split) > 2:
+@@ -162,8 +162,8 @@ def remove_permission_user(text, bot, conn, notice, reply):
+ def add_permissions_user(text, conn, bot, notice, reply):
+     """<user> <group> - adds <user> to <group>
+     :type text: str
+-    :type conn: cloudbot.core.connection.Client
+-    :type bot: cloudbot.core.bot.CloudBot
++    :type conn: cloudbot.client.Client
++    :type bot: cloudbot.bot.CloudBot
+     """
+     split = text.split()
+     if len(split) > 2:
+@@ -204,7 +204,7 @@ def add_permissions_user(text, conn, bot, notice, reply):
+ def stop(text, bot):
+     """[reason] - stops me with [reason] as its quit message.
+     :type text: str
+-    :type bot: cloudbot.core.bot.CloudBot
++    :type bot: cloudbot.bot.CloudBot
+     """
+     if text:
+         yield from bot.stop(reason=text)
+@@ -216,7 +216,7 @@ def stop(text, bot):
+ def restart(text, bot):
+     """[reason] - restarts me with [reason] as its quit message.
+     :type text: str
+-    :type bot: cloudbot.core.bot.CloudBot
++    :type bot: cloudbot.bot.CloudBot
+     """
+     if text:
+         yield from bot.restart(reason=text)
+@@ -229,7 +229,7 @@ def restart(text, bot):
+ def join(text, conn, notice):
+     """<channel> - joins <channel>
+     :type text: str
+-    :type conn: cloudbot.core.connection.Client
++    :type conn: cloudbot.client.Client
+     """
+     for target in text.split():
+         if not target.startswith("#"):
+@@ -243,7 +243,7 @@ def join(text, conn, notice):
+ def part(text, conn, chan, notice):
+     """[#channel] - parts [#channel], or the caller's channel if no channel is specified
+     :type text: str
+-    :type conn: cloudbot.core.connection.Client
++    :type conn: cloudbot.client.Client
+     :type chan: str
+     """
+     if text:
+@@ -262,7 +262,7 @@ def part(text, conn, chan, notice):
+ def cycle(text, conn, chan, notice):
+     """[#channel] - cycles [#channel], or the caller's channel if no channel is specified
+     :type text: str
+-    :type conn: cloudbot.core.connection.Client
++    :type conn: cloudbot.client.Client
+     :type chan: str
+     """
+     if text:
+@@ -282,7 +282,7 @@ def cycle(text, conn, chan, notice):
+ def nick(text, conn, notice):
+     """<nick> - changes my nickname to <nick>
+     :type text: str
+-    :type conn: cloudbot.core.connection.Client
++    :type conn: cloudbot.client.Client
+     """
+     if not re.match("^[a-z0-9_|.-\]\[]*$", text.lower()):
+         notice("Invalid username '{}'".format(text))
+@@ -296,7 +296,7 @@ def nick(text, conn, notice):
+ def raw(text, conn, notice):
+     """<command> - sends <command> as a raw IRC command
+     :type text: str
+-    :type conn: cloudbot.core.connection.Client
++    :type conn: cloudbot.client.Client
+     """
+     notice("Raw command sent.")
+     conn.send(text)
+@@ -307,7 +307,7 @@ def raw(text, conn, notice):
+ def say(text, conn, chan):
+     """[#channel] <message> - says <message> to [#channel], or to the caller's channel if no channel is specified
+     :type text: str
+-    :type conn: cloudbot.core.connection.Client
++    :type conn: cloudbot.client.Client
+     :type chan: str
+     """
+     text = text.strip()
+@@ -326,7 +326,7 @@ def say(text, conn, chan):
+ def message(text, conn):
+     """<name> <message> - says <message> to <name>
+     :type text: str
+-    :type conn: cloudbot.core.connection.Client
++    :type conn: cloudbot.client.Client
+     """
+     split = text.split(None, 1)
+     channel = split[0]
+@@ -339,7 +339,7 @@ def message(text, conn):
+ def me(text, conn, chan):
+     """[#channel] <action> - acts out <action> in a [#channel], or in the current channel of none is specified
+     :type text: str
+-    :type conn: cloudbot.core.connection.Client
++    :type conn: cloudbot.client.Client
+     :type chan: str
+     """
+     text = text.strip()
+diff --git a/plugins/attacks.py b/plugins/attacks.py
+index 5e8831a..0c29af8 100644
+--- a/plugins/attacks.py
++++ b/plugins/attacks.py
+@@ -12,7 +12,7 @@ from cloudbot.util import textgen
+ @hook.onload()
+ def load_attacks(bot):
+     """
+-    :type bot: cloudbot.core.bot.CloudBot
++    :type bot: cloudbot.bot.CloudBot
+     """
+     global larts, insults, flirts, kills
+ 
+@@ -31,7 +31,7 @@ def load_attacks(bot):
+ 
+ def is_self(conn, target):
+     """
+-    :type conn: cloudbot.core.connection.Client
++    :type conn: cloudbot.client.Client
+     :type target: str
+     """
+     if re.search("(^..?.?.?self|{})".format(re.escape(conn.nick.lower())), target.lower()):
+@@ -45,7 +45,7 @@ def is_self(conn, target):
+ def lart(text, conn, nick, notice, action):
+     """<user> - LARTs <user>
+     :type text: str
+-    :type conn: cloudbot.core.connection.Client
++    :type conn: cloudbot.client.Client
+     :type nick: str
+     """
+     target = text.strip()
+@@ -69,7 +69,7 @@ def lart(text, conn, nick, notice, action):
+ def insult(text, conn, nick, notice, message):
+     """<user> - insults <user>
+     :type text: str
+-    :type conn: cloudbot.core.connection.Client
++    :type conn: cloudbot.client.Client
+     :type nick: str
+     """
+     target = text.strip()
+@@ -90,7 +90,7 @@ def insult(text, conn, nick, notice, message):
+ def flirt(text, conn, nick, notice, message):
+     """<user> - flirts with <user>
+     :type text: str
+-    :type conn: cloudbot.core.connection.Client
++    :type conn: cloudbot.client.Client
+     :type nick: str
+     """
+     target = text.strip()
+@@ -111,7 +111,7 @@ def flirt(text, conn, nick, notice, message):
+ def kill(text, conn, nick, notice, action):
+     """<user> - kills <user>
+     :type text: str
+-    :type conn: cloudbot.core.connection.Client
++    :type conn: cloudbot.client.Client
+     :type nick: str
+     """
+     target = text.strip()
+diff --git a/plugins/core_misc.py b/plugins/core_misc.py
+index af1eeb4..2fd2ac8 100644
+--- a/plugins/core_misc.py
++++ b/plugins/core_misc.py
+@@ -12,7 +12,7 @@ socket.setdefaulttimeout(10)
+ def invite(irc_paramlist, conn):
+     """
+     :type irc_paramlist: list[str]
+-    :type conn: cloudbot.core.connection.Client
++    :type conn: cloudbot.client.Client
+     """
+     invite_join = conn.config.get('invite_join', True)
+     if invite_join:
+@@ -24,8 +24,8 @@ def invite(irc_paramlist, conn):
+ @hook.irc_raw('004')
+ def onjoin(conn, bot):
+     """
+-    :type conn: cloudbot.core.connection.IRCClient
+-    :type bot: cloudbot.core.bot.CloudBot
++    :type conn: cloudbot.clients.irc.IrcClient
++    :type bot: cloudbot.bot.CloudBot
+     """
+     bot.logger.info("ONJOIN hook triggered.")
+     nickserv = conn.config.get('nickserv')
+@@ -64,7 +64,7 @@ def onjoin(conn, bot):
+ @hook.irc_raw('004')
+ def keep_alive(conn):
+     """
+-    :type conn: cloudbot.core.connection.IRCClient
++    :type conn: cloudbot.clients.irc.IrcClient
+     """
+     keepalive = conn.config.get('keep_alive', False)
+     if keepalive:
+diff --git a/plugins/core_sieve.py b/plugins/core_sieve.py
+index df19e51..64b72b9 100644
+--- a/plugins/core_sieve.py
++++ b/plugins/core_sieve.py
+@@ -1,5 +1,6 @@
+ import asyncio
+-from cloudbot import bucket, hook
++from cloudbot import hook
++from cloudbot.util import bucket
+ 
+ TOKENS = 10
+ RESTORE_RATE = 2
+@@ -12,9 +13,9 @@ buckets = {}
+ @hook.sieve
+ def sieve_suite(bot, event, _hook):
+     """
+-    :type bot: cloudbot.core.bot.CloudBot
+-    :type event: cloudbot.core.events.Event
+-    :type _hook: cloudbot.core.pluginmanager.Hook
++    :type bot: cloudbot.bot.CloudBot
++    :type event: cloudbot.event.Event
++    :type _hook: cloudbot.plugin.Hook
+     """
+     conn = event.conn
+     # check ignore bots
+diff --git a/plugins/core_tracker.py b/plugins/core_tracker.py
+index d1131f4..89b8207 100644
+--- a/plugins/core_tracker.py
++++ b/plugins/core_tracker.py
+@@ -15,7 +15,7 @@ nick_re = re.compile(":(.+?)!")
+ @hook.irc_raw("KICK")
+ def on_kick(conn, chan, nick):
+     """
+-    :type conn: cloudbot.core.connection.Client
++    :type conn: cloudbot.client.Client
+     :type chan: str
+     :type nick: str
+     """
+@@ -32,7 +32,7 @@ def on_kick(conn, chan, nick):
+ def on_nick(irc_paramlist, conn, irc_raw):
+     """
+     :type irc_paramlist: list[str]
+-    :type conn: cloudbot.core.connection.Client
++    :type conn: cloudbot.client.Client
+     :type irc_raw: str
+     """
+     old_nick = nick_re.search(irc_raw).group(1)
+@@ -48,7 +48,7 @@ def on_nick(irc_paramlist, conn, irc_raw):
+ @hook.irc_raw("JOIN")
+ def on_join(conn, chan, nick):
+     """
+-    :type conn: cloudbot.core.connection.Client
++    :type conn: cloudbot.client.Client
+     :type chan: str
+     :type nick: str
+     """
+diff --git a/plugins/correction.py b/plugins/correction.py
+index c0d7aae..4cbf32e 100644
+--- a/plugins/correction.py
++++ b/plugins/correction.py
+@@ -11,7 +11,7 @@ correction_re = re.compile(r"^[sS]/([^/]*)/([^/]*)(/.*)?\s*$")
+ def correction(match, conn, chan, message):
+     """
+     :type match: re.__Match
+-    :type conn: cloudbot.core.connection.Client
++    :type conn: cloudbot.client.Client
+     :type chan: str
+     """
+     print(match.groups())
+diff --git a/plugins/dbtest.py b/plugins/dbtest.py
+index 53bd0da..703241e 100644
+--- a/plugins/dbtest.py
++++ b/plugins/dbtest.py
+@@ -1,6 +1,7 @@
+ from sqlalchemy import Table, Column, String
+ 
+-from cloudbot import hook, botvars
++from cloudbot import hook
++from cloudbot.util import botvars
+ 
+ users = Table(
+     'user_table', botvars.metadata,
+diff --git a/plugins/domainr.py b/plugins/domainr.py
+index 1e0e3d6..d800677 100644
+--- a/plugins/domainr.py
++++ b/plugins/domainr.py
+@@ -1,4 +1,5 @@
+-from cloudbot import hook, http
++from cloudbot import hook
++from cloudbot.util import http
+ 
+ formats = {
+     "taken": "\x034{domain}\x0f{path}",
+diff --git a/plugins/drama.py b/plugins/drama.py
+index 34c1b47..d359a5f 100644
+--- a/plugins/drama.py
++++ b/plugins/drama.py
+@@ -5,7 +5,8 @@ from lxml import html
+ 
+ import requests
+ 
+-from cloudbot import hook, formatting
++from cloudbot import hook
++from cloudbot.util import formatting
+ 
+ api_url = "http://encyclopediadramatica.se/api.php"
+ ed_url = "http://encyclopediadramatica.se/"
+diff --git a/plugins/eightball.py b/plugins/eightball.py
+index 91687b5..72f258d 100644
+--- a/plugins/eightball.py
++++ b/plugins/eightball.py
+@@ -2,7 +2,8 @@ import os
+ import asyncio
+ import random
+ 
+-from cloudbot import hook, formatting
++from cloudbot import hook
++from cloudbot.util import formatting
+ 
+ color_codes = {
+     "<r>": "\x02\x0305",
+diff --git a/plugins/encrypt.py b/plugins/encrypt.py
+index 0acd546..22966af 100644
+--- a/plugins/encrypt.py
++++ b/plugins/encrypt.py
+@@ -56,7 +56,7 @@ def create_db(db):
+ 
+ def get_salt(bot):
+     """generate an encryption salt if none exists, then returns the salt
+-    :type bot: cloudbot.core.bot.CloudBot
++    :type bot: cloudbot.bot.CloudBot
+     """
+     if not bot.config.get("random_salt", False):
+         bot.config["random_salt"] = hashlib.md5(os.urandom(16)).hexdigest()
+@@ -69,7 +69,7 @@ def get_salt(bot):
+ def encrypt(text, bot, db, notice):
+     """<pass> <string> - encrypts <string> with <pass>. (<string> can only be decrypted using this bot)
+     :type text: str
+-    :type bot: cloudbot.core.bot.CloudBot
++    :type bot: cloudbot.bot.CloudBot
+     :type db: sqlalchemy.orm.session.Session
+     """
+ 
+@@ -107,7 +107,7 @@ def encrypt(text, bot, db, notice):
+ @hook.command
+ def decrypt(text, bot, db, notice):
+     """<pass> <string> - decrypts <string> with <pass>. (can only decrypt strings encrypted on this bot)
+-    :type bot: cloudbot.core.bot.CloudBot
++    :type bot: cloudbot.bot.CloudBot
+     :type db: sqlalchemy.orm.session.Session
+     """
+ 
+diff --git a/plugins/fact.py b/plugins/fact.py
+index 4b2386f..5228391 100644
+--- a/plugins/fact.py
++++ b/plugins/fact.py
+@@ -1,4 +1,5 @@
+-from cloudbot import hook, http, web
++from cloudbot import hook
++from cloudbot.util import http, web
+ 
+ 
+ @hook.command(autohelp=False)
+diff --git a/plugins/factoids.py b/plugins/factoids.py
+index efde4c5..7de5ae1 100644
+--- a/plugins/factoids.py
++++ b/plugins/factoids.py
+@@ -7,7 +7,8 @@ import requests
+ 
+ from sqlalchemy import Table, Column, String
+ 
+-from cloudbot import botvars, hook, formatting, web
++from cloudbot import hook
++from cloudbot.util import botvars, formatting, web
+ 
+ re_lineends = re.compile(r'[\r\n]*')
+ 
+diff --git a/plugins/fishbans.py b/plugins/fishbans.py
+index 8f5cdb8..e365bd1 100644
+--- a/plugins/fishbans.py
++++ b/plugins/fishbans.py
+@@ -4,7 +4,8 @@ import asyncio
+ import requests
+ import requests.exceptions
+ 
+-from cloudbot import hook, formatting
++from cloudbot import hook
++from cloudbot.util import formatting
+ 
+ 
+ api_url = "http://api.fishbans.com/stats/{}/"
+diff --git a/plugins/geoip.py b/plugins/geoip.py
+index cb8c7da..61a695e 100644
+--- a/plugins/geoip.py
++++ b/plugins/geoip.py
+@@ -5,7 +5,8 @@ from io import BytesIO
+ 
+ import pygeoip
+ 
+-from cloudbot import hook, http
++from cloudbot import hook
++from cloudbot.util import http
+ 
+ 
+ @hook.onload()
+diff --git a/plugins/github.py b/plugins/github.py
+index 5887a44..add37b7 100644
+--- a/plugins/github.py
++++ b/plugins/github.py
+@@ -1,6 +1,7 @@
+ import requests
+ 
+-from cloudbot import hook, web, formatting
++from cloudbot import hook
++from cloudbot.util import web, formatting
+ 
+ shortcuts = {
+     'cloudbot': 'CloudBotIRC/Refresh'
+diff --git a/plugins/google.py b/plugins/google.py
+index 09dcf8e..036c523 100644
+--- a/plugins/google.py
++++ b/plugins/google.py
+@@ -1,6 +1,7 @@
+ import random
+ 
+-from cloudbot import hook, http, formatting
++from cloudbot import hook
++from cloudbot.util import http, formatting
+ 
+ 
+ def api_get(kind, query):
+diff --git a/plugins/google_translate.py b/plugins/google_translate.py
+index e2510e9..0e33447 100644
+--- a/plugins/google_translate.py
++++ b/plugins/google_translate.py
+@@ -6,7 +6,8 @@ Since December 1, 2011, the Google Translate API is a paid service only.
+ import re
+ import html.entities
+ 
+-from cloudbot import hook, http
++from cloudbot import hook
++from cloudbot.util import http
+ 
+ max_length = 100
+ 
+diff --git a/plugins/help.py b/plugins/help.py
+index 245abaf..429f0fc 100644
+--- a/plugins/help.py
++++ b/plugins/help.py
+@@ -10,8 +10,8 @@ from cloudbot import hook
+ def help_command(text, conn, bot, notice, has_permission):
+     """[command] - gives help for [command], or lists all available commands if no command is specified
+     :type text: str
+-    :type conn: cloudbot.core.connection.Client
+-    :type bot: cloudbot.core.bot.CloudBot
++    :type conn: cloudbot.client.Client
++    :type bot: cloudbot.bot.CloudBot
+     """
+     if text:
+         searching_for = text.lower().strip()
+diff --git a/plugins/history.py b/plugins/history.py
+index b7622b1..c0b46c9 100644
+--- a/plugins/history.py
++++ b/plugins/history.py
+@@ -3,10 +3,10 @@ import time
+ import asyncio
+ import re
+ 
+-from cloudbot import hook, timesince
++from cloudbot import hook
++from cloudbot.util import timesince
+ from cloudbot.event import EventType
+ 
+-
+ db_ready = []
+ 
+ 
+@@ -23,9 +23,9 @@ def db_init(db, conn_name):
+ 
+ def track_seen(event, db, conn):
+     """ Tracks messages for the .seen command
+-    :type event: cloudbot.core.events.Event
++    :type event: cloudbot.event.Event
+     :type db: sqlalchemy.orm.Session
+-    :type conn: cloudbot.core.connection.Client
++    :type conn: cloudbot.client.Client
+     """
+     db_init(db, conn)
+     # keep private messages private
+@@ -37,8 +37,8 @@ def track_seen(event, db, conn):
+ 
+ def track_history(event, message_time, conn):
+     """
+-    :type event: cloudbot.core.events.Event
+-    :type conn: cloudbot.core.connection.Client
++    :type event: cloudbot.event.Event
++    :type conn: cloudbot.client.Client
+     """
+     try:
+         history = conn.history[event.chan]
+@@ -54,8 +54,8 @@ def track_history(event, message_time, conn):
+ def chat_tracker(event, db, conn):
+     """
+     :type db: sqlalchemy.orm.Session
+-    :type event: cloudbot.core.events.Event
+-    :type conn: cloudbot.core.connection.Client
++    :type event: cloudbot.event.Event
++    :type conn: cloudbot.client.Client
+     """
+     message_time = time.time()
+     track_seen(event, db, conn)
+@@ -66,8 +66,8 @@ def chat_tracker(event, db, conn):
+ @hook.command(autohelp=False)
+ def resethistory(event, conn):
+     """- resets chat history for the current channel
+-    :type event: cloudbot.core.events.Event
+-    :type conn: cloudbot.core.connection.Client
++    :type event: cloudbot.event.Event
++    :type conn: cloudbot.client.Client
+     """
+     try:
+         conn.history[event.chan].clear()
+@@ -81,8 +81,8 @@ def resethistory(event, conn):
+ def seen(text, nick, chan, db, event, conn):
+     """<nick> <channel> - tells when a nickname was last in active in one of my channels
+     :type db: sqlalchemy.orm.Session
+-    :type event: cloudbot.core.events.Event
+-    :type conn: cloudbot.core.connection.Client
++    :type event: cloudbot.event.Event
++    :type conn: cloudbot.client.Client
+     """
+ 
+     if event.conn.nick.lower() == text.lower():
+diff --git a/plugins/horoscope.py b/plugins/horoscope.py
+index 1eff2b9..9af1630 100644
+--- a/plugins/horoscope.py
++++ b/plugins/horoscope.py
+@@ -1,6 +1,7 @@
+ # Plugin by Infinity - <https://github.com/infinitylabs/UguuBot>
+ 
+-from cloudbot import hook, http, formatting
++from cloudbot import hook
++from cloudbot.util import http, formatting
+ 
+ 
+ @hook.onload()
+diff --git a/plugins/hulu.py b/plugins/hulu.py
+index 211252f..26dcc11 100644
+--- a/plugins/hulu.py
++++ b/plugins/hulu.py
+@@ -1,7 +1,8 @@
+ import re
+ from urllib.parse import urlencode
+ 
+-from cloudbot import hook, http, timeformat
++from cloudbot import hook
++from cloudbot.util import http, timeformat
+ 
+ hulu_re = re.compile(r'(.*://)(www.hulu.com|hulu.com)(.*)', re.I)
+ 
+diff --git a/plugins/ignore.py b/plugins/ignore.py
+index f1fd713..0372144 100644
+--- a/plugins/ignore.py
++++ b/plugins/ignore.py
+@@ -27,9 +27,9 @@ def ensure_ignored(bot):
+ @hook.sieve()
+ def ignore_sieve(bot, event, _hook):
+     """ blocks events from ignored channels/hosts
+-    :type bot: cloudbot.core.bot.CloudBot
+-    :type event: cloudbot.core.events.Event
+-    :type _hook: cloudbot.core.pluginmanager.Hook
++    :type bot: cloudbot.bot.CloudBot
++    :type event: cloudbot.event.Event
++    :type _hook: cloudbot.plugin.Hook
+     """
+     # don't block event hooks
+     if _hook.type == "event":
+diff --git a/plugins/imdb.py b/plugins/imdb.py
+index 2940266..aa329ee 100644
+--- a/plugins/imdb.py
++++ b/plugins/imdb.py
+@@ -2,7 +2,8 @@
+ 
+ import re
+ 
+-from cloudbot import hook, http, formatting
++from cloudbot import hook
++from cloudbot.util import http, formatting
+ 
+ id_re = re.compile("tt\d+")
+ imdb_re = re.compile(r'(.*:)//(imdb.com|www.imdb.com)(:[0-9]+)?(.*)', re.I)
+diff --git a/plugins/imgur.py b/plugins/imgur.py
+index f951e47..492a789 100644
+--- a/plugins/imgur.py
++++ b/plugins/imgur.py
+@@ -1,7 +1,8 @@
+ import re
+ import random
+ 
+-from cloudbot import hook, http, web
++from cloudbot import hook
++from cloudbot.util import http, web
+ 
+ base_url = "http://reddit.com/r/{}/.json"
+ imgur_re = re.compile(r'http://(?:i\.)?imgur\.com/(a/)?(\w+\b(?!/))\.?\w?')
+diff --git a/plugins/kernel.py b/plugins/kernel.py
+index ae8434d..56bd030 100644
+--- a/plugins/kernel.py
++++ b/plugins/kernel.py
+@@ -1,6 +1,7 @@
+ import re
+ 
+-from cloudbot import hook, http
++from cloudbot import hook
++from cloudbot.util import http
+ 
+ 
+ @hook.command(autohelp=False)
+diff --git a/plugins/lastfm.py b/plugins/lastfm.py
+index 819264a..4f12bc3 100644
+--- a/plugins/lastfm.py
++++ b/plugins/lastfm.py
+@@ -1,6 +1,7 @@
+ from datetime import datetime
+ 
+-from cloudbot import hook, http, timesince
++from cloudbot import hook
++from cloudbot.util import http, timesince
+ 
+ api_url = "http://ws.audioscrobbler.com/2.0/?format=json"
+ 
+diff --git a/plugins/lmgtfy.py b/plugins/lmgtfy.py
+index 60c1664..c97c383 100644
+--- a/plugins/lmgtfy.py
++++ b/plugins/lmgtfy.py
+@@ -1,4 +1,5 @@
+-from cloudbot import hook, web, http
++from cloudbot import hook
++from cloudbot.util import web, http
+ 
+ 
+ @hook.command("lmgtfy", "gfy")
+diff --git a/plugins/log.py b/plugins/log.py
+index fb4faea..6eea19c 100644
+--- a/plugins/log.py
++++ b/plugins/log.py
+@@ -9,24 +9,6 @@ from cloudbot.event import EventType
+ 
+ 
+ 
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+ # +---------+
+ # | Formats |
+ # +---------+
+@@ -66,7 +48,7 @@ ctcp_unknown_with_message = ("[{server}:{channel}] {nick} [{user}@{host}] "
+ def format_event(event):
+     """
+     Format an event
+-    :type event: cloudbot.core.events.Event
++    :type event: cloudbot.event.Event
+     :rtype: str
+     """
+ 
+@@ -220,7 +202,7 @@ def get_raw_log_stream(server):
+ @hook.irc_raw("*", singlethread=True)
+ def log_raw(event):
+     """
+-    :type event: cloudbot.core.events.Event
++    :type event: cloudbot.event.Event
+     """
+     logging_config = event.bot.config.get("logging", {})
+     if not logging_config.get("raw_file_log", False):
+@@ -232,7 +214,7 @@ def log_raw(event):
+ @hook.irc_raw("*", singlethread=True)
+ def log(event):
+     """
+-    :type event: cloudbot.core.events.Event
++    :type event: cloudbot.event.Event
+     """
+     text = format_event(event)
+ 
+@@ -246,8 +228,8 @@ def log(event):
+ @hook.irc_raw("*")
+ def console_log(bot, event):
+     """
+-    :type bot: cloudbot.core.bot.CloudBot
+-    :type event: cloudbot.core.events.Event
++    :type bot: cloudbot.bot.CloudBot
++    :type event: cloudbot.event.Event
+     """
+     text = format_event(event)
+     if text is not None:
+diff --git a/plugins/lyrics.py b/plugins/lyrics.py
+index c2951d6..d35372e 100644
+--- a/plugins/lyrics.py
++++ b/plugins/lyrics.py
+@@ -1,4 +1,5 @@
+-from cloudbot import hook, http, web
++from cloudbot import hook
++from cloudbot.util import http, web
+ 
+ url = "http://search.azlyrics.com/search.php?q="
+ 
+diff --git a/plugins/metacritic.py b/plugins/metacritic.py
+index 53e77d4..1301842 100644
+--- a/plugins/metacritic.py
++++ b/plugins/metacritic.py
+@@ -3,7 +3,8 @@
+ import re
+ from urllib.error import HTTPError
+ 
+-from cloudbot import hook, http
++from cloudbot import hook
++from cloudbot.util import http
+ 
+ 
+ @hook.command("metacritic", "mc")
+diff --git a/plugins/minecraft_bukget.py b/plugins/minecraft_bukget.py
+index 9180d96..4f0fc2d 100644
+--- a/plugins/minecraft_bukget.py
++++ b/plugins/minecraft_bukget.py
+@@ -3,11 +3,11 @@ import time
+ import random
+ import requests
+ 
+-from cloudbot import hook, http, web
++from cloudbot import hook
++from cloudbot.util import http, web, formatting
+ 
+ 
+ # # CONSTANTS
+-from cloudbot import formatting
+ 
+ base_url = "http://api.bukget.org/3/"
+ 
+diff --git a/plugins/minecraft_ping.py b/plugins/minecraft_ping.py
+index 0a9de26..a6362e7 100644
+--- a/plugins/minecraft_ping.py
++++ b/plugins/minecraft_ping.py
+@@ -58,9 +58,9 @@ def mcping_modern(host, port):
+         except socket.timeout:
+             raise PingError("Request timed out")
+         except ConnectionRefusedError:
+-            raise PingError("Client refused")
++            raise PingError("Connection refused")
+         except ConnectionError:
+-            raise PingError("Client error")
++            raise PingError("Connection error")
+ 
+         # send handshake + status request
+         s.send(pack_data(b"\x00\x00" + pack_data(host.encode('utf8')) + pack_port(port) + b"\x01"))
+@@ -121,9 +121,9 @@ def mcping_legacy(host, port):
+     except socket.timeout:
+         raise PingError("Request timed out")
+     except ConnectionRefusedError:
+-        raise PingError("Client refused")
++        raise PingError("Connection refused")
+     except ConnectionError:
+-        raise PingError("Client error")
++        raise PingError("Connection error")
+ 
+     if response[0] != '\xff':
+         raise PingError("Invalid response")
+diff --git a/plugins/minecraft_status.py b/plugins/minecraft_status.py
+index f73452e..acd8c4f 100644
+--- a/plugins/minecraft_status.py
++++ b/plugins/minecraft_status.py
+@@ -1,6 +1,7 @@
+ import json
+ 
+-from cloudbot import hook, http
++from cloudbot import hook
++from cloudbot.util import http
+ 
+ 
+ @hook.command(autohelp=False)
+diff --git a/plugins/minecraft_user.py b/plugins/minecraft_user.py
+index 27cb2a9..2de1e26 100644
+--- a/plugins/minecraft_user.py
++++ b/plugins/minecraft_user.py
+@@ -4,7 +4,8 @@ import requests
+ import json
+ import re
+ 
+-from cloudbot import hook, http
++from cloudbot import hook
++from cloudbot.util import http
+ 
+ 
+ # I need TREE apis, all on separate domains, to get basic account info
+diff --git a/plugins/minecraft_wiki.py b/plugins/minecraft_wiki.py
+index 570723d..9489c13 100644
+--- a/plugins/minecraft_wiki.py
++++ b/plugins/minecraft_wiki.py
+@@ -1,6 +1,7 @@
+ import re
+ 
+-from cloudbot import hook, http, formatting
++from cloudbot import hook
++from cloudbot.util import http, formatting
+ 
+ api_url = "http://minecraft.gamepedia.com/api.php?action=opensearch"
+ mc_url = "http://minecraft.gamepedia.com/"
+diff --git a/plugins/mlia.py b/plugins/mlia.py
+index 065e960..9d94253 100644
+--- a/plugins/mlia.py
++++ b/plugins/mlia.py
+@@ -2,7 +2,8 @@
+ 
+ import random
+ 
+-from cloudbot import hook, http
++from cloudbot import hook
++from cloudbot.util import http
+ 
+ mlia_cache = []
+ 
+diff --git a/plugins/namegen.py b/plugins/namegen.py
+index 5d8d342..636095d 100644
+--- a/plugins/namegen.py
++++ b/plugins/namegen.py
+@@ -1,7 +1,8 @@
+ import json
+ import os
+ 
+-from cloudbot import hook, formatting, textgen
++from cloudbot import hook
++from cloudbot.util import formatting, textgen
+ 
+ 
+ def get_generator(_json):
+@@ -13,7 +14,7 @@ def get_generator(_json):
+ @hook.command(autohelp=False)
+ def namegen(text, bot, notice):
+     """[generator|list] - generates some names using the chosen generator, or lists all generators if 'list' is specified
+-    :type bot: cloudbot.core.bot.CloudBot
++    :type bot: cloudbot.bot.CloudBot
+     """
+ 
+     # clean up the input
+diff --git a/plugins/newegg.py b/plugins/newegg.py
+index 81400db..1dda1b1 100644
+--- a/plugins/newegg.py
++++ b/plugins/newegg.py
+@@ -1,7 +1,8 @@
+ import json
+ import re
+ 
+-from cloudbot import hook, http, formatting, web
++from cloudbot import hook
++from cloudbot.util import http, formatting, web
+ 
+ 
+ 
+diff --git a/plugins/newgrounds.py b/plugins/newgrounds.py
+index 7fea478..2d7095e 100644
+--- a/plugins/newgrounds.py
++++ b/plugins/newgrounds.py
+@@ -1,6 +1,7 @@
+ import re
+ 
+-from cloudbot import hook, http
++from cloudbot import hook
++from cloudbot.util import http
+ 
+ newgrounds_re = re.compile(r'(.*:)//(www.newgrounds.com|newgrounds.com)(:[0-9]+)?(.*)', re.I)
+ valid = set('0123456789')
+diff --git a/plugins/osrc.py b/plugins/osrc.py
+index 01a3a71..1150a96 100644
+--- a/plugins/osrc.py
++++ b/plugins/osrc.py
+@@ -1,4 +1,5 @@
+-from cloudbot import hook, http, web
++from cloudbot import hook
++from cloudbot.util import http, web
+ 
+ 
+ user_url = "http://osrc.dfm.io/{}"
+diff --git a/plugins/pagecheck.py b/plugins/pagecheck.py
+index 79f589c..bef604d 100644
+--- a/plugins/pagecheck.py
++++ b/plugins/pagecheck.py
+@@ -3,7 +3,8 @@ import requests
+ import requests.exceptions
+ import urllib.parse
+ 
+-from cloudbot import hook, urlnorm
++from cloudbot import hook
++from cloudbot.util import urlnorm
+ 
+ 
+ @hook.command("down", "offline", "up")
+diff --git a/plugins/plpaste.py b/plugins/plpaste.py
+index 273145f..12ac517 100644
+--- a/plugins/plpaste.py
++++ b/plugins/plpaste.py
+@@ -1,13 +1,14 @@
+ from os import listdir
+ 
+-from cloudbot import hook, web
++from cloudbot import hook
++from cloudbot.util import web
+ 
+ 
+ @hook.command(permissions=["adminonly"])
+ def plpaste(text, bot):
+     """<command> - pastes the plugin file that contains <command>
+     :type text: str
+-    :type bot: cloudbot.core.bot.CloudBot
++    :type bot: cloudbot.bot.CloudBot
+     """
+     if text in bot.plugin_manager.commands:
+         file_path = bot.plugin_manager.commands[text].plugin.file_path
+diff --git a/plugins/profiling.py b/plugins/profiling.py
+index 8dc485a..feb16e6 100644
+--- a/plugins/profiling.py
++++ b/plugins/profiling.py
+@@ -22,7 +22,8 @@ try:
+ except ImportError:
+     objgraph = None
+ 
+-from cloudbot import hook, web
++from cloudbot import hook
++from cloudbot.util import web
+ 
+ 
+ def get_name(thread_id):
+diff --git a/plugins/qrcode.py b/plugins/qrcode.py
+index 4f47cb1..7a35fda 100644
+--- a/plugins/qrcode.py
++++ b/plugins/qrcode.py
+@@ -1,5 +1,6 @@
+ # Plugin by https://github.com/Mu5tank05
+-from cloudbot import hook, web, http
++from cloudbot import hook
++from cloudbot.util import web, http
+ 
+ 
+ @hook.command('qr')
+diff --git a/plugins/recipe.py b/plugins/recipe.py
+index 407e59b..1ca63c7 100644
+--- a/plugins/recipe.py
++++ b/plugins/recipe.py
+@@ -2,7 +2,8 @@ import random
+ import microdata
+ import requests
+ 
+-from cloudbot import hook, http, web
++from cloudbot import hook
++from cloudbot.util import http, web
+ 
+ 
+ base_url = "http://www.cookstr.com"
+diff --git a/plugins/reddit.py b/plugins/reddit.py
+index 5a3ca2d..3b527fb 100644
+--- a/plugins/reddit.py
++++ b/plugins/reddit.py
+@@ -2,7 +2,8 @@ from datetime import datetime
+ import re
+ import random
+ 
+-from cloudbot import hook, http, timesince, formatting
++from cloudbot import hook
++from cloudbot.util import http, timesince, formatting
+ 
+ reddit_re = re.compile(r'.*(((www\.)?reddit\.com/r|redd\.it)[^ ]+)', re.I)
+ 
+diff --git a/plugins/regex_chans.py b/plugins/regex_chans.py
+index e43a3a6..498f8a1 100644
+--- a/plugins/regex_chans.py
++++ b/plugins/regex_chans.py
+@@ -1,6 +1,7 @@
+ from sqlalchemy import Table, Column, UniqueConstraint, String
+ 
+-from cloudbot import hook, botvars
++from cloudbot import hook
++from cloudbot.util import botvars
+ 
+ table = Table(
+     "regex_chans",
+diff --git a/plugins/rottentomatoes.py b/plugins/rottentomatoes.py
+index 900dc71..5c34465 100644
+--- a/plugins/rottentomatoes.py
++++ b/plugins/rottentomatoes.py
+@@ -1,4 +1,5 @@
+-from cloudbot import http, hook
++from cloudbot import hook
++from cloudbot.util import http
+ 
+ api_root = 'http://api.rottentomatoes.com/api/public/v1.0/'
+ movie_search_url = api_root + 'movies.json'
+diff --git a/plugins/rss.py b/plugins/rss.py
+index 0b851d3..1357cca 100644
+--- a/plugins/rss.py
++++ b/plugins/rss.py
+@@ -1,4 +1,5 @@
+-from cloudbot import hook, formatting, web
++from cloudbot import hook
++from cloudbot.util import formatting, web
+ 
+ 
+ @hook.command("feed")
+diff --git a/plugins/scene.py b/plugins/scene.py
+index 97bad91..ebd15f4 100644
+--- a/plugins/scene.py
++++ b/plugins/scene.py
+@@ -1,6 +1,7 @@
+ import datetime
+ 
+-from cloudbot import hook, http, timesince
++from cloudbot import hook
++from cloudbot.util import http, timesince
+ 
+ 
+ @hook.command("scene")
+diff --git a/plugins/shorten.py b/plugins/shorten.py
+index 1414898..cd35937 100644
+--- a/plugins/shorten.py
++++ b/plugins/shorten.py
+@@ -1,4 +1,5 @@
+-from cloudbot import hook, web
++from cloudbot import hook
++from cloudbot.util import web
+ 
+ 
+ @hook.command()
+diff --git a/plugins/slap.py b/plugins/slap.py
+index 64042b7..2f72610 100644
+--- a/plugins/slap.py
++++ b/plugins/slap.py
+@@ -1,6 +1,7 @@
+ import json
+ 
+-from cloudbot import hook, textgen
++from cloudbot import hook
++from cloudbot.util import textgen
+ 
+ 
+ def get_generator(_json, variables):
+diff --git a/plugins/slogan.py b/plugins/slogan.py
+index 73b3b38..f35d83c 100644
+--- a/plugins/slogan.py
++++ b/plugins/slogan.py
+@@ -1,6 +1,7 @@
+ import random
+ 
+-from cloudbot import hook, formatting
++from cloudbot import hook
++from cloudbot.util import formatting
+ 
+ with open("./data/slogans.txt") as f:
+     slogans = [line.strip() for line in f.readlines()
+diff --git a/plugins/snopes.py b/plugins/snopes.py
+index 6affa17..7cee11d 100644
+--- a/plugins/snopes.py
++++ b/plugins/snopes.py
+@@ -1,6 +1,7 @@
+ import re
+ 
+-from cloudbot import hook, http
++from cloudbot import hook
++from cloudbot.util import http
+ 
+ search_url = "http://search.atomz.com/search/?sp_a=00062d45-sp00000000"
+ 
+diff --git a/plugins/soundcloud.py b/plugins/soundcloud.py
+index 909e7f3..0c45282 100644
+--- a/plugins/soundcloud.py
++++ b/plugins/soundcloud.py
+@@ -1,8 +1,8 @@
+ import re
+ from urllib.parse import urlencode
+ 
+-from cloudbot import hook, http, web
+-from cloudbot import formatting
++from cloudbot import hook
++from cloudbot.util import http, web, formatting
+ 
+ sc_re = re.compile(r'(.*:)//(www.)?(soundcloud.com)(.*)', re.I)
+ api_url = "http://api.soundcloud.com"
+diff --git a/plugins/spotify.py b/plugins/spotify.py
+index 96d5828..ca656d6 100644
+--- a/plugins/spotify.py
++++ b/plugins/spotify.py
+@@ -1,7 +1,8 @@
+ import re
+ from urllib.parse import urlencode
+ 
+-from cloudbot import hook, http, web
++from cloudbot import hook
++from cloudbot.util import http, web
+ 
+ gateway = 'http://open.spotify.com/{}/{}'  # http spotify gw address
+ spuri = 'spotify:{}:{}'
+diff --git a/plugins/steam.py b/plugins/steam.py
+index 3f95afa..da56152 100644
+--- a/plugins/steam.py
++++ b/plugins/steam.py
+@@ -2,7 +2,8 @@ import re
+ 
+ from bs4 import BeautifulSoup, NavigableString, Tag
+ 
+-from cloudbot import hook, http, web
++from cloudbot import hook
++from cloudbot.util import http, web
+ from cloudbot.util.formatting import truncate_str
+ 
+ steam_re = re.compile(r'(.*:)//(store.steampowered.com)(:[0-9]+)?(.*)', re.I)
+diff --git a/plugins/steam_calc.py b/plugins/steam_calc.py
+index 948948c..b6bf6a7 100644
+--- a/plugins/steam_calc.py
++++ b/plugins/steam_calc.py
+@@ -1,7 +1,8 @@
+ import csv
+ import io
+ 
+-from cloudbot import hook, http
++from cloudbot import hook
++from cloudbot.util import http
+ 
+ gauge_url = "http://www.mysteamgauge.com/search?username={}"
+ 
+diff --git a/plugins/stock.py b/plugins/stock.py
+index efcf4ff..9356f55 100644
+--- a/plugins/stock.py
++++ b/plugins/stock.py
+@@ -1,4 +1,5 @@
+-from cloudbot import hook, web
++from cloudbot import hook
++from cloudbot.util import web
+ 
+ 
+ @hook.command()
+diff --git a/plugins/suggest.py b/plugins/suggest.py
+index de8c213..1c30574 100644
+--- a/plugins/suggest.py
++++ b/plugins/suggest.py
+@@ -2,7 +2,8 @@ import json
+ 
+ from bs4 import BeautifulSoup
+ 
+-from cloudbot import hook, http, formatting
++from cloudbot import hook
++from cloudbot.util import http, formatting
+ 
+ 
+ @hook.command()
+diff --git a/plugins/tell.py b/plugins/tell.py
+index 940aa5f..a3686c7 100644
+--- a/plugins/tell.py
++++ b/plugins/tell.py
+@@ -4,10 +4,10 @@ from datetime import datetime
+ from sqlalchemy import Table, Column, String, Boolean, DateTime
+ from sqlalchemy.sql import select
+ 
+-from cloudbot import hook, timesince, botvars
++from cloudbot import hook
++from cloudbot.util import timesince, botvars
+ from cloudbot.event import EventType
+ 
+-
+ table = Table(
+     'tells',
+     botvars.metadata,
+@@ -75,8 +75,8 @@ def add_tell(db, server, sender, target, message):
+ @hook.event(EventType.message, singlethread=True)
+ def tellinput(event, conn, db, nick, notice):
+     """
+-    :type event: cloudbot.core.events.Event
+-    :type conn: cloudbot.core.connection.Client
++    :type event: cloudbot.event.Event
++    :type conn: cloudbot.client.Client
+     :type db: sqlalchemy.orm.Session
+     """
+     if 'showtells' in event.content.lower():
+diff --git a/plugins/time_plugin.py b/plugins/time_plugin.py
+index dc979ca..45426af 100644
+--- a/plugins/time_plugin.py
++++ b/plugins/time_plugin.py
+@@ -1,7 +1,7 @@
+ import time
+ 
+-from cloudbot import hook, http
+-from cloudbot.util.formatting import capitalize_first
++from cloudbot import hook
++from cloudbot.util import http, formatting
+ 
+ api_url = 'http://api.wolframalpha.com/v2/query?format=plaintext'
+ 
+@@ -25,7 +25,7 @@ def time_command(inp, bot=None):
+         if inp.lower() == "unix":
+             place = "Unix Epoch"
+         else:
+-            place = capitalize_first(" ".join(request.xpath("//pod[@"
++            place = formatting.capitalize_first(" ".join(request.xpath("//pod[@"
+                                                             "title='Input interpretation']/subpod/plaintext/text()"))[
+                                      16:])
+         return "{} - \x02{}\x02".format(current_time, place)
+diff --git a/plugins/title.py b/plugins/title.py
+index ccd5fb2..def393e 100644
+--- a/plugins/title.py
++++ b/plugins/title.py
+@@ -1,6 +1,7 @@
+ from bs4 import BeautifulSoup
+ 
+-from cloudbot import hook, http, urlnorm
++from cloudbot import hook
++from cloudbot.util import http, urlnorm
+ 
+ 
+ @hook.command()
+diff --git a/plugins/tvdb.py b/plugins/tvdb.py
+index c407df6..2e3852e 100644
+--- a/plugins/tvdb.py
++++ b/plugins/tvdb.py
+@@ -1,6 +1,7 @@
+ import datetime
+ 
+-from cloudbot import hook, http
++from cloudbot import hook
++from cloudbot.util import http
+ 
+ base_url = "http://thetvdb.com/api/"
+ api_key = "469B73127CA0C411"
+diff --git a/plugins/twitch.py b/plugins/twitch.py
+index 3e68046..1ae9a2d 100644
+--- a/plugins/twitch.py
++++ b/plugins/twitch.py
+@@ -1,7 +1,8 @@
+ import re
+ from html.parser import HTMLParser
+ 
+-from cloudbot import hook, http
++from cloudbot import hook
++from cloudbot.util import http
+ 
+ twitch_re = re.compile(r'(.*:)//(twitch.tv|www.twitch.tv)(:[0-9]+)?(.*)', re.I)
+ multitwitch_re = re.compile(r'(.*:)//(www.multitwitch.tv|multitwitch.tv)/(.*)', re.I)
+diff --git a/plugins/twitter.py b/plugins/twitter.py
+index 2731e09..509ef0a 100644
+--- a/plugins/twitter.py
++++ b/plugins/twitter.py
+@@ -5,7 +5,8 @@ from datetime import datetime
+ from twitter import Twitter, OAuth
+ from twitter.api import TwitterHTTPError
+ 
+-from cloudbot import hook, timesince
++from cloudbot import hook
++from cloudbot.util import timesince
+ 
+ 
+ @hook.onload()
+diff --git a/plugins/update.py b/plugins/update.py
+index 89032d0..bd2eafe 100644
+--- a/plugins/update.py
++++ b/plugins/update.py
+@@ -1,6 +1,7 @@
+ from git import Repo
+ 
+-from cloudbot import hook, web
++from cloudbot import hook
++from cloudbot.util import web
+ 
+ 
+ @hook.command()
+diff --git a/plugins/urban.py b/plugins/urban.py
+index 7ece74c..0f738c6 100644
+--- a/plugins/urban.py
++++ b/plugins/urban.py
+@@ -1,6 +1,7 @@
+ import random
+ 
+-from cloudbot import hook, http, formatting
++from cloudbot import hook
++from cloudbot.util import http, formatting
+ 
+ base_url = 'http://api.urbandictionary.com/v0'
+ define_url = base_url + "/define"
+diff --git a/plugins/utility.py b/plugins/utility.py
+index 97000c7..f153345 100644
+--- a/plugins/utility.py
++++ b/plugins/utility.py
+@@ -5,7 +5,8 @@ import collections
+ import re
+ import binascii
+ 
+-from cloudbot import hook, formatting
++from cloudbot import hook
++from cloudbot.util import formatting
+ 
+ colors = collections.OrderedDict([
+     ('red', '\x0304'),
+diff --git a/plugins/validate.py b/plugins/validate.py
+index dc61c24..115106f 100644
+--- a/plugins/validate.py
++++ b/plugins/validate.py
+@@ -4,7 +4,8 @@ Runs a given url through the w3c validator
+ by Vladi
+ """
+ 
+-from cloudbot import hook, http
++from cloudbot import hook
++from cloudbot.util import http
+ 
+ 
+ @hook.command("validate", "w3c")
+diff --git a/plugins/valvesounds.py b/plugins/valvesounds.py
+index b1b186d..810a549 100644
+--- a/plugins/valvesounds.py
++++ b/plugins/valvesounds.py
+@@ -1,7 +1,8 @@
+ import json
+ import urllib
+ 
+-from cloudbot import hook, http, web
++from cloudbot import hook
++from cloudbot.util import http, web
+ 
+ 
+ def get_sound_info(game, search):
+diff --git a/plugins/vimeo.py b/plugins/vimeo.py
+index fb30ab9..d1f15cd 100644
+--- a/plugins/vimeo.py
++++ b/plugins/vimeo.py
+@@ -1,4 +1,5 @@
+-from cloudbot import hook, http, timeformat
++from cloudbot import hook
++from cloudbot.util import http, timeformat
+ 
+ 
+ @hook.regex(r'vimeo.com/([0-9]+)')
+diff --git a/plugins/weather.py b/plugins/weather.py
+index e71dd2c..0a78a1c 100644
+--- a/plugins/weather.py
++++ b/plugins/weather.py
+@@ -1,4 +1,5 @@
+-from cloudbot import hook, http, web
++from cloudbot import hook
++from cloudbot.util import http, web
+ 
+ base_url = "http://api.wunderground.com/api/{}/{}/q/{}.json"
+ 
+diff --git a/plugins/wikipedia.py b/plugins/wikipedia.py
+index 0467960..6e33fce 100644
+--- a/plugins/wikipedia.py
++++ b/plugins/wikipedia.py
+@@ -3,7 +3,8 @@ Scaevolus 2009"""
+ 
+ import re
+ 
+-from cloudbot import hook, http, formatting
++from cloudbot import hook
++from cloudbot.util import http, formatting
+ 
+ api_prefix = "http://en.wikipedia.org/w/api.php"
+ search_url = api_prefix + "?action=opensearch&format=xml"
+diff --git a/plugins/wolframalpha.py b/plugins/wolframalpha.py
+index 48e5620..d3bdeb4 100644
+--- a/plugins/wolframalpha.py
++++ b/plugins/wolframalpha.py
+@@ -1,6 +1,7 @@
+ import re
+ 
+-from cloudbot import hook, http, web, formatting
++from cloudbot import hook
++from cloudbot.util import http, web, formatting
+ 
+ 
+ @hook.command("wa", "calc", "math", "wolframalpha")
+diff --git a/plugins/wow.py b/plugins/wow.py
+index 7e92b92..7dba65e 100644
+--- a/plugins/wow.py
++++ b/plugins/wow.py
+@@ -10,7 +10,8 @@ armoury, armory: Request data from the armoury API and format it into something
+ import re
+ import requests
+ 
+-from cloudbot import hook, web
++from cloudbot import hook
++from cloudbot.util import web
+ 
+ 
+ def wow_armoury_data(link):
+diff --git a/plugins/xkcd.py b/plugins/xkcd.py
+index 3a3ca34..0c451e9 100644
+--- a/plugins/xkcd.py
++++ b/plugins/xkcd.py
+@@ -1,6 +1,7 @@
+ import re
+ 
+-from cloudbot import hook, http
++from cloudbot import hook
++from cloudbot.util import http
+ 
+ xkcd_re = re.compile(r'(.*:)//(www.xkcd.com|xkcd.com)(.*)', re.I)
+ months = {1: 'January', 2: 'February', 3: 'March', 4: 'April', 5: 'May', 6: 'June', 7: 'July', 8: 'August',
+diff --git a/plugins/yahooanswers.py b/plugins/yahooanswers.py
+index 315baf5..f9f7d85 100644
+--- a/plugins/yahooanswers.py
++++ b/plugins/yahooanswers.py
+@@ -1,4 +1,5 @@
+-from cloudbot import hook, web, formatting
++from cloudbot import hook
++from cloudbot.util import web, formatting
+ 
+ 
+ @hook.command()
+diff --git a/plugins/youtube.py b/plugins/youtube.py
+index efcda9e..d2472d0 100644
+--- a/plugins/youtube.py
++++ b/plugins/youtube.py
+@@ -1,7 +1,8 @@
+ import re
+ import time
+ 
+-from cloudbot import hook, http, timeformat
++from cloudbot import hook
++from cloudbot.util import http, timeformat
+ 
+ youtube_re = re.compile(r'(?:youtube.*?(?:v=|/v/)|youtu\.be/|yooouuutuuube.*?id=)([-_a-zA-Z0-9]+)', re.I)
+ 
+-- 
+2.0.0
+
