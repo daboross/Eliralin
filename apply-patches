@@ -34,6 +34,12 @@ function apply_patches {
     if [[ "$TARGET" == "$ORIGIN" ]]; then
         git checkout -B "$TARGET_BRANCH" --track "$ORIGIN_BRANCH"
     else
+        local -r REMOTE="$(readlink -f $BASE_DIR/$ORIGIN)"
+        local -r CURRENT_REMOTE="$(git config --get remote.upstream.url)"
+        if [[ "$CURRENT_REMOTE" != "$REMOTE" ]]; then
+            log "Changing the upstream of $TARGET from $CURRENT_REMOTE to $REMOTE"
+            git remote set-url upstream "$REMOTE"
+        fi
         git fetch upstream &> /dev/null
         git checkout -B "$TARGET_BRANCH" --track "upstream/$ORIGIN_BRANCH"
     fi
@@ -52,10 +58,13 @@ function apply_patches {
         fi
     fi
 }
-
-# Refresh-origin/master  + Patches-01-Connection-Emerge -> Refresh-connection-emerge/connection-emerge-no-plugins
-apply_patches Refresh-origin master Refresh-connection-emerge connection-emerge-no-plugins Patches-01-Connection-Emerge &&
-# Refresh-connection-emerge/connection-emerge-no-plugins + Patches-02-Connection-Emerge-Plugins -> Refresh-connection-emerge/connection-emerge
-apply_patches Refresh-connection-emerge connection-emerge-no-plugins Refresh-connection-emerge connection-emerge Patches-02-Connection-Emerge-Plugins &&
-# Refresh-connection-emerge/connection-emerge + Patches-02-Eliralin -> Eliralin/master
-apply_patches Refresh-connection-emerge connection-emerge Eliralin master Patches-03-Eliralin
+# Refresh-origin/master + Patches-01-rerefactoring -> Refresh-rerefactoring/re-refactoring-no-plugins
+apply_patches Refresh-origin master Refresh-rerefactoring re-refactoring-no-plugins Patches-01-rerefactoring &&
+# Refresh-rerefactoring/re-refactoring-no-plugins + Patches-02-rerefactoring-plugins -> Refresh-rerefactoring/re-refactoring
+apply_patches Refresh-rerefactoring re-refactoring-no-plugins Refresh-rerefactoring re-refactoring Patches-02-rerefactoring-plugins &&
+# Refresh-rerefactoring/re-refactoring + Patches-03-connection-emerge -> Refresh-connection-emerge/connection-emerge-no-plugins
+apply_patches Refresh-rerefactoring re-refactoring Refresh-connection-emerge connection-emerge-no-plugins Patches-03-connection-emerge &&
+# Refresh-connection-emerge/connection-emerge-no-plugins + Patches-04-connection-emerge-plugins -> Refresh-connection-emerge/connection-emerge
+apply_patches Refresh-connection-emerge connection-emerge-no-plugins Refresh-connection-emerge connection-emerge Patches-04-connection-emerge-plugins &&
+# Refresh-connection-emerge/connection-emerge + Patches-05-Eliralin -> Eliralin/master
+apply_patches Refresh-connection-emerge connection-emerge Eliralin master Patches-05-eliralin

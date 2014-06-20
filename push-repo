@@ -23,7 +23,10 @@ function update {
     git push "$TARGET" "$ORIGIN_BRANCH":"$TARGET_BRANCH" -f
 }
 
-# Refresh-connection-emerge/connection-emerge -> CloudBotRefresh/connection-emerge
+# Refresh-rerefactoring/re-refactoring -> CloudBotRefresh/re-refactoring
+update Refresh-refactoring re-refactoring git@github.com:CloudBotIRC/CloudBotRefresh.git re-refactoring
+
+# Refresh-connection-emerge/connection-emerge -> EliRefresh/connection-emerge
 update Refresh-connection-emerge connection-emerge git@github.com:daboross/EliRefresh.git connection-emerge
 
 # Eliralin/master -> EliRefresh/master
