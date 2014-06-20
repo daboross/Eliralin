@@ -1,4 +1,4 @@
-From 2a3303affd479f7268e05f530b80cf2de9878c05 Mon Sep 17 00:00:00 2001
+From 814d98e86bbaab6a8ac4bef5f6d1dc7edc997ea9 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Fri, 20 Jun 2014 13:02:50 -0500
 Subject: [PATCH] Rename implementations to clients.

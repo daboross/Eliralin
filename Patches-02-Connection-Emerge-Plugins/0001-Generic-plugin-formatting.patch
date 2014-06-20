@@ -1,4 +1,4 @@
-From 10698091a6c2d7a0b1fe7cc7f8080b47f36e6069 Mon Sep 17 00:00:00 2001
+From 91d5e3b6c88d8d6f5b110868cf69e05ee140309e Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Fri, 20 Jun 2014 12:53:12 -0500
 Subject: [PATCH] Generic plugin formatting
@@ -17,7 +17,7 @@ index effb0d5..29ade2b 100644
  @hook.command(permissions=["botcontrol"], autohelp=False)
  def restart(text, bot):
 diff --git a/plugins/core_sieve.py b/plugins/core_sieve.py
-index c2e1f6c..ef23252 100644
+index 64b72b9..19693d0 100644
 --- a/plugins/core_sieve.py
 +++ b/plugins/core_sieve.py
 @@ -1,4 +1,5 @@
@@ -144,7 +144,7 @@ index 7891688..e57790b 100644
  @hook.command()
  def cake(text, action):
 diff --git a/plugins/history.py b/plugins/history.py
-index c479c94..62bcbf4 100644
+index c0b46c9..b350f31 100644
 --- a/plugins/history.py
 +++ b/plugins/history.py
 @@ -30,8 +30,10 @@ def track_seen(event, db, conn):
@@ -174,11 +174,11 @@ index 9af1630..e34ef58 100644
      if not title:
          return "Could not get the horoscope for {}.".format(text)
 diff --git a/plugins/log.py b/plugins/log.py
-index 6f61337..3ea80e2 100644
+index 6eea19c..b3f960c 100644
 --- a/plugins/log.py
 +++ b/plugins/log.py
 @@ -8,7 +8,6 @@ from cloudbot import hook
- from cloudbot.events import EventType
+ from cloudbot.event import EventType
  
  
 -
@@ -323,7 +323,7 @@ index 0c45282..12f328f 100644
 +          match.group(4).split(' ')[0]
      return soundcloud(http.open(url).url, api_key)
 diff --git a/plugins/tell.py b/plugins/tell.py
-index 5955108..338c259 100644
+index a3686c7..15029fb 100644
 --- a/plugins/tell.py
 +++ b/plugins/tell.py
 @@ -1,7 +1,7 @@

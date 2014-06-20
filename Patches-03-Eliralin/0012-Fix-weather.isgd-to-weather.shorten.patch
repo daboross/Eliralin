@@ -1,4 +1,4 @@
-From 7da216fcf237fe4167964e74c4fdc0073171ccd8 Mon Sep 17 00:00:00 2001
+From 5b3a8d24c419f514869a5b61f869648f06d2c6bb Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 18 Jun 2014 18:13:56 -0500
 Subject: [PATCH] Fix weather.isgd to weather.shorten

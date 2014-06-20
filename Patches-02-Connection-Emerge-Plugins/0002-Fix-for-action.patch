@@ -1,11 +1,11 @@
-From 5a5907df8165d4e0f6f4ff396d34825471944e40 Mon Sep 17 00:00:00 2001
+From 156af137186bc70b40298448ecb34540f1a43779 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 18 Jun 2014 20:21:33 -0500
 Subject: [PATCH] Fix for action
 
 
 diff --git a/plugins/history.py b/plugins/history.py
-index 62bcbf4..f2facc3 100644
+index b350f31..70291fb 100644
 --- a/plugins/history.py
 +++ b/plugins/history.py
 @@ -52,13 +52,16 @@ def track_history(event, message_time, conn):
@@ -17,7 +17,7 @@ index 62bcbf4..f2facc3 100644
  def chat_tracker(event, db, conn):
      """
      :type db: sqlalchemy.orm.Session
-     :type event: cloudbot.events.BaseEvent
+     :type event: cloudbot.event.Event
      :type conn: cloudbot.client.Client
      """
 +    if event.type is EventType.action:
