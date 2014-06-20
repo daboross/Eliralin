@@ -1,0 +1,89 @@
+From 87151cf9989606921e83f9f537fee4c2d6c0985d Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Wed, 18 Jun 2014 20:12:16 -0500
+Subject: [PATCH] Not at all a tracking system - TODO: improve
+
+
+diff --git a/cloudbot/connection.py b/cloudbot/connection.py
+index 4d48010..304bb50 100644
+--- a/cloudbot/connection.py
++++ b/cloudbot/connection.py
+@@ -1,4 +1,5 @@
+ import asyncio
++from collections import deque
+ import logging
+ 
+ from cloudbot.permissions import PermissionManager
+@@ -121,3 +122,49 @@ class Connection:
+     @property
+     def connected(self):
+         raise NotImplementedError
++
++
++# TODO: Tracking of user 'mode' in channels
++class User:
++    """
++    :param name: The nickname of this User
++    :param ident: The IRC ident of this User, if applicable
++    :param host: The hostname of this User, if applicable
++    :param mask: The IRC mask (nick!ident@host), if applicable
++    :type name: str
++    :type ident: str
++    :type host: str
++    :type mask: str
++    """
++
++    def __init__(self, name, ident, host, mask):
++        self.name = name
++        self.ident = ident
++        self.host = host
++        self.mask = mask
++
++
++class Channel:
++    """
++    name: the name of this channel
++    users: A dict from nickname to User in this channel
++    user_modes: A dict from User to an str containing all of the user's modes in this channel
++    history: A list of (User, timestamp, message content)
++    :type name: str
++    :type users: dict[str, User]
++    :type user_modes: dict[User, str]
++    :type history: deque[(User, datetime, str)]
++
++    """
++
++    def __init__(self, name):
++        self.name = name
++        self.users = {}
++        self.user_modes = {}
++        self.history = deque(maxlen=100)
++
++    def track_message(self):
++        """
++        Adds a message to this channel's history, adding user info from the message as well
++        """
++        pass
+diff --git a/cloudbot/pluginmanager.py b/cloudbot/pluginmanager.py
+index 51256a7..77e41ed 100644
+--- a/cloudbot/pluginmanager.py
++++ b/cloudbot/pluginmanager.py
+@@ -294,7 +294,14 @@ class PluginManager:
+             logger.info("Loaded {}".format(hook))
+             logger.debug("Loaded {}".format(repr(hook)))
+ 
+-    def _prepare_parameters(self, hook, event):
++    def add_hook(self, hook_type, function, *args, **kwargs):
++        # this is a little hacky, but I think it's a good design choice. hook.py does the actual processing,
++        # so this works.
++        
++        pass
++
++    @staticmethod
++    def _prepare_parameters(hook, event):
+         """
+         Prepares arguments for the given hook
+ 
+-- 
+2.0.0
+

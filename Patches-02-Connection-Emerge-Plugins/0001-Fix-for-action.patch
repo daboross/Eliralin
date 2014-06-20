@@ -1,27 +1,14 @@
-From 4381201d5c975be5fcc1f537001b89d0f6bd120d Mon Sep 17 00:00:00 2001
+From 2221ae8af3aa8d84020798a0b6fe51e12f403b94 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 18 Jun 2014 20:21:33 -0500
 Subject: [PATCH] Fix for action
 
 
 diff --git a/plugins/history.py b/plugins/history.py
-index 7408c5a..8288aeb 100644
+index 62bcbf4..f2facc3 100644
 --- a/plugins/history.py
 +++ b/plugins/history.py
-@@ -30,8 +30,10 @@ def track_seen(event, db, conn):
-     db_init(db, conn)
-     # keep private messages private
-     if event.chan[:1] == "#" and not re.findall('^s/.*/.*/$', event.content.lower()):
--        db.execute("insert or replace into seen_user(name, time, quote, chan, host) values(:name,:time,:quote,:chan,:host)",
--                   {'name': event.nick.lower(), 'time': time.time(), 'quote': event.content, 'chan': event.chan, 'host': event.mask})
-+        db.execute(
-+            "insert or replace into seen_user(name, time, quote, chan, host) values(:name,:time,:quote,:chan,:host)",
-+            {'name': event.nick.lower(), 'time': time.time(), 'quote': event.content, 'chan': event.chan,
-+             'host': event.mask})
-         db.commit()
- 
- 
-@@ -50,13 +52,16 @@ def track_history(event, message_time, conn):
+@@ -52,13 +52,16 @@ def track_history(event, message_time, conn):
      history.append(data)
  
  
@@ -31,7 +18,7 @@ index 7408c5a..8288aeb 100644
      """
      :type db: sqlalchemy.orm.Session
      :type event: cloudbot.events.BaseEvent
-     :type conn: cloudbot.connection.Connection
+     :type conn: cloudbot.client.Client
      """
 +    if event.type is EventType.action:
 +        event.content = "\x01ACTION {}\x01".format(event.content)
@@ -39,7 +26,7 @@ index 7408c5a..8288aeb 100644
      message_time = time.time()
      track_seen(event, db, conn)
      track_history(event, message_time, conn)
-@@ -104,8 +109,7 @@ def seen(text, nick, chan, db, event, conn):
+@@ -106,8 +109,7 @@ def seen(text, nick, chan, db, event, conn):
          if last_seen[0] != text.lower():  # for glob matching
              text = last_seen[0]
          if last_seen[2][0:1] == "\x01":

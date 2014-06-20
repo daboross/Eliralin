@@ -19,4 +19,4 @@ function update {
 }
 
 # The f8e1b4e68cb48a3af399c27604c8cc106958f02b is to fix commit to not merge the latest changes
-update Refresh-origin master origin python3.4 f8e1b4e68cb48a3af399c27604c8cc106958f02b
+update Refresh-origin master origin python3.4 # f8e1b4e68cb48a3af399c27604c8cc106958f02b

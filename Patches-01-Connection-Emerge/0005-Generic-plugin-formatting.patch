@@ -1,0 +1,380 @@
+From a3a5e3b477717b3d3860ed0b7eacbe948fca459c Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Fri, 20 Jun 2014 12:53:12 -0500
+Subject: [PATCH] Generic plugin formatting
+
+
+diff --git a/plugins/admin.py b/plugins/admin.py
+index effb0d5..29ade2b 100644
+--- a/plugins/admin.py
++++ b/plugins/admin.py
+@@ -211,6 +211,7 @@ def stop(text, bot):
+     else:
+         yield from bot.stop()
+ 
++
+ @asyncio.coroutine
+ @hook.command(permissions=["botcontrol"], autohelp=False)
+ def restart(text, bot):
+diff --git a/plugins/core_sieve.py b/plugins/core_sieve.py
+index c2e1f6c..ef23252 100644
+--- a/plugins/core_sieve.py
++++ b/plugins/core_sieve.py
+@@ -1,4 +1,5 @@
+ import asyncio
++
+ from cloudbot import hook
+ from cloudbot.util import bucket
+ 
+diff --git a/plugins/cryptocoins.py b/plugins/cryptocoins.py
+index 1a07899..f386d02 100644
+--- a/plugins/cryptocoins.py
++++ b/plugins/cryptocoins.py
+@@ -1,6 +1,8 @@
+ import requests
++
+ from cloudbot import hook
+ 
++
+ ## CONSTANTS
+ 
+ exchanges = {
+diff --git a/plugins/debug.py b/plugins/debug.py
+index e296aae..51fdec7 100644
+--- a/plugins/debug.py
++++ b/plugins/debug.py
+@@ -4,6 +4,7 @@ import psutil
+ 
+ from cloudbot import hook
+ 
++
+ @hook.command(autohelp=False)
+ def debug():
+     # get a Process object for the bot using psutil
+diff --git a/plugins/dice.py b/plugins/dice.py
+index 0213ff1..43409ba 100644
+--- a/plugins/dice.py
++++ b/plugins/dice.py
+@@ -34,7 +34,7 @@ def n_rolls(count, n):
+                                                (.5 * (1 + n)) ** 2) * count) ** .5))]
+ 
+ 
+-#@hook.regex(valid_diceroll, re.I)
++# @hook.regex(valid_diceroll, re.I)
+ @asyncio.coroutine
+ @hook.command("roll", "dice")
+ def dice(text, notice):
+diff --git a/plugins/dictionary.py b/plugins/dictionary.py
+index 17b513b..df8ae5b 100644
+--- a/plugins/dictionary.py
++++ b/plugins/dictionary.py
+@@ -1,9 +1,9 @@
+ # Plugin by GhettoWizard and Scaevolus
+ 
+ import re
++from lxml import html
+ 
+ import requests
+-from lxml import html
+ 
+ from cloudbot import hook
+ 
+diff --git a/plugins/drama.py b/plugins/drama.py
+index d359a5f..de980ec 100644
+--- a/plugins/drama.py
++++ b/plugins/drama.py
+@@ -1,6 +1,5 @@
+ import re
+ from urllib import parse
+-
+ from lxml import html
+ 
+ import requests
+diff --git a/plugins/factoids.py b/plugins/factoids.py
+index 7de5ae1..7ece5cf 100644
+--- a/plugins/factoids.py
++++ b/plugins/factoids.py
+@@ -2,11 +2,10 @@
+ import string
+ import asyncio
+ import re
++from sqlalchemy import Table, Column, String
+ 
+ import requests
+ 
+-from sqlalchemy import Table, Column, String
+-
+ from cloudbot import hook
+ from cloudbot.util import botvars, formatting, web
+ 
+diff --git a/plugins/fishbans.py b/plugins/fishbans.py
+index e365bd1..bff43e2 100644
+--- a/plugins/fishbans.py
++++ b/plugins/fishbans.py
+@@ -7,7 +7,6 @@ import requests.exceptions
+ from cloudbot import hook
+ from cloudbot.util import formatting
+ 
+-
+ api_url = "http://api.fishbans.com/stats/{}/"
+ 
+ 
+diff --git a/plugins/fmylife.py b/plugins/fmylife.py
+index 91ed6f0..f3fd887 100644
+--- a/plugins/fmylife.py
++++ b/plugins/fmylife.py
+@@ -7,6 +7,7 @@ from cloudbot import hook
+ 
+ fml_cache = []
+ 
++
+ @asyncio.coroutine
+ def refresh_cache(loop):
+     """ gets a page of random FMLs and puts them into a dictionary """
+diff --git a/plugins/foods.py b/plugins/foods.py
+index 7891688..e57790b 100644
+--- a/plugins/foods.py
++++ b/plugins/foods.py
+@@ -65,6 +65,7 @@ def potato(text, action):
+     action("{} a {} {} {} potato for {} and serves it with a small {}!".format(method, flavor, size, potato_type, text,
+                                                                                side_dish))
+ 
++
+ @asyncio.coroutine
+ @hook.command()
+ def cake(text, action):
+diff --git a/plugins/history.py b/plugins/history.py
+index c479c94..62bcbf4 100644
+--- a/plugins/history.py
++++ b/plugins/history.py
+@@ -30,8 +30,10 @@ def track_seen(event, db, conn):
+     db_init(db, conn)
+     # keep private messages private
+     if event.chan[:1] == "#" and not re.findall('^s/.*/.*/$', event.content.lower()):
+-        db.execute("insert or replace into seen_user(name, time, quote, chan, host) values(:name,:time,:quote,:chan,:host)",
+-                   {'name': event.nick.lower(), 'time': time.time(), 'quote': event.content, 'chan': event.chan, 'host': event.mask})
++        db.execute(
++            "insert or replace into seen_user(name, time, quote, chan, host) values(:name,:time,:quote,:chan,:host)",
++            {'name': event.nick.lower(), 'time': time.time(), 'quote': event.content, 'chan': event.chan,
++             'host': event.mask})
+         db.commit()
+ 
+ 
+diff --git a/plugins/horoscope.py b/plugins/horoscope.py
+index 9af1630..e34ef58 100644
+--- a/plugins/horoscope.py
++++ b/plugins/horoscope.py
+@@ -38,7 +38,7 @@ def horoscope(text, db, notice, nick):
+     horoscope_text = soup.find('div', {'class': 'fontdef1'})
+     result = "\x02{}\x02 {}".format(title, horoscope_text)
+     result = formatting.strip_html(result)
+-    #result = unicode(result, "utf8").replace('flight ','')
++    # result = unicode(result, "utf8").replace('flight ','')
+ 
+     if not title:
+         return "Could not get the horoscope for {}.".format(text)
+diff --git a/plugins/log.py b/plugins/log.py
+index 6f61337..3ea80e2 100644
+--- a/plugins/log.py
++++ b/plugins/log.py
+@@ -8,7 +8,6 @@ from cloudbot import hook
+ from cloudbot.events import EventType
+ 
+ 
+-
+ # +---------+
+ # | Formats |
+ # +---------+
+diff --git a/plugins/minecraft_bukget.py b/plugins/minecraft_bukget.py
+index 4f0fc2d..d578af5 100644
+--- a/plugins/minecraft_bukget.py
++++ b/plugins/minecraft_bukget.py
+@@ -1,6 +1,6 @@
+-import json
+ import time
+ import random
++
+ import requests
+ 
+ from cloudbot import hook
+diff --git a/plugins/minecraft_user.py b/plugins/minecraft_user.py
+index 2de1e26..caed53e 100644
+--- a/plugins/minecraft_user.py
++++ b/plugins/minecraft_user.py
+@@ -1,9 +1,8 @@
+-from enum import Enum
+-
+-import requests
+ import json
+ import re
+ 
++import requests
++
+ from cloudbot import hook
+ from cloudbot.util import http
+ 
+@@ -15,7 +14,6 @@ PROFILE_URL = "https://api.mojang.com/profiles/page/1"
+ PAID_URL = "http://www.minecraft.net/haspaid.jsp"
+ 
+ 
+-
+ class McuError(Exception):
+     pass
+ 
+diff --git a/plugins/newegg.py b/plugins/newegg.py
+index 1dda1b1..8110a14 100644
+--- a/plugins/newegg.py
++++ b/plugins/newegg.py
+@@ -5,7 +5,6 @@ from cloudbot import hook
+ from cloudbot.util import http, formatting, web
+ 
+ 
+-
+ ## CONSTANTS
+ 
+ ITEM_URL = "http://www.newegg.com/Product/Product.aspx?Item={}"
+diff --git a/plugins/notes.py b/plugins/notes.py
+index a04883d..298bfff 100644
+--- a/plugins/notes.py
++++ b/plugins/notes.py
+@@ -102,7 +102,7 @@ def note(text, nick, db, notice):
+ 
+     # code to allow users to access each others factoids and a copy of help
+     # ".note (add|del|list|search) [@user] args -- Manipulates your list of todos."
+-    #if len(args) and args[0].startswith("@"):
++    # if len(args) and args[0].startswith("@"):
+     #    nick = args[0][1:]
+     #    args = args[1:]
+ 
+diff --git a/plugins/osrc.py b/plugins/osrc.py
+index 1150a96..cd9bc42 100644
+--- a/plugins/osrc.py
++++ b/plugins/osrc.py
+@@ -1,7 +1,6 @@
+ from cloudbot import hook
+ from cloudbot.util import http, web
+ 
+-
+ user_url = "http://osrc.dfm.io/{}"
+ 
+ 
+diff --git a/plugins/pagecheck.py b/plugins/pagecheck.py
+index bef604d..b6cbe85 100644
+--- a/plugins/pagecheck.py
++++ b/plugins/pagecheck.py
+@@ -1,7 +1,8 @@
++import urllib.parse
++
+ from bs4 import BeautifulSoup
+ import requests
+ import requests.exceptions
+-import urllib.parse
+ 
+ from cloudbot import hook
+ from cloudbot.util import urlnorm
+diff --git a/plugins/password.py b/plugins/password.py
+index 4bf95eb..0b9556e 100644
+--- a/plugins/password.py
++++ b/plugins/password.py
+@@ -28,7 +28,7 @@ def password(text, notice):
+     # add alpha characters
+     if "alpha" in text or "letter" in text:
+         okay = okay + list(string.ascii_lowercase)
+-        #adds capital characters if not told not to
++        # adds capital characters if not told not to
+         if "no caps" not in text:
+             okay = okay + list(string.ascii_uppercase)
+ 
+diff --git a/plugins/recipe.py b/plugins/recipe.py
+index 1ca63c7..7f5cf3c 100644
+--- a/plugins/recipe.py
++++ b/plugins/recipe.py
+@@ -1,11 +1,11 @@
+ import random
++
+ import microdata
+ import requests
+ 
+ from cloudbot import hook
+ from cloudbot.util import http, web
+ 
+-
+ base_url = "http://www.cookstr.com"
+ search_url = base_url + "/searches"
+ random_url = search_url + "/surprise"
+diff --git a/plugins/soundcloud.py b/plugins/soundcloud.py
+index 0c45282..12f328f 100644
+--- a/plugins/soundcloud.py
++++ b/plugins/soundcloud.py
+@@ -35,7 +35,7 @@ def soundcloud_url(match, bot=None):
+         print("Error: no api key set")
+         return None
+     url = match.group(1).split(' ')[-1] + "//" + (match.group(2) if match.group(2) else "") + match.group(3) + \
+-        match.group(4).split(' ')[0]
++          match.group(4).split(' ')[0]
+     return soundcloud(url, api_key)
+ 
+ 
+@@ -46,5 +46,5 @@ def sndsc_url(match, bot=None):
+         print("Error: no api key set")
+         return None
+     url = match.group(1).split(' ')[-1] + "//" + (match.group(2) if match.group(2) else "") + match.group(3) + \
+-        match.group(4).split(' ')[0]
++          match.group(4).split(' ')[0]
+     return soundcloud(http.open(url).url, api_key)
+diff --git a/plugins/tell.py b/plugins/tell.py
+index 5955108..338c259 100644
+--- a/plugins/tell.py
++++ b/plugins/tell.py
+@@ -1,7 +1,7 @@
+ import re
+ from datetime import datetime
+-
+ from sqlalchemy import Table, Column, String, Boolean, DateTime
++
+ from sqlalchemy.sql import select
+ 
+ from cloudbot import hook
+diff --git a/plugins/time_plugin.py b/plugins/time_plugin.py
+index 45426af..7147879 100644
+--- a/plugins/time_plugin.py
++++ b/plugins/time_plugin.py
+@@ -26,8 +26,8 @@ def time_command(inp, bot=None):
+             place = "Unix Epoch"
+         else:
+             place = formatting.capitalize_first(" ".join(request.xpath("//pod[@"
+-                                                            "title='Input interpretation']/subpod/plaintext/text()"))[
+-                                     16:])
++                                                                       "title='Input interpretation']/subpod/plaintext/text()"))[
++                                                16:])
+         return "{} - \x02{}\x02".format(current_time, place)
+     else:
+         return "Could not get the time for '{}'.".format(inp)
+diff --git a/plugins/tvdb.py b/plugins/tvdb.py
+index 2e3852e..868ecf8 100644
+--- a/plugins/tvdb.py
++++ b/plugins/tvdb.py
+@@ -142,7 +142,7 @@ def tv_last(inp, bot=None):
+         (first_aired, air_date, episode_desc) = ep_info
+ 
+         if air_date < today:
+-            #iterating in reverse order, so the first episode encountered
++            # iterating in reverse order, so the first episode encountered
+             #before today was the most recently aired
+             prev_ep = '{} ({})'.format(first_aired, episode_desc)
+             break
+diff --git a/plugins/wow.py b/plugins/wow.py
+index 7dba65e..3fa09df 100644
+--- a/plugins/wow.py
++++ b/plugins/wow.py
+@@ -8,6 +8,7 @@ armoury, armory: Request data from the armoury API and format it into something
+ """
+ 
+ import re
++
+ import requests
+ 
+ from cloudbot import hook
+-- 
+2.0.0
+

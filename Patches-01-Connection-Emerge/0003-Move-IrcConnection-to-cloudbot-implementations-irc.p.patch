@@ -1,4 +1,4 @@
-From 68541eb55e88c60a9d012a23383da40751e2a143 Mon Sep 17 00:00:00 2001
+From 705b2d07b409fb2c92da13c41490429ae0c6aa61 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 18 Jun 2014 18:45:51 -0500
 Subject: [PATCH] Move IrcConnection to cloudbot/implementations/irc.py
@@ -24,7 +24,7 @@ index 5502f33..3dbc2ee 100644
  logger = logging.getLogger("cloudbot")
  
 diff --git a/cloudbot/connection.py b/cloudbot/connection.py
-index ffdde11..4d48010 100644
+index baefb04..4bdf6b1 100644
 --- a/cloudbot/connection.py
 +++ b/cloudbot/connection.py
 @@ -1,28 +1,10 @@
@@ -75,7 +75,7 @@ index ffdde11..4d48010 100644
 -    def __init__(self, bot, name, nick, *, readable_name, channels=None, config=None,
 -                 server, port=6667, use_ssl=False, ignore_cert_errors=True, timeout=300):
 -        """
--        :type bot: cloudbot.core.bot.CloudBot
+-        :type bot: cloudbot.bot.CloudBot
 -        :type name: str
 -        :type readable_name: str
 -        :type nick: str
@@ -243,7 +243,7 @@ index ffdde11..4d48010 100644
 -    """
 -    :type loop: asyncio.events.AbstractEventLoop
 -    :type conn: IrcConnection
--    :type bot: cloudbot.core.bot.CloudBot
+-    :type bot: cloudbot.bot.CloudBot
 -    :type _input_buffer: bytes
 -    :type _connected: bool
 -    :type _transport: asyncio.transports.Transport
@@ -419,7 +419,7 @@ new file mode 100644
 index 0000000..e69de29
 diff --git a/cloudbot/implementations/irc.py b/cloudbot/implementations/irc.py
 new file mode 100644
-index 0000000..1296362
+index 0000000..1803d1e
 --- /dev/null
 +++ b/cloudbot/implementations/irc.py
 @@ -0,0 +1,379 @@
@@ -463,7 +463,7 @@ index 0000000..1296362
 +    def __init__(self, bot, name, nick, *, readable_name, channels=None, config=None,
 +                 server, port=6667, use_ssl=False, ignore_cert_errors=True, timeout=300):
 +        """
-+        :type bot: cloudbot.core.bot.CloudBot
++        :type bot: cloudbot.bot.CloudBot
 +        :type name: str
 +        :type readable_name: str
 +        :type nick: str
@@ -631,7 +631,7 @@ index 0000000..1296362
 +    """
 +    :type loop: asyncio.events.AbstractEventLoop
 +    :type conn: IrcConnection
-+    :type bot: cloudbot.core.bot.CloudBot
++    :type bot: cloudbot.bot.CloudBot
 +    :type _input_buffer: bytes
 +    :type _connected: bool
 +    :type _transport: asyncio.transports.Transport

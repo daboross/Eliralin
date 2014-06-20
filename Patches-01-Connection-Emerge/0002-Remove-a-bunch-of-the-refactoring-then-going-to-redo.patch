@@ -1,416 +1,165 @@
-From 80740e51f13727403fcfe0a9962f4b665b20b57c Mon Sep 17 00:00:00 2001
+From d25689a1a388055a7f439984d2c40e3bc8673a20 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 18 Jun 2014 17:18:01 -0500
-Subject: [PATCH] Some major moving of files
+Subject: [PATCH] Remove a bunch of the refactoring, then going to redo it.
 
+Difference from before things were moved:
 - Move cloudbot/core/* to cloudbot/
 - Move cloudbot/util/hook to cloudbot/
 - Remove cloudbot/util/* aliases in cloudbot/
-- Update all plugins accordingly
+- Update all plugins, documentation, etc. accordingly
+
+Difference from last commit:
+- Move client/connection stuff back into connection.py
+- Move event.py back to events.py
+- Move plugin.py back to pluginmanager.py
+- Move util/hook.py to hook.py
+- Rename IRCClient to IrcConnection and Client to Connection
+- Fix a bunch of refactoring documentation in plugins/
 
 diff --git a/cloudbot/__init__.py b/cloudbot/__init__.py
-index 05ca790..5d91238 100644
+index f033189..5d91238 100644
 --- a/cloudbot/__init__.py
 +++ b/cloudbot/__init__.py
-@@ -10,13 +10,10 @@ import logging.config
+@@ -10,12 +10,10 @@ import logging.config
  import logging
  import os
  
--from .core import bot, connection, config, permissions, pluginmanager, events
 -from .util import botvars, bucket, formatting, hook, http, textgen, timeformat, timesince, urlnorm, web
 -
  __version__ = "0.1.1.dev0"
  
--__all__ = ["core", "util", "bot", "connection", "config", "permissions", "pluginmanager", "events", "botvars", "bucket",
+-__all__ = ["core", "util", "bot", "config", "permissions", "pluginmanager", "events", "botvars", "bucket",
 -           "formatting", "hook", "http", "textgen", "timeformat", "timesince", "urlnorm", "web", "dev_mode", "log_dir"]
 +__all__ = ["util", "bot", "connection", "config", "permissions", "pluginmanager", "events", "hook", "dev_mode",
 +           "log_dir"]
  
  
  def _setup():
-diff --git a/cloudbot/__main__.py b/cloudbot/__main__.py
-index e8c6402..c650b3a 100644
---- a/cloudbot/__main__.py
-+++ b/cloudbot/__main__.py
-@@ -21,7 +21,7 @@ if os.path.exists(os.path.abspath('lib')):
-     sys.path += ['lib']
- 
- # import bot
--from cloudbot.core.bot import CloudBot
-+from cloudbot.bot import CloudBot
- 
- 
- def main():
 diff --git a/cloudbot/bot.py b/cloudbot/bot.py
-new file mode 100644
-index 0000000..5502f33
---- /dev/null
+index e388c2f..5502f33 100644
+--- a/cloudbot/bot.py
 +++ b/cloudbot/bot.py
-@@ -0,0 +1,257 @@
-+import asyncio
-+import time
-+import logging
-+import re
-+import os
-+import gc
-+from sqlalchemy import create_engine
+@@ -4,20 +4,19 @@ import logging
+ import re
+ import os
+ import gc
+-
+ from sqlalchemy import create_engine
 +
-+from sqlalchemy.orm import scoped_session, sessionmaker
-+from sqlalchemy.schema import MetaData
-+
-+import cloudbot
+ from sqlalchemy.orm import scoped_session, sessionmaker
+ from sqlalchemy.schema import MetaData
+ 
+ import cloudbot
 +from cloudbot.connection import Connection, IrcConnection
-+from cloudbot.config import Config
-+from cloudbot.reloader import PluginReloader
+ from cloudbot.config import Config
+ from cloudbot.reloader import PluginReloader
+-from cloudbot.plugin import PluginManager
+-from cloudbot.event import Event, CommandEvent, RegexEvent, EventType
+-from cloudbot.dialect.irc.client import IRCClient
 +from cloudbot.pluginmanager import PluginManager
 +from cloudbot.events import BaseEvent, CommandEvent, RegexEvent, EventType
-+from cloudbot.util import botvars, formatting
-+
-+logger = logging.getLogger("cloudbot")
-+
-+
-+def clean_name(n):
-+    """strip all spaces and capitalization
-+    :type n: str
-+    :rtype: str
-+    """
-+    return re.sub('[^A-Za-z0-9_]+', '', n.replace(" ", "_"))
-+
-+
-+class CloudBot:
-+    """
-+    :type start_time: float
-+    :type running: bool
+ from cloudbot.util import botvars, formatting
+ 
+-
+ logger = logging.getLogger("cloudbot")
+ 
+ 
+@@ -33,7 +32,7 @@ class CloudBot:
+     """
+     :type start_time: float
+     :type running: bool
+-    :type connections: list[Connection | IRCClient]
 +    :type connections: list[Connection | IrcConnection]
-+    :type data_dir: bytes
-+    :type config: core.config.Config
-+    :type plugin_manager: PluginManager
-+    :type reloader: PluginReloader
-+    :type db_engine: sqlalchemy.engine.Engine
-+    :type db_factory: sqlalchemy.orm.session.sessionmaker
-+    :type db_session: sqlalchemy.orm.scoping.scoped_session
-+    :type db_metadata: sqlalchemy.sql.schema.MetaData
-+    :type loop: asyncio.events.AbstractEventLoop
-+    :type stopped_future: asyncio.Future
-+    :param: stopped_future: Future that will be given a result when the bot has stopped.
-+    """
-+
-+    def __init__(self, loop=asyncio.get_event_loop()):
-+        # basic variables
-+        self.loop = loop
-+        self.start_time = time.time()
-+        self.running = True
-+        # future which will be called when the bot stops
-+        self.stopped_future = asyncio.Future(loop=self.loop)
-+
-+        # stores each bot server connection
-+        self.connections = []
-+
-+        # for plugins
-+        self.logger = logger
-+
-+        # declare and create data folder
-+        self.data_dir = os.path.abspath('data')
-+        if not os.path.exists(self.data_dir):
-+            logger.debug("Data folder not found, creating.")
-+            os.mkdir(self.data_dir)
-+
-+        # set up config
-+        self.config = Config(self)
-+        logger.debug("Config system initialised.")
-+
-+        # log developer mode
-+        if cloudbot.dev_mode.get("plugin_reloading"):
-+            logger.info("Enabling developer option: plugin reloading.")
-+        if cloudbot.dev_mode.get("config_reloading"):
-+            logger.info("Enabling developer option: config reloading.")
-+        if cloudbot.dev_mode.get("console_debug"):
-+            logger.info("Enabling developer option: console debug.")
-+        if cloudbot.dev_mode.get("file_debug"):
-+            logger.info("Enabling developer option: file debug")
-+
-+        # setup db
-+        db_path = self.config.get('database', 'sqlite:///cloudbot.db')
-+        self.db_engine = create_engine(db_path)
-+        self.db_factory = sessionmaker(bind=self.db_engine)
-+        self.db_session = scoped_session(self.db_factory)
-+        self.db_metadata = MetaData()
-+        # set botvars.metadata so plugins can access when loading
-+        botvars.metadata = self.db_metadata
-+        logger.debug("Database system initialised.")
-+
-+        # Bot initialisation complete
-+        logger.debug("Bot setup completed.")
-+
-+        # create bot connections
-+        self.create_connections()
-+
-+        if cloudbot.dev_mode.get("plugin_reloading"):
-+            self.reloader = PluginReloader(self)
-+
-+        self.plugin_manager = PluginManager(self)
-+
-+    def run(self):
-+        """
-+        Starts CloudBot.
-+        This will load plugins, connect to IRC, and process input.
-+        :return: True if CloudBot should be restarted, False otherwise
-+        :rtype: bool
-+        """
-+        # Initializes the bot, plugins and connections
-+        self.loop.run_until_complete(self._init_routine())
-+        # Wait till the bot stops. The stopped_future will be set to True to restart, False otherwise
-+        restart = self.loop.run_until_complete(self.stopped_future)
-+        self.loop.close()
-+        return restart
-+
-+    def create_connections(self):
-+        """ Create a BotConnection for all the networks defined in the config """
-+        for conf in self.config['connections']:
-+            # strip all spaces and capitalization from the connection name
-+            readable_name = conf['name']
-+            name = clean_name(readable_name)
-+            nick = conf['nick']
-+            server = conf['connection']['server']
-+            port = conf['connection'].get('port', 6667)
-+
+     :type data_dir: bytes
+     :type config: core.config.Config
+     :type plugin_manager: PluginManager
+@@ -126,7 +125,7 @@ class CloudBot:
+             server = conf['connection']['server']
+             port = conf['connection'].get('port', 6667)
+ 
+-            self.connections.append(IRCClient(self, name, nick, config=conf, channels=conf['channels'],
 +            self.connections.append(IrcConnection(self, name, nick, config=conf, channels=conf['channels'],
-+                                                  readable_name=readable_name, server=server, port=port,
-+                                                  use_ssl=conf['connection'].get('ssl', False)))
-+            logger.debug("[{}] Created connection.".format(readable_name))
-+
-+    @asyncio.coroutine
-+    def stop(self, reason=None, *, restart=False):
-+        """quits all networks and shuts the bot down"""
-+        logger.info("Stopping bot.")
-+
-+        if cloudbot.dev_mode.get("config_reloading"):
-+            logger.debug("Stopping config reloader.")
-+            self.config.stop()
-+
-+        if cloudbot.dev_mode.get("plugin_reloading"):
-+            logger.debug("Stopping plugin reloader.")
-+            self.reloader.stop()
-+
-+        for connection in self.connections:
-+            if not connection.connected:
-+                # Don't quit a connection that hasn't connected
-+                continue
-+            logger.debug("[{}] Closing connection.".format(connection.readable_name))
-+
-+            connection.quit(reason)
-+
-+        yield from asyncio.sleep(1.0)  # wait for 'QUIT' calls to take affect
-+
-+        for connection in self.connections:
-+            if not connection.connected:
-+                # Don't close a connection that hasn't connected
-+                continue
-+            connection.close()
-+
-+        self.running = False
-+        # Give the stopped_future a result, so that run() will exit
-+        self.stopped_future.set_result(restart)
-+
-+    @asyncio.coroutine
-+    def restart(self, reason=None):
-+        """shuts the bot down and restarts it"""
-+        yield from self.stop(reason=reason, restart=True)
-+
-+    @asyncio.coroutine
-+    def _init_routine(self):
-+        # Load plugins
-+        yield from self.plugin_manager.load_all(os.path.abspath("plugins"))
-+
-+        # If we we're stopped while loading plugins, cancel that and just stop
-+        if not self.running:
-+            logger.info("Killed while loading, exiting")
-+            return
-+
-+        if cloudbot.dev_mode.get("plugin_reloading"):
-+            # start plugin reloader
-+            self.reloader.start(os.path.abspath("plugins"))
-+
-+        # Connect to servers
-+        yield from asyncio.gather(*[conn.connect() for conn in self.connections], loop=self.loop)
-+
-+        # Run a manual garbage collection cycle, to clean up any unused objects created during initialization
-+        gc.collect()
-+
-+    @asyncio.coroutine
-+    def process(self, event):
-+        """
+                                                   readable_name=readable_name, server=server, port=port,
+                                                   use_ssl=conf['connection'].get('ssl', False)))
+             logger.debug("[{}] Created connection.".format(readable_name))
+@@ -192,7 +191,7 @@ class CloudBot:
+     @asyncio.coroutine
+     def process(self, event):
+         """
+-        :type event: Event
 +        :type event: BaseEvent
-+        """
-+        run_before_tasks = []
-+        tasks = []
-+        command_prefix = event.conn.config.get('command_prefix', '.')
-+
-+        # Raw IRC hook
-+        for raw_hook in self.plugin_manager.catch_all_triggers:
-+            # run catch-all coroutine hooks before all others - TODO: Make this a plugin argument
-+            if not raw_hook.threaded:
-+                run_before_tasks.append(
+         """
+         run_before_tasks = []
+         tasks = []
+@@ -203,17 +202,17 @@ class CloudBot:
+             # run catch-all coroutine hooks before all others - TODO: Make this a plugin argument
+             if not raw_hook.threaded:
+                 run_before_tasks.append(
+-                    self.plugin_manager.launch(raw_hook, Event(hook=raw_hook, base_event=event)))
 +                    self.plugin_manager.launch(raw_hook, BaseEvent(hook=raw_hook, base_event=event)))
-+            else:
+             else:
+-                tasks.append(self.plugin_manager.launch(raw_hook, Event(hook=raw_hook, base_event=event)))
 +                tasks.append(self.plugin_manager.launch(raw_hook, BaseEvent(hook=raw_hook, base_event=event)))
-+        if event.irc_command in self.plugin_manager.raw_triggers:
-+            for raw_hook in self.plugin_manager.raw_triggers[event.irc_command]:
+         if event.irc_command in self.plugin_manager.raw_triggers:
+             for raw_hook in self.plugin_manager.raw_triggers[event.irc_command]:
+-                tasks.append(self.plugin_manager.launch(raw_hook, Event(hook=raw_hook, base_event=event)))
 +                tasks.append(self.plugin_manager.launch(raw_hook, BaseEvent(hook=raw_hook, base_event=event)))
-+
-+        # Event hooks
-+        if event.type in self.plugin_manager.event_type_hooks:
-+            for event_hook in self.plugin_manager.event_type_hooks[event.type]:
+ 
+         # Event hooks
+         if event.type in self.plugin_manager.event_type_hooks:
+             for event_hook in self.plugin_manager.event_type_hooks[event.type]:
+-                tasks.append(self.plugin_manager.launch(event_hook, Event(hook=event_hook, base_event=event)))
 +                tasks.append(self.plugin_manager.launch(event_hook, BaseEvent(hook=event_hook, base_event=event)))
-+
-+        if event.type is EventType.message:
-+            # Commands
-+            if event.chan.lower() == event.nick.lower():  # private message, no command prefix
-+                command_re = r'(?i)^(?:[{}]?|{}[,;:]+\s+)(\w+)(?:$|\s+)(.*)'.format(command_prefix, event.conn.nick)
-+            else:
-+                command_re = r'(?i)^(?:[{}]|{}[,;:]+\s+)(\w+)(?:$|\s+)(.*)'.format(command_prefix, event.conn.nick)
-+
-+            match = re.match(command_re, event.content)
-+
-+            if match:
-+                command = match.group(1).lower()
-+                if command in self.plugin_manager.commands:
-+                    command_hook = self.plugin_manager.commands[command]
-+                    command_event = CommandEvent(hook=command_hook, text=match.group(2).strip(),
-+                                                 triggered_command=command, base_event=event)
-+                    tasks.append(self.plugin_manager.launch(command_hook, command_event))
-+                else:
-+                    potential_matches = []
-+                    for potential_match, plugin in self.plugin_manager.commands.items():
-+                        if potential_match.startswith(command):
-+                            potential_matches.append((potential_match, plugin))
-+                    if potential_matches:
-+                        if len(potential_matches) == 1:
-+                            command_hook = potential_matches[0][1]
-+                            command_event = CommandEvent(hook=command_hook, text=match.group(2).strip(),
-+                                                         triggered_command=command, base_event=event)
-+                            tasks.append(self.plugin_manager.launch(command_hook, command_event))
-+                        else:
-+                            event.notice("Possible matches: {}".format(
-+                                formatting.get_text_list([command for command, plugin in potential_matches])))
-+
-+            # Regex hooks
-+            for regex, regex_hook in self.plugin_manager.regex_hooks:
-+                match = regex.search(event.content)
-+                if match:
-+                    regex_event = RegexEvent(hook=regex_hook, match=match, base_event=event)
-+                    tasks.append(self.plugin_manager.launch(regex_hook, regex_event))
-+
-+        # Run the tasks
-+        yield from asyncio.gather(*run_before_tasks, loop=self.loop)
-+        yield from asyncio.gather(*tasks, loop=self.loop)
+ 
+         if event.type is EventType.message:
+             # Commands
 diff --git a/cloudbot/config.py b/cloudbot/config.py
-new file mode 100644
-index 0000000..c208cc0
---- /dev/null
+index 22f2062..22574c7 100644
+--- a/cloudbot/config.py
 +++ b/cloudbot/config.py
-@@ -0,0 +1,98 @@
-+import json
-+import os
-+import time
-+import sys
-+import logging
-+
-+from watchdog.observers import Observer
-+from watchdog.tricks import Trick
-+import cloudbot
-+
-+logger = logging.getLogger("cloudbot")
-+
-+
-+class Config(dict):
-+    """
-+    :type filename: str
-+    :type path: str
-+    :type bot: cloudbot.core.bot.CloudBot
-+    :type observer: Observer
-+    :type event_handler: ConfigEventHandler
-+    """
-+
-+    def __init__(self, bot, *args, **kwargs):
-+        """
-+        :type bot: cloudbot.core.bot.CloudBot
-+        :type args: list
-+        :type kwargs: dict
-+        """
-+        super().__init__(*args, **kwargs)
-+        self.filename = "config.json"
-+        self.path = os.path.abspath(self.filename)
-+        self.bot = bot
-+        self.update(*args, **kwargs)
-+
-+        # populate self with config data
-+        self.load_config()
-+
-+        if cloudbot.dev_mode["config_reloading"]:
-+            # start watcher
-+            self.observer = Observer()
-+
-+            pattern = "*{}".format(self.filename)
-+
-+            self.event_handler = ConfigEventHandler(self.bot, self, patterns=[pattern])
-+            self.observer.schedule(self.event_handler, path='.', recursive=False)
-+            self.observer.start()
-+
-+    def stop(self):
-+        """shuts down the config reloader"""
-+        if cloudbot.dev_mode["config_reloading"]:
-+            self.observer.stop()
-+
-+    def load_config(self):
-+        """(re)loads the bot config from the config file"""
-+        if not os.path.exists(self.path):
-+            # if there is no config, show an error and die
-+            logger.critical("No config file found, bot shutting down!")
-+            print("No config file found! Bot shutting down in five seconds.")
-+            print("Copy 'config.default' to 'config.json' for defaults.")
-+            print("For help, see http://git.io/cloudbotirc. Thank you for using CloudBot!")
-+            time.sleep(5)
-+            sys.exit()
-+
-+        with open(self.path) as f:
-+            self.update(json.load(f))
-+            logger.debug("Config loaded from file.")
-+
-+        # reload permissions
-+        if self.bot.connections:
-+            for connection in self.bot.connections:
-+                connection.permissions.reload()
-+
-+    def save_config(self):
-+        """saves the contents of the config dict to the config file"""
-+        json.dump(self, open(self.path, 'w'), sort_keys=True, indent=4)
-+        logger.info("Config saved to file.")
-+
-+
-+class ConfigEventHandler(Trick):
-+    """
-+    :type bot: cloudbot.core.bot.CloudBot
-+    :type config: core.config.Config
-+    :type logger: logging.Logger
-+    """
-+
-+    def __init__(self, bot, config, *args, **kwargs):
-+        """
-+        :type bot: cloudbot.core.bot.CloudBot
-+        :type config: Config
-+        """
-+        self.bot = bot
-+        self.config = config
-+        Trick.__init__(self, *args, **kwargs)
-+
-+    def on_any_event(self, event):
-+        if self.bot.running:
-+            logger.info("Config changed, triggering reload.")
-+            self.config.load_config()
+@@ -15,14 +15,14 @@ class Config(dict):
+     """
+     :type filename: str
+     :type path: str
+-    :type bot: cloudbot.core.bot.CloudBot
++    :type bot: cloudbot.bot.CloudBot
+     :type observer: Observer
+     :type event_handler: ConfigEventHandler
+     """
+ 
+     def __init__(self, bot, *args, **kwargs):
+         """
+-        :type bot: cloudbot.core.bot.CloudBot
++        :type bot: cloudbot.bot.CloudBot
+         :type args: list
+         :type kwargs: dict
+         """
+@@ -78,19 +78,18 @@ class Config(dict):
+ 
+ class ConfigEventHandler(Trick):
+     """
+-    :type bot: cloudbot.core.bot.CloudBot
++    :type bot: cloudbot.bot.CloudBot
+     :type config: core.config.Config
+     :type logger: logging.Logger
+     """
+ 
+     def __init__(self, bot, config, *args, **kwargs):
+         """
+-        :type bot: cloudbot.core.bot.CloudBot
++        :type bot: cloudbot.bot.CloudBot
+         :type config: Config
+         """
+         self.bot = bot
+         self.config = config
+-        logger = config.logger
+         Trick.__init__(self, *args, **kwargs)
+ 
+     def on_any_event(self, event):
 diff --git a/cloudbot/connection.py b/cloudbot/connection.py
 new file mode 100644
-index 0000000..ffdde11
+index 0000000..baefb04
 --- /dev/null
 +++ b/cloudbot/connection.py
 @@ -0,0 +1,495 @@
@@ -443,7 +192,7 @@ index 0000000..ffdde11
 +class Connection:
 +    """
 +    A Connection representing each connection the bot makes to a single server
-+    :type bot: cloudbot.core.bot.CloudBot
++    :type bot: cloudbot.bot.CloudBot
 +    :type loop: asyncio.events.AbstractEventLoop
 +    :type name: str
 +    :type readable_name: str
@@ -457,7 +206,7 @@ index 0000000..ffdde11
 +
 +    def __init__(self, bot, name, nick, *, readable_name, channels=None, config=None):
 +        """
-+        :type bot: cloudbot.core.bot.CloudBot
++        :type bot: cloudbot.bot.CloudBot
 +        :type name: str
 +        :type readable_name: str
 +        :type nick: str
@@ -570,7 +319,7 @@ index 0000000..ffdde11
 +    def __init__(self, bot, name, nick, *, readable_name, channels=None, config=None,
 +                 server, port=6667, use_ssl=False, ignore_cert_errors=True, timeout=300):
 +        """
-+        :type bot: cloudbot.core.bot.CloudBot
++        :type bot: cloudbot.bot.CloudBot
 +        :type name: str
 +        :type readable_name: str
 +        :type nick: str
@@ -738,7 +487,7 @@ index 0000000..ffdde11
 +    """
 +    :type loop: asyncio.events.AbstractEventLoop
 +    :type conn: IrcConnection
-+    :type bot: cloudbot.core.bot.CloudBot
++    :type bot: cloudbot.bot.CloudBot
 +    :type _input_buffer: bytes
 +    :type _connected: bool
 +    :type _transport: asyncio.transports.Transport
@@ -909,533 +658,42 @@ index 0000000..ffdde11
 +
 +            # handle the message, async
 +            asyncio.async(self.bot.process(event), loop=self.loop)
-diff --git a/cloudbot/core/__init__.py b/cloudbot/core/__init__.py
+diff --git a/cloudbot/dialect/__init__.py b/cloudbot/dialect/__init__.py
 deleted file mode 100644
-index aa64481..0000000
---- a/cloudbot/core/__init__.py
+index ad25671..0000000
+--- a/cloudbot/dialect/__init__.py
 +++ /dev/null
 @@ -1 +0,0 @@
--__all__ = ["bot", "config", "connection", "events", "permissions", "pluginmanager"]
-diff --git a/cloudbot/core/bot.py b/cloudbot/core/bot.py
+-__author__ = 'Luke'
+diff --git a/cloudbot/dialect/irc/__init__.py b/cloudbot/dialect/irc/__init__.py
 deleted file mode 100644
-index 1ad162d..0000000
---- a/cloudbot/core/bot.py
+index ad25671..0000000
+--- a/cloudbot/dialect/irc/__init__.py
 +++ /dev/null
-@@ -1,257 +0,0 @@
--import asyncio
--import time
--import logging
--import re
--import os
--import gc
--from sqlalchemy import create_engine
--
--from sqlalchemy.orm import scoped_session, sessionmaker
--from sqlalchemy.schema import MetaData
--
--import cloudbot
--from cloudbot.core.connection import Connection, IrcConnection
--from cloudbot.core.config import Config
--from cloudbot.core.reloader import PluginReloader
--from cloudbot.core.pluginmanager import PluginManager
--from cloudbot.core.events import BaseEvent, CommandEvent, RegexEvent, EventType
--from cloudbot.util import botvars, formatting
--
--logger = logging.getLogger("cloudbot")
--
--
--def clean_name(n):
--    """strip all spaces and capitalization
--    :type n: str
--    :rtype: str
--    """
--    return re.sub('[^A-Za-z0-9_]+', '', n.replace(" ", "_"))
--
--
--class CloudBot:
--    """
--    :type start_time: float
--    :type running: bool
--    :type connections: list[Connection | IrcConnection]
--    :type data_dir: bytes
--    :type config: core.config.Config
--    :type plugin_manager: PluginManager
--    :type reloader: PluginReloader
--    :type db_engine: sqlalchemy.engine.Engine
--    :type db_factory: sqlalchemy.orm.session.sessionmaker
--    :type db_session: sqlalchemy.orm.scoping.scoped_session
--    :type db_metadata: sqlalchemy.sql.schema.MetaData
--    :type loop: asyncio.events.AbstractEventLoop
--    :type stopped_future: asyncio.Future
--    :param: stopped_future: Future that will be given a result when the bot has stopped.
--    """
--
--    def __init__(self, loop=asyncio.get_event_loop()):
--        # basic variables
--        self.loop = loop
--        self.start_time = time.time()
--        self.running = True
--        # future which will be called when the bot stops
--        self.stopped_future = asyncio.Future(loop=self.loop)
--
--        # stores each bot server connection
--        self.connections = []
--
--        # for plugins
--        self.logger = logger
--
--        # declare and create data folder
--        self.data_dir = os.path.abspath('data')
--        if not os.path.exists(self.data_dir):
--            logger.debug("Data folder not found, creating.")
--            os.mkdir(self.data_dir)
--
--        # set up config
--        self.config = Config(self)
--        logger.debug("Config system initialised.")
--
--        # log developer mode
--        if cloudbot.dev_mode.get("plugin_reloading"):
--            logger.info("Enabling developer option: plugin reloading.")
--        if cloudbot.dev_mode.get("config_reloading"):
--            logger.info("Enabling developer option: config reloading.")
--        if cloudbot.dev_mode.get("console_debug"):
--            logger.info("Enabling developer option: console debug.")
--        if cloudbot.dev_mode.get("file_debug"):
--            logger.info("Enabling developer option: file debug")
--
--        # setup db
--        db_path = self.config.get('database', 'sqlite:///cloudbot.db')
--        self.db_engine = create_engine(db_path)
--        self.db_factory = sessionmaker(bind=self.db_engine)
--        self.db_session = scoped_session(self.db_factory)
--        self.db_metadata = MetaData()
--        # set botvars.metadata so plugins can access when loading
--        botvars.metadata = self.db_metadata
--        logger.debug("Database system initialised.")
--
--        # Bot initialisation complete
--        logger.debug("Bot setup completed.")
--
--        # create bot connections
--        self.create_connections()
--
--        if cloudbot.dev_mode.get("plugin_reloading"):
--            self.reloader = PluginReloader(self)
--
--        self.plugin_manager = PluginManager(self)
--
--    def run(self):
--        """
--        Starts CloudBot.
--        This will load plugins, connect to IRC, and process input.
--        :return: True if CloudBot should be restarted, False otherwise
--        :rtype: bool
--        """
--        # Initializes the bot, plugins and connections
--        self.loop.run_until_complete(self._init_routine())
--        # Wait till the bot stops. The stopped_future will be set to True to restart, False otherwise
--        restart = self.loop.run_until_complete(self.stopped_future)
--        self.loop.close()
--        return restart
--
--    def create_connections(self):
--        """ Create a BotConnection for all the networks defined in the config """
--        for conf in self.config['connections']:
--            # strip all spaces and capitalization from the connection name
--            readable_name = conf['name']
--            name = clean_name(readable_name)
--            nick = conf['nick']
--            server = conf['connection']['server']
--            port = conf['connection'].get('port', 6667)
--
--            self.connections.append(IrcConnection(self, name, nick, config=conf, channels=conf['channels'],
--                                                  readable_name=readable_name, server=server, port=port,
--                                                  use_ssl=conf['connection'].get('ssl', False)))
--            logger.debug("[{}] Created connection.".format(readable_name))
--
--    @asyncio.coroutine
--    def stop(self, reason=None, *, restart=False):
--        """quits all networks and shuts the bot down"""
--        logger.info("Stopping bot.")
--
--        if cloudbot.dev_mode.get("config_reloading"):
--            logger.debug("Stopping config reloader.")
--            self.config.stop()
--
--        if cloudbot.dev_mode.get("plugin_reloading"):
--            logger.debug("Stopping plugin reloader.")
--            self.reloader.stop()
--
--        for connection in self.connections:
--            if not connection.connected:
--                # Don't quit a connection that hasn't connected
--                continue
--            logger.debug("[{}] Closing connection.".format(connection.readable_name))
--
--            connection.quit(reason)
--
--        yield from asyncio.sleep(1.0)  # wait for 'QUIT' calls to take affect
--
--        for connection in self.connections:
--            if not connection.connected:
--                # Don't close a connection that hasn't connected
--                continue
--            connection.close()
--
--        self.running = False
--        # Give the stopped_future a result, so that run() will exit
--        self.stopped_future.set_result(restart)
--
--    @asyncio.coroutine
--    def restart(self, reason=None):
--        """shuts the bot down and restarts it"""
--        yield from self.stop(reason=reason, restart=True)
--
--    @asyncio.coroutine
--    def _init_routine(self):
--        # Load plugins
--        yield from self.plugin_manager.load_all(os.path.abspath("plugins"))
--
--        # If we we're stopped while loading plugins, cancel that and just stop
--        if not self.running:
--            logger.info("Killed while loading, exiting")
--            return
--
--        if cloudbot.dev_mode.get("plugin_reloading"):
--            # start plugin reloader
--            self.reloader.start(os.path.abspath("plugins"))
--
--        # Connect to servers
--        yield from asyncio.gather(*[conn.connect() for conn in self.connections], loop=self.loop)
--
--        # Run a manual garbage collection cycle, to clean up any unused objects created during initialization
--        gc.collect()
--
--    @asyncio.coroutine
--    def process(self, event):
--        """
--        :type event: BaseEvent
--        """
--        run_before_tasks = []
--        tasks = []
--        command_prefix = event.conn.config.get('command_prefix', '.')
--
--        # Raw IRC hook
--        for raw_hook in self.plugin_manager.catch_all_triggers:
--            # run catch-all coroutine hooks before all others - TODO: Make this a plugin argument
--            if not raw_hook.threaded:
--                run_before_tasks.append(
--                    self.plugin_manager.launch(raw_hook, BaseEvent(hook=raw_hook, base_event=event)))
--            else:
--                tasks.append(self.plugin_manager.launch(raw_hook, BaseEvent(hook=raw_hook, base_event=event)))
--        if event.irc_command in self.plugin_manager.raw_triggers:
--            for raw_hook in self.plugin_manager.raw_triggers[event.irc_command]:
--                tasks.append(self.plugin_manager.launch(raw_hook, BaseEvent(hook=raw_hook, base_event=event)))
--
--        # Event hooks
--        if event.type in self.plugin_manager.event_type_hooks:
--            for event_hook in self.plugin_manager.event_type_hooks[event.type]:
--                tasks.append(self.plugin_manager.launch(event_hook, BaseEvent(hook=event_hook, base_event=event)))
--
--        if event.type is EventType.message:
--            # Commands
--            if event.chan.lower() == event.nick.lower():  # private message, no command prefix
--                command_re = r'(?i)^(?:[{}]?|{}[,;:]+\s+)(\w+)(?:$|\s+)(.*)'.format(command_prefix, event.conn.nick)
--            else:
--                command_re = r'(?i)^(?:[{}]|{}[,;:]+\s+)(\w+)(?:$|\s+)(.*)'.format(command_prefix, event.conn.nick)
--
--            match = re.match(command_re, event.content)
--
--            if match:
--                command = match.group(1).lower()
--                if command in self.plugin_manager.commands:
--                    command_hook = self.plugin_manager.commands[command]
--                    command_event = CommandEvent(hook=command_hook, text=match.group(2).strip(),
--                                                 triggered_command=command, base_event=event)
--                    tasks.append(self.plugin_manager.launch(command_hook, command_event))
--                else:
--                    potential_matches = []
--                    for potential_match, plugin in self.plugin_manager.commands.items():
--                        if potential_match.startswith(command):
--                            potential_matches.append((potential_match, plugin))
--                    if potential_matches:
--                        if len(potential_matches) == 1:
--                            command_hook = potential_matches[0][1]
--                            command_event = CommandEvent(hook=command_hook, text=match.group(2).strip(),
--                                                         triggered_command=command, base_event=event)
--                            tasks.append(self.plugin_manager.launch(command_hook, command_event))
--                        else:
--                            event.notice("Possible matches: {}".format(
--                                formatting.get_text_list([command for command, plugin in potential_matches])))
--
--            # Regex hooks
--            for regex, regex_hook in self.plugin_manager.regex_hooks:
--                match = regex.search(event.content)
--                if match:
--                    regex_event = RegexEvent(hook=regex_hook, match=match, base_event=event)
--                    tasks.append(self.plugin_manager.launch(regex_hook, regex_event))
--
--        # Run the tasks
--        yield from asyncio.gather(*run_before_tasks, loop=self.loop)
--        yield from asyncio.gather(*tasks, loop=self.loop)
-diff --git a/cloudbot/core/config.py b/cloudbot/core/config.py
+@@ -1 +0,0 @@
+-__author__ = 'Luke'
+diff --git a/cloudbot/dialect/irc/client.py b/cloudbot/dialect/irc/client.py
 deleted file mode 100644
-index 22f2062..0000000
---- a/cloudbot/core/config.py
+index 1218dd3..0000000
+--- a/cloudbot/dialect/irc/client.py
 +++ /dev/null
-@@ -1,99 +0,0 @@
--import json
--import os
--import time
--import sys
--import logging
--
--from watchdog.observers import Observer
--from watchdog.tricks import Trick
--import cloudbot
--
--logger = logging.getLogger("cloudbot")
--
--
--class Config(dict):
--    """
--    :type filename: str
--    :type path: str
--    :type bot: cloudbot.core.bot.CloudBot
--    :type observer: Observer
--    :type event_handler: ConfigEventHandler
--    """
--
--    def __init__(self, bot, *args, **kwargs):
--        """
--        :type bot: cloudbot.core.bot.CloudBot
--        :type args: list
--        :type kwargs: dict
--        """
--        super().__init__(*args, **kwargs)
--        self.filename = "config.json"
--        self.path = os.path.abspath(self.filename)
--        self.bot = bot
--        self.update(*args, **kwargs)
--
--        # populate self with config data
--        self.load_config()
--
--        if cloudbot.dev_mode["config_reloading"]:
--            # start watcher
--            self.observer = Observer()
--
--            pattern = "*{}".format(self.filename)
--
--            self.event_handler = ConfigEventHandler(self.bot, self, patterns=[pattern])
--            self.observer.schedule(self.event_handler, path='.', recursive=False)
--            self.observer.start()
--
--    def stop(self):
--        """shuts down the config reloader"""
--        if cloudbot.dev_mode["config_reloading"]:
--            self.observer.stop()
--
--    def load_config(self):
--        """(re)loads the bot config from the config file"""
--        if not os.path.exists(self.path):
--            # if there is no config, show an error and die
--            logger.critical("No config file found, bot shutting down!")
--            print("No config file found! Bot shutting down in five seconds.")
--            print("Copy 'config.default' to 'config.json' for defaults.")
--            print("For help, see http://git.io/cloudbotirc. Thank you for using CloudBot!")
--            time.sleep(5)
--            sys.exit()
--
--        with open(self.path) as f:
--            self.update(json.load(f))
--            logger.debug("Config loaded from file.")
--
--        # reload permissions
--        if self.bot.connections:
--            for connection in self.bot.connections:
--                connection.permissions.reload()
--
--    def save_config(self):
--        """saves the contents of the config dict to the config file"""
--        json.dump(self, open(self.path, 'w'), sort_keys=True, indent=4)
--        logger.info("Config saved to file.")
--
--
--class ConfigEventHandler(Trick):
--    """
--    :type bot: cloudbot.core.bot.CloudBot
--    :type config: core.config.Config
--    :type logger: logging.Logger
--    """
--
--    def __init__(self, bot, config, *args, **kwargs):
--        """
--        :type bot: cloudbot.core.bot.CloudBot
--        :type config: Config
--        """
--        self.bot = bot
--        self.config = config
--        logger = config.logger
--        Trick.__init__(self, *args, **kwargs)
--
--    def on_any_event(self, event):
--        if self.bot.running:
--            logger.info("Config changed, triggering reload.")
--            self.config.load_config()
-diff --git a/cloudbot/core/connection.py b/cloudbot/core/connection.py
-deleted file mode 100644
-index 62cf162..0000000
---- a/cloudbot/core/connection.py
-+++ /dev/null
-@@ -1,495 +0,0 @@
+@@ -1,188 +0,0 @@
 -from _ssl import PROTOCOL_SSLv23
 -import asyncio
--import re
 -import ssl
 -import logging
 -from ssl import SSLContext
 -
--from cloudbot.core.permissions import PermissionManager
--from cloudbot.core.events import BaseEvent, EventType
+-from cloudbot.client import Client
+-from cloudbot.dialect.irc.protocol import IRCProtocol
+-
 -
 -logger = logging.getLogger("cloudbot")
 -
--irc_prefix_re = re.compile(r":([^ ]*) ([^ ]*) (.*)")
--irc_noprefix_re = re.compile(r"([^ ]*) (.*)")
--irc_netmask_re = re.compile(r"([^!@]*)!([^@]*)@(.*)")
--irc_param_re = re.compile(r"(?:^|(?<= ))(:.*|[^ ]+)")
 -
--irc_command_to_event_type = {
--    "PRIVMSG": EventType.message,
--    "JOIN": EventType.join,
--    "PART": EventType.part,
--    "KICK": EventType.kick,
--    "NOTICE": EventType.notice
--}
--
--
--class Connection:
+-class IRCClient(Client):
 -    """
--    A Connection representing each connection the bot makes to a single server
--    :type bot: cloudbot.core.bot.CloudBot
--    :type loop: asyncio.events.AbstractEventLoop
--    :type name: str
--    :type readable_name: str
--    :type channels: list[str]
--    :type config: dict[str, unknown]
--    :type nick: str
--    :type vars: dict
--    :type history: dict[str, list[tuple]]
--    :type permissions: PermissionManager
--    """
--
--    def __init__(self, bot, name, nick, *, readable_name, channels=None, config=None):
--        """
--        :type bot: cloudbot.core.bot.CloudBot
--        :type name: str
--        :type readable_name: str
--        :type nick: str
--        :type channels: list[str]
--        :type config: dict[str, unknown]
--        """
--        self.bot = bot
--        self.loop = bot.loop
--        self.name = name
--        self.nick = nick
--        self.readable_name = readable_name
--
--        if channels is None:
--            self.channels = []
--        else:
--            self.channels = channels
--
--        if config is None:
--            self.config = {}
--        else:
--            self.config = config
--        self.vars = {}
--        self.history = {}
--
--        # create permissions manager
--        self.permissions = PermissionManager(self)
--
--    def describe_server(self):
--        raise NotImplementedError
--
--    @asyncio.coroutine
--    def connect(self):
--        """
--        Connects to the server, or reconnects if already connected.
--        """
--        raise NotImplementedError
--
--    def quit(self, reason=None):
--        """
--        Gracefully disconnects from the server with reason <reason>, close() should be called shortly after.
--        """
--        raise NotImplementedError
--
--    def close(self):
--        """
--        Disconnects from the server, only for use when this Connection object will *not* ever be connected again
--        """
--        raise NotImplementedError
--
--    def message(self, target, text):
--        """
--        Sends a message to the given target
--        :type target: str
--        :type text: str
--        """
--        raise NotImplementedError
--
--    def action(self, target, text):
--        """
--        Sends an action (or /me) to the given target channel
--        :type target: str
--        :type text: str
--        """
--        raise NotImplementedError
--
--    def notice(self, target, text):
--        """
--        Sends a notice to the given target
--        :type target: str
--        :type text: str
--        """
--        raise NotImplementedError
--
--    def set_nick(self, nick):
--        """
--        Sets the bot's nickname
--        :type nick: str
--        """
--        raise NotImplementedError
--
--    def join(self, channel):
--        """
--        Joins a given channel
--        :type channel: str
--        """
--        raise NotImplementedError
--
--    def part(self, channel):
--        """
--        Parts a given channel
--        :type channel: str
--        """
--        raise NotImplementedError
--
--    @property
--    def connected(self):
--        raise NotImplementedError
--
--
--class IrcConnection(Connection):
--    """
--    An implementation of Connection for IRC.
+-    An implementation of Client for IRC.
 -    :type use_ssl: bool
 -    :type server: str
 -    :type port: int
@@ -1510,7 +768,7 @@ index 62cf162..0000000
 -            logger.info("[{}] Connecting".format(self.readable_name))
 -
 -        self._transport, self._protocol = yield from self.loop.create_connection(
--            lambda: _IrcProtocol(self), host=self.server, port=self.port, ssl=self.ssl_context)
+-            lambda: IRCProtocol(self), host=self.server, port=self.port, ssl=self.ssl_context)
 -
 -        # send the password, nick, and user
 -        self.set_pass(self.config["connection"].get("password"))
@@ -1594,7 +852,7 @@ index 62cf162..0000000
 -        :type line: str
 -        """
 -        if not self._connected:
--            raise ValueError("Connection must be connected to irc server to use send")
+-            raise ValueError("Client must be connected to irc server to use send")
 -        self.loop.call_soon_threadsafe(self._send, line)
 -
 -    def _send(self, line):
@@ -1608,12 +866,39 @@ index 62cf162..0000000
 -    @property
 -    def connected(self):
 -        return self._connected
+diff --git a/cloudbot/dialect/irc/protocol.py b/cloudbot/dialect/irc/protocol.py
+deleted file mode 100644
+index a8f6da1..0000000
+--- a/cloudbot/dialect/irc/protocol.py
++++ /dev/null
+@@ -1,198 +0,0 @@
+-import asyncio
+-import logging
+-import re
+-
+-from cloudbot.event import EventType, Event
 -
 -
--class _IrcProtocol(asyncio.Protocol):
+-logger = logging.getLogger("cloudbot")
+-
+-irc_prefix_re = re.compile(r":([^ ]*) ([^ ]*) (.*)")
+-irc_noprefix_re = re.compile(r"([^ ]*) (.*)")
+-irc_netmask_re = re.compile(r"([^!@]*)!([^@]*)@(.*)")
+-irc_param_re = re.compile(r"(?:^|(?<= ))(:.*|[^ ]+)")
+-
+-irc_command_to_event_type = {
+-    "PRIVMSG": EventType.message,
+-    "JOIN": EventType.join,
+-    "PART": EventType.part,
+-    "KICK": EventType.kick,
+-    "NOTICE": EventType.notice
+-}
+-
+-
+-class IRCProtocol(asyncio.Protocol):
 -    """
 -    :type loop: asyncio.events.AbstractEventLoop
--    :type conn: IrcConnection
+-    :type conn: IRCClient
 -    :type bot: cloudbot.core.bot.CloudBot
 -    :type _input_buffer: bytes
 -    :type _connected: bool
@@ -1623,7 +908,7 @@ index 62cf162..0000000
 -
 -    def __init__(self, conn):
 -        """
--        :type conn: IrcConnection
+-        :type conn: IRCClient
 -        """
 -        self.loop = conn.loop
 -        self.bot = conn.bot
@@ -1655,7 +940,7 @@ index 62cf162..0000000
 -        if exc is None:
 -            # we've been closed intentionally, so don't reconnect
 -            return
--        logger.exception("[{}] Connection lost.".format(self.conn.readable_name))
+-        logger.exception("[{}] Client lost.".format(self.conn.readable_name))
 -        asyncio.async(self.conn.connect(), loop=self.loop)
 -
 -    def eof_received(self):
@@ -1778,17 +1063,17 @@ index 62cf162..0000000
 -
 -            # Set up parsed message
 -            # TODO: Do we really want to send the raw `prefix` and `command_params` here?
--            event = BaseEvent(bot=self.bot, conn=self.conn, event_type=event_type, content=content, target=target,
--                              channel=channel, nick=nick, user=user, host=host, mask=mask, irc_raw=line,
--                              irc_prefix=prefix, irc_command=command, irc_paramlist=command_params,
--                              irc_ctcp_text=ctcp_text)
+-            event = Event(bot=self.bot, conn=self.conn, event_type=event_type, content=content, target=target,
+-                          channel=channel, nick=nick, user=user, host=host, mask=mask, irc_raw=line,
+-                          irc_prefix=prefix, irc_command=command, irc_paramlist=command_params,
+-                          irc_ctcp_text=ctcp_text)
 -
 -            # handle the message, async
 -            asyncio.async(self.bot.process(event), loop=self.loop)
-diff --git a/cloudbot/core/events.py b/cloudbot/core/events.py
+diff --git a/cloudbot/event.py b/cloudbot/event.py
 deleted file mode 100644
-index c4eb41e..0000000
---- a/cloudbot/core/events.py
+index 0cb3a27..0000000
+--- a/cloudbot/event.py
 +++ /dev/null
 @@ -1,373 +0,0 @@
 -import asyncio
@@ -1811,10 +1096,10 @@ index c4eb41e..0000000
 -    other = 6
 -
 -
--class BaseEvent:
+-class Event:
 -    """
 -    :type bot: cloudbot.core.bot.CloudBot
--    :type conn: cloudbot.core.connection.Connection
+-    :type conn: cloudbot.core.connection.Client
 -    :type hook: cloudbot.core.pluginmanager.Hook
 -    :type type: EventType
 -    :type content: str
@@ -1843,7 +1128,7 @@ index c4eb41e..0000000
 -        Note that the `bot` argument may be left out if you specify a `base_event`.
 -
 -        :param bot: The CloudBot instance this event was triggered from
--        :param conn: The Connection instance this event was triggered from
+-        :param conn: The Client instance this event was triggered from
 -        :param hook: The hook this event will be passed to
 -        :param base_event: The base event that this event is based on. If this parameter is not None, then nick, user,
 -                            host, mask, and irc_* arguments are ignored
@@ -1862,9 +1147,9 @@ index c4eb41e..0000000
 -                                should be removed from the front.
 -        :param irc_ctcp_text: CTCP text if this message is a CTCP command
 -        :type bot: cloudbot.core.bot.CloudBot
--        :type conn: cloudbot.core.connection.Connection
+-        :type conn: cloudbot.core.connection.Client
 -        :type hook: cloudbot.core.pluginmanager.Hook
--        :type base_event: cloudbot.core.events.BaseEvent
+-        :type base_event: cloudbot.core.events.Event
 -        :type content: str
 -        :type target: str
 -        :type event_type: EventType
@@ -2002,7 +1287,7 @@ index c4eb41e..0000000
 -    @property
 -    def event(self):
 -        """
--        :rtype; cloudbot.core.events.BaseEvent
+-        :rtype; cloudbot.core.events.Event
 -        """
 -        return self
 -
@@ -2104,7 +1389,7 @@ index c4eb41e..0000000
 -        return result
 -
 -
--class CommandEvent(BaseEvent):
+-class CommandEvent(Event):
 -    """
 -    :type hook: cloudbot.core.pluginmanager.CommandHook
 -    :type text: str
@@ -2147,7 +1432,7 @@ index c4eb41e..0000000
 -        self.notice(message, target=target)
 -
 -
--class RegexEvent(BaseEvent):
+-class RegexEvent(Event):
 -    """
 -    :type hook: cloudbot.core.pluginmanager.RegexHook
 -    :type match: re.__Match
@@ -2164,219 +1449,705 @@ index c4eb41e..0000000
 -                         target=target, channel=channel, nick=nick, user=user, host=host, mask=mask, irc_raw=irc_raw,
 -                         irc_prefix=irc_prefix, irc_command=irc_command, irc_paramlist=irc_paramlist)
 -        self.match = match
-diff --git a/cloudbot/core/permissions.py b/cloudbot/core/permissions.py
+diff --git a/cloudbot/events.py b/cloudbot/events.py
+new file mode 100644
+index 0000000..ec96914
+--- /dev/null
++++ b/cloudbot/events.py
+@@ -0,0 +1,373 @@
++import asyncio
++import enum
++import logging
++import concurrent.futures
++
++logger = logging.getLogger("cloudbot")
++
++
++@enum.unique
++class EventType(enum.Enum):
++    message = 0
++    action = 1
++    # TODO: Do we actually want to have a 'notice' event type? Should the NOTICE command be a 'message' type?
++    notice = 2
++    join = 3
++    part = 4
++    kick = 5
++    other = 6
++
++
++class BaseEvent:
++    """
++    :type bot: cloudbot.bot.CloudBot
++    :type conn: cloudbot.connection.Connection
++    :type hook: cloudbot.pluginmanager.Hook
++    :type type: EventType
++    :type content: str
++    :type target: str
++    :type chan: str
++    :type nick: str
++    :type user: str
++    :type host: str
++    :type mask: str
++    :type db: sqlalchemy.orm.Session
++    :type db_executor: concurrent.futures.ThreadPoolExecutor
++    :type irc_raw: str
++    :type irc_prefix: str
++    :type irc_command: str
++    :type irc_paramlist: str
++    :type irc_ctcp_text: str
++    """
++
++    def __init__(self, *, bot=None, hook=None, conn=None, base_event=None, event_type=EventType.other, content=None,
++                 target=None, channel=None, nick=None, user=None, host=None, mask=None, irc_raw=None, irc_prefix=None,
++                 irc_command=None, irc_paramlist=None, irc_ctcp_text=None):
++        """
++        All of these parameters except for `bot` and `hook` are optional.
++        The irc_* parameters should only be specified for IRC events.
++
++        Note that the `bot` argument may be left out if you specify a `base_event`.
++
++        :param bot: The CloudBot instance this event was triggered from
++        :param conn: The Connection instance this event was triggered from
++        :param hook: The hook this event will be passed to
++        :param base_event: The base event that this event is based on. If this parameter is not None, then nick, user,
++                            host, mask, and irc_* arguments are ignored
++        :param event_type: The type of the event
++        :param content: The content of the message, or the reason for an join or part
++        :param target: The target of the action, for example the user being kicked, or invited
++        :param channel: The channel that this action took place in
++        :param nick: The nickname of the sender that triggered this event
++        :param user: The user of the sender that triggered this event
++        :param host: The host of the sender that triggered this event
++        :param mask: The mask of the sender that triggered this event (nick!user@host)
++        :param irc_raw: The raw IRC line
++        :param irc_prefix: The raw IRC prefix
++        :param irc_command: The IRC command
++        :param irc_paramlist: The list of params for the IRC command. If the last param is a content param, the ':'
++                                should be removed from the front.
++        :param irc_ctcp_text: CTCP text if this message is a CTCP command
++        :type bot: cloudbot.bot.CloudBot
++        :type conn: cloudbot.connection.Connection
++        :type hook: cloudbot.pluginmanager.Hook
++        :type base_event: cloudbot.events.BaseEvent
++        :type content: str
++        :type target: str
++        :type event_type: EventType
++        :type nick: str
++        :type user: str
++        :type host: str
++        :type mask: str
++        :type irc_raw: str
++        :type irc_prefix: str
++        :type irc_command: str
++        :type irc_paramlist: list[str]
++        :type irc_ctcp_text: str
++        """
++        self.db = None
++        self.db_executor = None
++        self.bot = bot
++        self.conn = conn
++        self.hook = hook
++        if base_event is not None:
++            # We're copying an event, so inherit values
++            if self.bot is None and base_event.bot is not None:
++                self.bot = base_event.bot
++            if self.conn is None and base_event.conn is not None:
++                self.conn = base_event.conn
++            if self.hook is None and base_event.hook is not None:
++                self.hook = base_event.hook
++
++            # If base_event is provided, don't check these parameters, just inherit
++            self.type = base_event.type
++            self.content = base_event.content
++            self.target = base_event.target
++            self.chan = base_event.chan
++            self.nick = base_event.nick
++            self.user = base_event.user
++            self.host = base_event.host
++            self.mask = base_event.mask
++            # irc-specific parameters
++            self.irc_raw = base_event.irc_raw
++            self.irc_prefix = base_event.irc_prefix
++            self.irc_command = base_event.irc_command
++            self.irc_paramlist = base_event.irc_paramlist
++            self.irc_ctcp_text = base_event.irc_ctcp_text
++        else:
++            # Since base_event wasn't provided, we can take these parameters
++            self.type = event_type
++            self.content = content
++            self.target = target
++            self.chan = channel
++            self.nick = nick
++            self.user = user
++            self.host = host
++            self.mask = mask
++            # irc-specific parameters
++            self.irc_raw = irc_raw
++            self.irc_prefix = irc_prefix
++            self.irc_command = irc_command
++            self.irc_paramlist = irc_paramlist
++            self.irc_ctcp_text = irc_ctcp_text
++
++    @asyncio.coroutine
++    def prepare(self):
++        """
++        Initializes this event to be run through it's hook
++
++        Mainly, initializes a database object on this event, if the hook requires it.
++
++        This method is for when the hook is *not* threaded (event.hook.threaded is False).
++        If you need to add a db to a threaded hook, use prepare_threaded.
++        """
++
++        if self.hook is None:
++            raise ValueError("event.hook is required to prepare an event")
++
++        if "db" in self.hook.required_args:
++            logger.debug("Opening database session for {}:threaded=False".format(self.hook.description))
++
++            # we're running a coroutine hook with a db, so initialise an executor pool
++            self.db_executor = concurrent.futures.ThreadPoolExecutor(1)
++            # be sure to initialize the db in the database executor, so it will be accessible in that thread.
++            self.db = yield from self.async(self.bot.db_session)
++
++    def prepare_threaded(self):
++        """
++        Initializes this event to be run through it's hook
++
++        Mainly, initializes the database object on this event, if the hook requires it.
++
++        This method is for when the hook is threaded (event.hook.threaded is True).
++        If you need to add a db to a coroutine hook, use prepare.
++        """
++
++        if self.hook is None:
++            raise ValueError("event.hook is required to prepare an event")
++
++        if "db" in self.hook.required_args:
++            logger.debug("Opening database session for {}:threaded=True".format(self.hook.description))
++
++            self.db = self.bot.db_session()
++
++    @asyncio.coroutine
++    def close(self):
++        """
++        Closes this event after running it through it's hook.
++
++        Mainly, closes the database connection attached to this event (if any).
++
++        This method is for when the hook is *not* threaded (event.hook.threaded is False).
++        If you need to add a db to a threaded hook, use close_threaded.
++        """
++        if self.hook is None:
++            raise ValueError("event.hook is required to close an event")
++
++        if self.db is not None:
++            logger.debug("Closing database session for {}:threaded=False".format(self.hook.description))
++            # be sure the close the database in the database executor, as it is only accessable in that one thread
++            yield from self.async(self.db.close)
++            self.db = None
++
++    def close_threaded(self):
++        """
++        Closes this event after running it through it's hook.
++
++        Mainly, closes the database connection attached to this event (if any).
++
++        This method is for when the hook is threaded (event.hook.threaded is True).
++        If you need to add a db to a coroutine hook, use close.
++        """
++        if self.hook is None:
++            raise ValueError("event.hook is required to close an event")
++        if self.db is not None:
++            logger.debug("Closing database session for {}:threaded=True".format(self.hook.description))
++            self.db.close()
++            self.db = None
++
++    @property
++    def event(self):
++        """
++        :rtype; cloudbot.events.BaseEvent
++        """
++        return self
++
++    @property
++    def loop(self):
++        """
++        :rtype: asyncio.events.AbstractEventLoop
++        """
++        return self.bot.loop
++
++    @property
++    def logger(self):
++        return logger
++
++    def message(self, message, target=None):
++        """sends a message to a specific or current channel/user
++        :type message: str
++        :type target: str
++        """
++        if target is None:
++            if self.chan is None:
++                raise ValueError("Target must be specified when chan is not assigned")
++            target = self.chan
++        self.conn.message(target, message)
++
++    def reply(self, message, target=None):
++        """sends a message to the current channel/user with a prefix
++        :type message: str
++        :type target: str
++        """
++        if target is None:
++            if self.chan is None:
++                raise ValueError("Target must be specified when chan is not assigned")
++            target = self.chan
++
++        if target == self.nick:
++            self.conn.message(target, message)
++        else:
++            self.conn.message(target, "({}) {}".format(self.nick, message))
++
++    def action(self, message, target=None):
++        """sends an action to the current channel/user or a specific channel/user
++        :type message: str
++        :type target: str
++        """
++        if target is None:
++            if self.chan is None:
++                raise ValueError("Target must be specified when chan is not assigned")
++            target = self.chan
++
++        self.conn.action(target, message)
++
++    def ctcp(self, message, ctcp_type, target=None):
++        """sends an ctcp to the current channel/user or a specific channel/user
++        :type message: str
++        :type ctcp_type: str
++        :type target: str
++        """
++        if target is None:
++            if self.chan is None:
++                raise ValueError("Target must be specified when chan is not assigned")
++            target = self.chan
++        if not hasattr(self.conn, "ctcp"):
++            raise ValueError("CTCP can only be used on IRC connections")
++        # noinspection PyUnresolvedReferences
++        self.conn.ctcp(target, ctcp_type, message)
++
++    def notice(self, message, target=None):
++        """sends a notice to the current channel/user or a specific channel/user
++        :type message: str
++        :type target: str
++        """
++        if target is None:
++            if self.nick is None:
++                raise ValueError("Target must be specified when nick is not assigned")
++            target = self.nick
++
++        self.conn.notice(target, message)
++
++    def has_permission(self, permission, notice=True):
++        """ returns whether or not the current user has a given permission
++        :type permission: str
++        :rtype: bool
++        """
++        if not self.mask:
++            raise ValueError("has_permission requires mask is not assigned")
++        return self.conn.permissions.has_perm_mask(self.mask, permission, notice=notice)
++
++    @asyncio.coroutine
++    def async(self, function, *args, **kwargs):
++        if self.db_executor is not None:
++            executor = self.db_executor
++        else:
++            executor = None
++        if kwargs:
++            result = yield from self.loop.run_in_executor(executor, function, *args)
++        else:
++            result = yield from self.loop.run_in_executor(executor, lambda: function(*args, **kwargs))
++        return result
++
++
++class CommandEvent(BaseEvent):
++    """
++    :type hook: cloudbot.pluginmanager.CommandHook
++    :type text: str
++    :type triggered_command: str
++    """
++
++    def __init__(self, *, bot=None, hook, text, triggered_command, conn=None, base_event=None, event_type=None,
++                 content=None, target=None, channel=None, nick=None, user=None, host=None, mask=None, irc_raw=None,
++                 irc_prefix=None, irc_command=None, irc_paramlist=None):
++        """
++        :param text: The arguments for the command
++        :param triggered_command: The command that was triggered
++        :type text: str
++        :type triggered_command: str
++        """
++        super().__init__(bot=bot, hook=hook, conn=conn, base_event=base_event, event_type=event_type, content=content,
++                         target=target, channel=channel, nick=nick, user=user, host=host, mask=mask, irc_raw=irc_raw,
++                         irc_prefix=irc_prefix, irc_command=irc_command, irc_paramlist=irc_paramlist)
++        self.hook = hook
++        self.text = text
++        self.triggered_command = triggered_command
++
++    def notice_doc(self, target=None):
++        """sends a notice containing this command's docstring to the current channel/user or a specific channel/user
++        :type target: str
++        """
++        if self.triggered_command is None:
++            raise ValueError("Triggered command not set on this event")
++        if self.hook.doc is None:
++            message = "{}{} requires additional arguments.".format(self.conn.config["command_prefix"],
++                                                                   self.triggered_command)
++        else:
++            if self.hook.doc.split()[0].isalpha():
++                # this is using the old format of `name <args> - doc`
++                message = "{}{}".format(self.conn.config["command_prefix"], self.hook.doc)
++            else:
++                # this is using the new format of `<args> - doc`
++                message = "{}{} {}".format(self.conn.config["command_prefix"], self.triggered_command, self.hook.doc)
++
++        self.notice(message, target=target)
++
++
++class RegexEvent(BaseEvent):
++    """
++    :type hook: cloudbot.pluginmanager.RegexHook
++    :type match: re.__Match
++    """
++
++    def __init__(self, *, bot=None, hook, match, conn=None, base_event=None, event_type=None, content=None, target=None,
++                 channel=None, nick=None, user=None, host=None, mask=None, irc_raw=None, irc_prefix=None,
++                 irc_command=None, irc_paramlist=None):
++        """
++        :param: match: The match objected returned by the regex search method
++        :type match: re.__Match
++        """
++        super().__init__(bot=bot, conn=conn, hook=hook, base_event=base_event, event_type=event_type, content=content,
++                         target=target, channel=channel, nick=nick, user=user, host=host, mask=mask, irc_raw=irc_raw,
++                         irc_prefix=irc_prefix, irc_command=irc_command, irc_paramlist=irc_paramlist)
++        self.match = match
+diff --git a/cloudbot/hook.py b/cloudbot/hook.py
+new file mode 100644
+index 0000000..c03aeb2
+--- /dev/null
++++ b/cloudbot/hook.py
+@@ -0,0 +1,297 @@
++import inspect
++import re
++import collections
++
++from cloudbot.events import EventType
++
++valid_command_re = re.compile(r"^\w+$")
++
++
++class _Hook():
++    """
++    :type function: function
++    :type type: str
++    :type kwargs: dict[str, unknown]
++    """
++
++    def __init__(self, function, _type):
++        """
++        :type function: function
++        :type _type: str
++        """
++        self.function = function
++        self.type = _type
++        self.kwargs = {}
++
++    def _add_hook(self, kwargs):
++        """
++        :type kwargs: dict[str, unknown]
++        """
++        # update kwargs, overwriting duplicates
++        self.kwargs.update(kwargs)
++
++
++class _CommandHook(_Hook):
++    """
++    :type main_alias: str
++    :type aliases: set[str]
++    """
++
++    def __init__(self, function):
++        """
++        :type function: function
++        """
++        _Hook.__init__(self, function, "command")
++        self.aliases = set()
++        self.main_alias = None
++
++        if function.__doc__:
++            self.doc = function.__doc__.split('\n', 1)[0]
++        else:
++            self.doc = None
++
++    def add_hook(self, alias_param, kwargs):
++        """
++        :type alias_param: list[str] | str
++        """
++        self._add_hook(kwargs)
++
++        if not alias_param:
++            alias_param = self.function.__name__
++        if isinstance(alias_param, str):
++            alias_param = [alias_param]
++        if not self.main_alias:
++            self.main_alias = alias_param[0]
++        for alias in alias_param:
++            if not valid_command_re.match(alias):
++                raise ValueError("Invalid command name {}".format(alias))
++        self.aliases.update(alias_param)
++
++
++class _RegexHook(_Hook):
++    """
++    :type regexes: list[re.__Regex]
++    """
++
++    def __init__(self, function):
++        """
++        :type function: function
++        """
++        _Hook.__init__(self, function, "regex")
++        self.regexes = []
++
++    def add_hook(self, regex_param, kwargs):
++        """
++        :type regex_param: Iterable[str | re.__Regex] | str | re.__Regex
++        :type kwargs: dict[str, unknown]
++        """
++        self._add_hook(kwargs)
++        # add all regex_parameters to valid regexes
++        if isinstance(regex_param, str):
++            # if the parameter is a string, compile and add
++            self.regexes.append(re.compile(regex_param))
++        elif hasattr(regex_param, "search"):
++            # if the parameter is an re.__Regex, just add it
++            # we only use regex.search anyways, so this is a good determiner
++            self.regexes.append(regex_param)
++        else:
++            assert isinstance(regex_param, collections.Iterable)
++            # if the parameter is a list, add each one
++            for re_to_match in regex_param:
++                if isinstance(re_to_match, str):
++                    re_to_match = re.compile(re_to_match)
++                else:
++                    # make sure that the param is either a compiled regex, or has a search attribute.
++                    assert hasattr(regex_param, "search")
++                self.regexes.append(re_to_match)
++
++
++class _RawHook(_Hook):
++    """
++    :type triggers: set[str]
++    """
++
++    def __init__(self, function):
++        """
++        :type function: function
++        """
++        _Hook.__init__(self, function, "irc_raw")
++        self.triggers = set()
++
++    def add_hook(self, trigger_param, kwargs):
++        """
++        :type trigger_param: list[str] | str
++        :type kwargs: dict[str, unknown]
++        """
++        self._add_hook(kwargs)
++
++        if isinstance(trigger_param, str):
++            self.triggers.add(trigger_param)
++        else:
++            # it's a list
++            self.triggers.update(trigger_param)
++
++
++class _EventHook(_Hook):
++    """
++    :type types: set[cloudbot.events.EventType]
++    """
++
++    def __init__(self, function):
++        """
++        :type function: function
++        """
++        _Hook.__init__(self, function, "event")
++        self.types = set()
++
++    def add_hook(self, trigger_param, kwargs):
++        """
++        :type trigger_param: cloudbot.events.EventType | list[cloudbot.events.EventType]
++        :type kwargs: dict[str, unknown]
++        """
++        self._add_hook(kwargs)
++
++        if isinstance(trigger_param, EventType):
++            self.types.add(trigger_param)
++        else:
++            # it's a list
++            self.types.update(trigger_param)
++
++
++def _add_hook(func, hook):
++    if not hasattr(func, "_cloudbot_hook"):
++        func._cloudbot_hook = {}
++    else:
++        assert hook.type not in func._cloudbot_hook  # in this case the hook should be using the add_hook method
++    func._cloudbot_hook[hook.type] = hook
++
++
++def _get_hook(func, hook_type):
++    if hasattr(func, "_cloudbot_hook") and hook_type in func._cloudbot_hook:
++        return func._cloudbot_hook[hook_type]
++
++    return None
++
++
++def command(*args, **kwargs):
++    """External command decorator. Can be used directly as a decorator, or with args to return a decorator.
++    :type param: str | list[str] | function
++    """
++
++    def _command_hook(func, alias_param=None):
++        hook = _get_hook(func, "command")
++        if hook is None:
++            hook = _CommandHook(func)
++            _add_hook(func, hook)
++
++        hook.add_hook(alias_param, kwargs)
++        return func
++
++    if len(args) == 1 and callable(args[0]):  # this decorator is being used directly
++        return _command_hook(args[0])
++    else:  # this decorator is being used indirectly, so return a decorator function
++        return lambda func: _command_hook(func, alias_param=args)
++
++
++def irc_raw(triggers_param, **kwargs):
++    """External raw decorator. Must be used as a function to return a decorator
++    :type triggers_param: str | list[str]
++    """
++
++    def _raw_hook(func):
++        hook = _get_hook(func, "irc_raw")
++        if hook is None:
++            hook = _RawHook(func)
++            _add_hook(func, hook)
++
++        hook.add_hook(triggers_param, kwargs)
++        return func
++
++    if callable(triggers_param):  # this decorator is being used directly, which isn't good
++        raise TypeError("@irc_raw() must be used as a function that returns a decorator")
++    else:  # this decorator is being used as a function, so return a decorator
++        return lambda func: _raw_hook(func)
++
++
++def event(types_param, **kwargs):
++    """External event decorator. Must be used as a function to return a decorator
++    :type types_param: cloudbot.events.EventType | list[cloudbot.events.EventType]
++    """
++
++    def _event_hook(func):
++        hook = _get_hook(func, "event")
++        if hook is None:
++            hook = _EventHook(func)
++            _add_hook(func, hook)
++
++        hook.add_hook(types_param, kwargs)
++        return func
++
++    if callable(types_param):  # this decorator is being used directly, which isn't good
++        raise TypeError("@irc_raw() must be used as a function that returns a decorator")
++    else:  # this decorator is being used as a function, so return a decorator
++        return lambda func: _event_hook(func)
++
++
++def regex(regex_param, **kwargs):
++    """External regex decorator. Must be used as a function to return a decorator.
++    :type regex_param: str | re.__Regex | list[str | re.__Regex]
++    :type flags: int
++    """
++
++    def _regex_hook(func):
++        hook = _get_hook(func, "regex")
++        if hook is None:
++            hook = _RegexHook(func)
++            _add_hook(func, hook)
++
++        hook.add_hook(regex_param, kwargs)
++        return func
++
++    if callable(regex_param):  # this decorator is being used directly, which isn't good
++        raise TypeError("@regex() hook must be used as a function that returns a decorator")
++    else:  # this decorator is being used as a function, so return a decorator
++        return lambda func: _regex_hook(func)
++
++
++def sieve(param=None, **kwargs):
++    """External sieve decorator. Can be used directly as a decorator, or with args to return a decorator
++    :type param: function | None
++    """
++
++    def _sieve_hook(func):
++        assert len(inspect.getargspec(func).args) == 3, \
++            "Sieve plugin has incorrect argument count. Needs params: bot, input, plugin"
++
++        hook = _get_hook(func, "sieve")
++        if hook is None:
++            hook = _Hook(func, "sieve")  # there's no need to have a specific SieveHook object
++            _add_hook(func, hook)
++
++        hook._add_hook(kwargs)
++        return func
++
++    if callable(param):
++        return _sieve_hook(param)
++    else:
++        return lambda func: _sieve_hook(func)
++
++
++def onload(param=None, **kwargs):
++    """External onload decorator. Can be used directly as a decorator, or with args to return a decorator
++    :type param: function | None
++    """
++
++    def _onload_hook(func):
++        hook = _get_hook(func, "onload")
++        if hook is None:
++            hook = _Hook(func, "onload")
++            _add_hook(func, hook)
++
++        hook._add_hook(kwargs)
++        return func
++
++    if callable(param):
++        return _onload_hook(param)
++    else:
++        return lambda func: _onload_hook(func)
+diff --git a/cloudbot/permissions.py b/cloudbot/permissions.py
+index 4e42ec1..6652252 100644
+--- a/cloudbot/permissions.py
++++ b/cloudbot/permissions.py
+@@ -16,7 +16,7 @@ class PermissionManager(object):
+ 
+     def __init__(self, conn):
+         """
+-        :type conn: cloudbot.core.connection.Client
++        :type conn: cloudbot.connection.Connection
+         """
+         logger.info("[{}] Created permission manager for {}.".format(conn.readable_name, conn.name))
+ 
+diff --git a/cloudbot/plugin.py b/cloudbot/plugin.py
 deleted file mode 100644
-index 74e4867..0000000
---- a/cloudbot/core/permissions.py
-+++ /dev/null
-@@ -1,203 +0,0 @@
--from fnmatch import fnmatch
--import logging
--
--logger = logging.getLogger("cloudbot")
--
--
--class PermissionManager(object):
--    """
--    :type name: str
--    :type readable_name: str
--    :type config: dict[str, ?]
--    :type group_perms: dict[str, list[str]]
--    :type group_users: dict[str, list[str]]
--    :type perm_users: dict[str, list[str]]
--    """
--
--    def __init__(self, conn):
--        """
--        :type conn: cloudbot.core.connection.Connection
--        """
--        logger.info("[{}] Created permission manager for {}.".format(conn.readable_name, conn.name))
--
--        # stuff
--        self.name = conn.name
--        self.readable_name = conn.readable_name
--        self.config = conn.config
--
--        self.group_perms = {}
--        self.group_users = {}
--        self.perm_users = {}
--
--        self.reload()
--
--    def reload(self):
--        self.group_perms = {}
--        self.group_users = {}
--        self.perm_users = {}
--        logger.info("[{}] Reloading permissions for {}.".format(self.readable_name, self.name))
--        groups = self.config.get("permissions", {})
--        # work out the permissions and users each group has
--        for key, value in groups.items():
--            if not key.islower():
--                logger.warning("[{}] Warning! Non-lower-case group '{}' in config. This will cause problems when"
--                               "setting permissions using the bot's permissions commands"
--                               .format(self.readable_name, key))
--            key = key.lower()
--            self.group_perms[key] = []
--            self.group_users[key] = []
--            for permission in value["perms"]:
--                self.group_perms[key].append(permission.lower())
--            for user in value["users"]:
--                self.group_users[key].append(user.lower())
--
--        for group, users in self.group_users.items():
--            group_perms = self.group_perms[group]
--            for perm in group_perms:
--                if self.perm_users.get(perm) is None:
--                    self.perm_users[perm] = []
--                self.perm_users[perm].extend(users)
--
--        logger.debug("[{}] Group permissions: {}".format(self.readable_name, self.group_perms))
--        logger.debug("[{}] Group users: {}".format(self.readable_name, self.group_users))
--        logger.debug("[{}] Permission users: {}".format(self.readable_name, self.perm_users))
--
--    def has_perm_mask(self, user_mask, perm, notice=True):
--        """
--        :type user_mask: str
--        :type perm: str
--        :rtype: bool
--        """
--
--        if not perm.lower() in self.perm_users:
--            # no one has access
--            return False
--
--        allowed_users = self.perm_users[perm.lower()]
--
--        for allowed_mask in allowed_users:
--            if fnmatch(user_mask.lower(), allowed_mask):
--                if notice:
--                    logger.info("[{}] Allowed user {} access to {}".format(self.readable_name, user_mask, perm))
--                return True
--
--        return False
--
--    def get_groups(self):
--        return set().union(self.group_perms.keys(), self.group_users.keys())
--
--    def get_group_permissions(self, group):
--        """
--        :type group: str
--        :rtype: list[str]
--        """
--        return self.group_perms.get(group.lower())
--
--    def get_group_users(self, group):
--        """
--        :type group: str
--        :rtype: list[str]
--        """
--        return self.group_users.get(group.lower())
--
--    def get_user_permissions(self, user_mask):
--        """
--        :type user_mask: str
--        :rtype: list[str]
--        """
--        permissions = set()
--        for permission, users in self.perm_users.items():
--            for mask_to_check in users:
--                if fnmatch(user_mask.lower(), mask_to_check):
--                    permissions.add(permission)
--        return permissions
--
--    def get_user_groups(self, user_mask):
--        """
--        :type user_mask: str
--        :rtype: list[str]
--        """
--        groups = []
--        for group, users in self.group_users.items():
--            for mask_to_check in users:
--                if fnmatch(user_mask.lower(), mask_to_check):
--                    groups.append(group)
--                    continue
--        return groups
--
--    def group_exists(self, group):
--        """
--        Checks whether a group exists
--        :type group: str
--        :rtype: bool
--        """
--        return group.lower() in self.group_perms
--
--    def user_in_group(self, user_mask, group):
--        """
--        Checks whether a user is matched by any masks in a given group
--        :type group: str
--        :type user_mask: str
--        :rtype: bool
--        """
--        users = self.group_users.get(group.lower())
--        if not users:
--            return False
--        for mask_to_check in users:
--            if fnmatch(user_mask.lower(), mask_to_check):
--                return True
--        return False
--
--    def remove_group_user(self, group, user_mask):
--        """
--        Removes all users that match user_mask from group. Returns a list of user masks removed from the group.
--        Use permission_manager.reload() to make this change take affect.
--        Use bot.config.save_config() to save this change to file.
--        :type group: str
--        :type user_mask: str
--        :rtype: list[str]
--        """
--        masks_removed = []
--
--        config_groups = self.config.get("permissions", {})
--
--        for mask_to_check in list(self.group_users[group.lower()]):
--            if fnmatch(user_mask.lower(), mask_to_check):
--                masks_removed.append(mask_to_check)
--                # We're going to act like the group keys are all lowercase.
--                # The user has been warned (above) if they aren't.
--                # Okay, maybe a warning, but no support.
--                if group not in config_groups:
--                    logger.warning(
--                        "[{}] Can't remove user from group due to upper-case group names!".format(self.readable_name))
--                    continue
--                config_group = config_groups.get(group)
--                config_users = config_group.get("users")
--                config_users.remove(mask_to_check)
--
--        return masks_removed
--
--    def add_user_to_group(self, user_mask, group):
--        """
--        Adds user to group. Returns whether this actually did anything.
--        Use permission_manager.reload() to make this change take affect.
--        Use bot.config.save_config() to save this change to file.
--        :type group: str
--        :type user_mask: str
--        :rtype: bool
--        """
--        if self.user_in_group(user_mask, group):
--            return False
--        # We're going to act like the group keys are all lowercase.
--        # The user has been warned (above) if they aren't.
--        groups = self.config.get("permissions", {})
--        if group in groups:
--            group_dict = groups.get(group)
--            users = group_dict["users"]
--            users.append(user_mask)
--        else:
--            # create the group
--            group_dict = {"users": [user_mask], "perms": []}
--            groups[group] = group_dict
--
--        return True
-diff --git a/cloudbot/core/pluginmanager.py b/cloudbot/core/pluginmanager.py
-deleted file mode 100644
-index cc955f0..0000000
---- a/cloudbot/core/pluginmanager.py
+index 29b6936..0000000
+--- a/cloudbot/plugin.py
 +++ /dev/null
 @@ -1,710 +0,0 @@
 -import asyncio
@@ -2389,7 +2160,7 @@ index cc955f0..0000000
 -
 -import sqlalchemy
 -
--from cloudbot.core import events
+-from cloudbot import event
 -from cloudbot.util import botvars
 -
 -logger = logging.getLogger("cloudbot")
@@ -2540,7 +2311,7 @@ index cc955f0..0000000
 -
 -        # run onload hooks
 -        for onload_hook in plugin.run_on_load:
--            success = yield from self.launch(onload_hook, events.BaseEvent(bot=self.bot, hook=onload_hook))
+-            success = yield from self.launch(onload_hook, event.Event(bot=self.bot, hook=onload_hook))
 -            if not success:
 -                logger.warning("Not registering hooks from plugin {}: onload hook errored".format(plugin.title))
 -
@@ -2680,7 +2451,7 @@ index cc955f0..0000000
 -        Prepares arguments for the given hook
 -
 -        :type hook: cloudbot.core.pluginmanager.Hook
--        :type event: cloudbot.core.events.BaseEvent
+-        :type event: cloudbot.core.events.Event
 -        :rtype: list
 -        """
 -        parameters = []
@@ -2698,7 +2469,7 @@ index cc955f0..0000000
 -    def _execute_hook_threaded(self, hook, event):
 -        """
 -        :type hook: Hook
--        :type event: cloudbot.core.events.BaseEvent
+-        :type event: cloudbot.core.events.Event
 -        """
 -        event.prepare_threaded()
 -
@@ -2715,7 +2486,7 @@ index cc955f0..0000000
 -    def _execute_hook_sync(self, hook, event):
 -        """
 -        :type hook: Hook
--        :type event: cloudbot.core.events.BaseEvent
+-        :type event: cloudbot.core.events.Event
 -        """
 -        yield from event.prepare()
 -
@@ -2736,7 +2507,7 @@ index cc955f0..0000000
 -        Returns False if the hook errored, True otherwise.
 -
 -        :type hook: cloudbot.core.pluginmanager.Hook
--        :type event: cloudbot.core.events.BaseEvent
+-        :type event: cloudbot.core.events.Event
 -        :rtype: bool
 -        """
 -        try:
@@ -2764,9 +2535,9 @@ index cc955f0..0000000
 -    def _sieve(self, sieve, event, hook):
 -        """
 -        :type sieve: cloudbot.core.pluginmanager.Hook
--        :type event: cloudbot.core.events.BaseEvent
+-        :type event: cloudbot.core.events.Event
 -        :type hook: cloudbot.core.pluginmanager.Hook
--        :rtype: cloudbot.core.events.BaseEvent
+-        :rtype: cloudbot.core.events.Event
 -        """
 -        try:
 -            if sieve.threaded:
@@ -2786,7 +2557,7 @@ index cc955f0..0000000
 -
 -        Returns False if the hook didn't run successfully, and True if it ran successfully.
 -
--        :type event: cloudbot.core.events.BaseEvent | cloudbot.core.events.CommandEvent
+-        :type event: cloudbot.core.events.Event | cloudbot.core.events.CommandEvent
 -        :type hook: cloudbot.core.pluginmanager.Hook | cloudbot.core.pluginmanager.CommandHook
 -        :rtype: bool
 -        """
@@ -3089,974 +2860,9 @@ index cc955f0..0000000
 -    "event": EventHook,
 -    "onload": OnloadHook
 -}
-diff --git a/cloudbot/core/reloader.py b/cloudbot/core/reloader.py
-deleted file mode 100644
-index 44fdef9..0000000
---- a/cloudbot/core/reloader.py
-+++ /dev/null
-@@ -1,68 +0,0 @@
--import asyncio
--
--from watchdog.observers import Observer
--from watchdog.tricks import Trick
--
--
--class PluginReloader(object):
--    def __init__(self, bot):
--        """
--        :type bot: cloudbot.core.bot.CloudBot
--        """
--        self.observer = Observer()
--        self.bot = bot
--        self.reloading = set()
--        self.event_handler = PluginEventHandler(self, patterns=["*.py"])
--
--    def start(self, module_path):
--        """Starts the plugin reloader
--        :type module_path: str
--        """
--        self.observer.schedule(self.event_handler, module_path, recursive=False)
--        self.observer.start()
--
--    def stop(self):
--        """Stops the plugin reloader"""
--        self.observer.stop()
--
--    def reload(self, path):
--        """
--        Loads or reloads a module, given its file path. Thread safe.
--
--        :type path: str
--        """
--        if isinstance(path, bytes):
--            path = path.decode()
--        self.bot.loop.call_soon_threadsafe(lambda: asyncio.async(self._reload(path), loop=self.bot.loop))
--
--    @asyncio.coroutine
--    def _reload(self, path):
--        if path in self.reloading:
--            # we already have a coroutine reloading
--            return
--        self.reloading.add(path)
--        # we don't want to reload more than once every 200 milliseconds, so wait that long to make sure there
--        # are no other file changes in that time.
--        yield from asyncio.sleep(0.2)
--        self.reloading.remove(path)
--        yield from self.bot.plugin_manager.load_plugin(path)
--
--
--class PluginEventHandler(Trick):
--    def __init__(self, loader, *args, **kwargs):
--        """
--        :type loader: PluginReloader
--        """
--        super().__init__(*args, **kwargs)
--        self.loader = loader
--
--    def on_created(self, event):
--        self.loader.reload(event.src_path)
--
--    def on_modified(self, event):
--        self.loader.reload(event.src_path)
--
--    def on_moved(self, event):
--        # only load if it's moved to a .py file
--        if event.dest_path.endswith(".py" if isinstance(event.dest_path, str) else b".py"):
--            self.loader.reload(event.dest_path)
-diff --git a/cloudbot/events.py b/cloudbot/events.py
-new file mode 100644
-index 0000000..c4eb41e
---- /dev/null
-+++ b/cloudbot/events.py
-@@ -0,0 +1,373 @@
-+import asyncio
-+import enum
-+import logging
-+import concurrent.futures
-+
-+logger = logging.getLogger("cloudbot")
-+
-+
-+@enum.unique
-+class EventType(enum.Enum):
-+    message = 0
-+    action = 1
-+    # TODO: Do we actually want to have a 'notice' event type? Should the NOTICE command be a 'message' type?
-+    notice = 2
-+    join = 3
-+    part = 4
-+    kick = 5
-+    other = 6
-+
-+
-+class BaseEvent:
-+    """
-+    :type bot: cloudbot.core.bot.CloudBot
-+    :type conn: cloudbot.core.connection.Connection
-+    :type hook: cloudbot.core.pluginmanager.Hook
-+    :type type: EventType
-+    :type content: str
-+    :type target: str
-+    :type chan: str
-+    :type nick: str
-+    :type user: str
-+    :type host: str
-+    :type mask: str
-+    :type db: sqlalchemy.orm.Session
-+    :type db_executor: concurrent.futures.ThreadPoolExecutor
-+    :type irc_raw: str
-+    :type irc_prefix: str
-+    :type irc_command: str
-+    :type irc_paramlist: str
-+    :type irc_ctcp_text: str
-+    """
-+
-+    def __init__(self, *, bot=None, hook=None, conn=None, base_event=None, event_type=EventType.other, content=None,
-+                 target=None, channel=None, nick=None, user=None, host=None, mask=None, irc_raw=None, irc_prefix=None,
-+                 irc_command=None, irc_paramlist=None, irc_ctcp_text=None):
-+        """
-+        All of these parameters except for `bot` and `hook` are optional.
-+        The irc_* parameters should only be specified for IRC events.
-+
-+        Note that the `bot` argument may be left out if you specify a `base_event`.
-+
-+        :param bot: The CloudBot instance this event was triggered from
-+        :param conn: The Connection instance this event was triggered from
-+        :param hook: The hook this event will be passed to
-+        :param base_event: The base event that this event is based on. If this parameter is not None, then nick, user,
-+                            host, mask, and irc_* arguments are ignored
-+        :param event_type: The type of the event
-+        :param content: The content of the message, or the reason for an join or part
-+        :param target: The target of the action, for example the user being kicked, or invited
-+        :param channel: The channel that this action took place in
-+        :param nick: The nickname of the sender that triggered this event
-+        :param user: The user of the sender that triggered this event
-+        :param host: The host of the sender that triggered this event
-+        :param mask: The mask of the sender that triggered this event (nick!user@host)
-+        :param irc_raw: The raw IRC line
-+        :param irc_prefix: The raw IRC prefix
-+        :param irc_command: The IRC command
-+        :param irc_paramlist: The list of params for the IRC command. If the last param is a content param, the ':'
-+                                should be removed from the front.
-+        :param irc_ctcp_text: CTCP text if this message is a CTCP command
-+        :type bot: cloudbot.core.bot.CloudBot
-+        :type conn: cloudbot.core.connection.Connection
-+        :type hook: cloudbot.core.pluginmanager.Hook
-+        :type base_event: cloudbot.core.events.BaseEvent
-+        :type content: str
-+        :type target: str
-+        :type event_type: EventType
-+        :type nick: str
-+        :type user: str
-+        :type host: str
-+        :type mask: str
-+        :type irc_raw: str
-+        :type irc_prefix: str
-+        :type irc_command: str
-+        :type irc_paramlist: list[str]
-+        :type irc_ctcp_text: str
-+        """
-+        self.db = None
-+        self.db_executor = None
-+        self.bot = bot
-+        self.conn = conn
-+        self.hook = hook
-+        if base_event is not None:
-+            # We're copying an event, so inherit values
-+            if self.bot is None and base_event.bot is not None:
-+                self.bot = base_event.bot
-+            if self.conn is None and base_event.conn is not None:
-+                self.conn = base_event.conn
-+            if self.hook is None and base_event.hook is not None:
-+                self.hook = base_event.hook
-+
-+            # If base_event is provided, don't check these parameters, just inherit
-+            self.type = base_event.type
-+            self.content = base_event.content
-+            self.target = base_event.target
-+            self.chan = base_event.chan
-+            self.nick = base_event.nick
-+            self.user = base_event.user
-+            self.host = base_event.host
-+            self.mask = base_event.mask
-+            # irc-specific parameters
-+            self.irc_raw = base_event.irc_raw
-+            self.irc_prefix = base_event.irc_prefix
-+            self.irc_command = base_event.irc_command
-+            self.irc_paramlist = base_event.irc_paramlist
-+            self.irc_ctcp_text = base_event.irc_ctcp_text
-+        else:
-+            # Since base_event wasn't provided, we can take these parameters
-+            self.type = event_type
-+            self.content = content
-+            self.target = target
-+            self.chan = channel
-+            self.nick = nick
-+            self.user = user
-+            self.host = host
-+            self.mask = mask
-+            # irc-specific parameters
-+            self.irc_raw = irc_raw
-+            self.irc_prefix = irc_prefix
-+            self.irc_command = irc_command
-+            self.irc_paramlist = irc_paramlist
-+            self.irc_ctcp_text = irc_ctcp_text
-+
-+    @asyncio.coroutine
-+    def prepare(self):
-+        """
-+        Initializes this event to be run through it's hook
-+
-+        Mainly, initializes a database object on this event, if the hook requires it.
-+
-+        This method is for when the hook is *not* threaded (event.hook.threaded is False).
-+        If you need to add a db to a threaded hook, use prepare_threaded.
-+        """
-+
-+        if self.hook is None:
-+            raise ValueError("event.hook is required to prepare an event")
-+
-+        if "db" in self.hook.required_args:
-+            logger.debug("Opening database session for {}:threaded=False".format(self.hook.description))
-+
-+            # we're running a coroutine hook with a db, so initialise an executor pool
-+            self.db_executor = concurrent.futures.ThreadPoolExecutor(1)
-+            # be sure to initialize the db in the database executor, so it will be accessible in that thread.
-+            self.db = yield from self.async(self.bot.db_session)
-+
-+    def prepare_threaded(self):
-+        """
-+        Initializes this event to be run through it's hook
-+
-+        Mainly, initializes the database object on this event, if the hook requires it.
-+
-+        This method is for when the hook is threaded (event.hook.threaded is True).
-+        If you need to add a db to a coroutine hook, use prepare.
-+        """
-+
-+        if self.hook is None:
-+            raise ValueError("event.hook is required to prepare an event")
-+
-+        if "db" in self.hook.required_args:
-+            logger.debug("Opening database session for {}:threaded=True".format(self.hook.description))
-+
-+            self.db = self.bot.db_session()
-+
-+    @asyncio.coroutine
-+    def close(self):
-+        """
-+        Closes this event after running it through it's hook.
-+
-+        Mainly, closes the database connection attached to this event (if any).
-+
-+        This method is for when the hook is *not* threaded (event.hook.threaded is False).
-+        If you need to add a db to a threaded hook, use close_threaded.
-+        """
-+        if self.hook is None:
-+            raise ValueError("event.hook is required to close an event")
-+
-+        if self.db is not None:
-+            logger.debug("Closing database session for {}:threaded=False".format(self.hook.description))
-+            # be sure the close the database in the database executor, as it is only accessable in that one thread
-+            yield from self.async(self.db.close)
-+            self.db = None
-+
-+    def close_threaded(self):
-+        """
-+        Closes this event after running it through it's hook.
-+
-+        Mainly, closes the database connection attached to this event (if any).
-+
-+        This method is for when the hook is threaded (event.hook.threaded is True).
-+        If you need to add a db to a coroutine hook, use close.
-+        """
-+        if self.hook is None:
-+            raise ValueError("event.hook is required to close an event")
-+        if self.db is not None:
-+            logger.debug("Closing database session for {}:threaded=True".format(self.hook.description))
-+            self.db.close()
-+            self.db = None
-+
-+    @property
-+    def event(self):
-+        """
-+        :rtype; cloudbot.core.events.BaseEvent
-+        """
-+        return self
-+
-+    @property
-+    def loop(self):
-+        """
-+        :rtype: asyncio.events.AbstractEventLoop
-+        """
-+        return self.bot.loop
-+
-+    @property
-+    def logger(self):
-+        return logger
-+
-+    def message(self, message, target=None):
-+        """sends a message to a specific or current channel/user
-+        :type message: str
-+        :type target: str
-+        """
-+        if target is None:
-+            if self.chan is None:
-+                raise ValueError("Target must be specified when chan is not assigned")
-+            target = self.chan
-+        self.conn.message(target, message)
-+
-+    def reply(self, message, target=None):
-+        """sends a message to the current channel/user with a prefix
-+        :type message: str
-+        :type target: str
-+        """
-+        if target is None:
-+            if self.chan is None:
-+                raise ValueError("Target must be specified when chan is not assigned")
-+            target = self.chan
-+
-+        if target == self.nick:
-+            self.conn.message(target, message)
-+        else:
-+            self.conn.message(target, "({}) {}".format(self.nick, message))
-+
-+    def action(self, message, target=None):
-+        """sends an action to the current channel/user or a specific channel/user
-+        :type message: str
-+        :type target: str
-+        """
-+        if target is None:
-+            if self.chan is None:
-+                raise ValueError("Target must be specified when chan is not assigned")
-+            target = self.chan
-+
-+        self.conn.action(target, message)
-+
-+    def ctcp(self, message, ctcp_type, target=None):
-+        """sends an ctcp to the current channel/user or a specific channel/user
-+        :type message: str
-+        :type ctcp_type: str
-+        :type target: str
-+        """
-+        if target is None:
-+            if self.chan is None:
-+                raise ValueError("Target must be specified when chan is not assigned")
-+            target = self.chan
-+        if not hasattr(self.conn, "ctcp"):
-+            raise ValueError("CTCP can only be used on IRC connections")
-+        # noinspection PyUnresolvedReferences
-+        self.conn.ctcp(target, ctcp_type, message)
-+
-+    def notice(self, message, target=None):
-+        """sends a notice to the current channel/user or a specific channel/user
-+        :type message: str
-+        :type target: str
-+        """
-+        if target is None:
-+            if self.nick is None:
-+                raise ValueError("Target must be specified when nick is not assigned")
-+            target = self.nick
-+
-+        self.conn.notice(target, message)
-+
-+    def has_permission(self, permission, notice=True):
-+        """ returns whether or not the current user has a given permission
-+        :type permission: str
-+        :rtype: bool
-+        """
-+        if not self.mask:
-+            raise ValueError("has_permission requires mask is not assigned")
-+        return self.conn.permissions.has_perm_mask(self.mask, permission, notice=notice)
-+
-+    @asyncio.coroutine
-+    def async(self, function, *args, **kwargs):
-+        if self.db_executor is not None:
-+            executor = self.db_executor
-+        else:
-+            executor = None
-+        if kwargs:
-+            result = yield from self.loop.run_in_executor(executor, function, *args)
-+        else:
-+            result = yield from self.loop.run_in_executor(executor, lambda: function(*args, **kwargs))
-+        return result
-+
-+
-+class CommandEvent(BaseEvent):
-+    """
-+    :type hook: cloudbot.core.pluginmanager.CommandHook
-+    :type text: str
-+    :type triggered_command: str
-+    """
-+
-+    def __init__(self, *, bot=None, hook, text, triggered_command, conn=None, base_event=None, event_type=None,
-+                 content=None, target=None, channel=None, nick=None, user=None, host=None, mask=None, irc_raw=None,
-+                 irc_prefix=None, irc_command=None, irc_paramlist=None):
-+        """
-+        :param text: The arguments for the command
-+        :param triggered_command: The command that was triggered
-+        :type text: str
-+        :type triggered_command: str
-+        """
-+        super().__init__(bot=bot, hook=hook, conn=conn, base_event=base_event, event_type=event_type, content=content,
-+                         target=target, channel=channel, nick=nick, user=user, host=host, mask=mask, irc_raw=irc_raw,
-+                         irc_prefix=irc_prefix, irc_command=irc_command, irc_paramlist=irc_paramlist)
-+        self.hook = hook
-+        self.text = text
-+        self.triggered_command = triggered_command
-+
-+    def notice_doc(self, target=None):
-+        """sends a notice containing this command's docstring to the current channel/user or a specific channel/user
-+        :type target: str
-+        """
-+        if self.triggered_command is None:
-+            raise ValueError("Triggered command not set on this event")
-+        if self.hook.doc is None:
-+            message = "{}{} requires additional arguments.".format(self.conn.config["command_prefix"],
-+                                                                   self.triggered_command)
-+        else:
-+            if self.hook.doc.split()[0].isalpha():
-+                # this is using the old format of `name <args> - doc`
-+                message = "{}{}".format(self.conn.config["command_prefix"], self.hook.doc)
-+            else:
-+                # this is using the new format of `<args> - doc`
-+                message = "{}{} {}".format(self.conn.config["command_prefix"], self.triggered_command, self.hook.doc)
-+
-+        self.notice(message, target=target)
-+
-+
-+class RegexEvent(BaseEvent):
-+    """
-+    :type hook: cloudbot.core.pluginmanager.RegexHook
-+    :type match: re.__Match
-+    """
-+
-+    def __init__(self, *, bot=None, hook, match, conn=None, base_event=None, event_type=None, content=None, target=None,
-+                 channel=None, nick=None, user=None, host=None, mask=None, irc_raw=None, irc_prefix=None,
-+                 irc_command=None, irc_paramlist=None):
-+        """
-+        :param: match: The match objected returned by the regex search method
-+        :type match: re.__Match
-+        """
-+        super().__init__(bot=bot, conn=conn, hook=hook, base_event=base_event, event_type=event_type, content=content,
-+                         target=target, channel=channel, nick=nick, user=user, host=host, mask=mask, irc_raw=irc_raw,
-+                         irc_prefix=irc_prefix, irc_command=irc_command, irc_paramlist=irc_paramlist)
-+        self.match = match
-diff --git a/cloudbot/hook.py b/cloudbot/hook.py
-new file mode 100644
-index 0000000..caa51f5
---- /dev/null
-+++ b/cloudbot/hook.py
-@@ -0,0 +1,297 @@
-+import inspect
-+import re
-+import collections
-+
-+from cloudbot.events import EventType
-+
-+valid_command_re = re.compile(r"^\w+$")
-+
-+
-+class _Hook():
-+    """
-+    :type function: function
-+    :type type: str
-+    :type kwargs: dict[str, unknown]
-+    """
-+
-+    def __init__(self, function, _type):
-+        """
-+        :type function: function
-+        :type _type: str
-+        """
-+        self.function = function
-+        self.type = _type
-+        self.kwargs = {}
-+
-+    def _add_hook(self, kwargs):
-+        """
-+        :type kwargs: dict[str, unknown]
-+        """
-+        # update kwargs, overwriting duplicates
-+        self.kwargs.update(kwargs)
-+
-+
-+class _CommandHook(_Hook):
-+    """
-+    :type main_alias: str
-+    :type aliases: set[str]
-+    """
-+
-+    def __init__(self, function):
-+        """
-+        :type function: function
-+        """
-+        _Hook.__init__(self, function, "command")
-+        self.aliases = set()
-+        self.main_alias = None
-+
-+        if function.__doc__:
-+            self.doc = function.__doc__.split('\n', 1)[0]
-+        else:
-+            self.doc = None
-+
-+    def add_hook(self, alias_param, kwargs):
-+        """
-+        :type alias_param: list[str] | str
-+        """
-+        self._add_hook(kwargs)
-+
-+        if not alias_param:
-+            alias_param = self.function.__name__
-+        if isinstance(alias_param, str):
-+            alias_param = [alias_param]
-+        if not self.main_alias:
-+            self.main_alias = alias_param[0]
-+        for alias in alias_param:
-+            if not valid_command_re.match(alias):
-+                raise ValueError("Invalid command name {}".format(alias))
-+        self.aliases.update(alias_param)
-+
-+
-+class _RegexHook(_Hook):
-+    """
-+    :type regexes: list[re.__Regex]
-+    """
-+
-+    def __init__(self, function):
-+        """
-+        :type function: function
-+        """
-+        _Hook.__init__(self, function, "regex")
-+        self.regexes = []
-+
-+    def add_hook(self, regex_param, kwargs):
-+        """
-+        :type regex_param: Iterable[str | re.__Regex] | str | re.__Regex
-+        :type kwargs: dict[str, unknown]
-+        """
-+        self._add_hook(kwargs)
-+        # add all regex_parameters to valid regexes
-+        if isinstance(regex_param, str):
-+            # if the parameter is a string, compile and add
-+            self.regexes.append(re.compile(regex_param))
-+        elif hasattr(regex_param, "search"):
-+            # if the parameter is an re.__Regex, just add it
-+            # we only use regex.search anyways, so this is a good determiner
-+            self.regexes.append(regex_param)
-+        else:
-+            assert isinstance(regex_param, collections.Iterable)
-+            # if the parameter is a list, add each one
-+            for re_to_match in regex_param:
-+                if isinstance(re_to_match, str):
-+                    re_to_match = re.compile(re_to_match)
-+                else:
-+                    # make sure that the param is either a compiled regex, or has a search attribute.
-+                    assert hasattr(regex_param, "search")
-+                self.regexes.append(re_to_match)
-+
-+
-+class _RawHook(_Hook):
-+    """
-+    :type triggers: set[str]
-+    """
-+
-+    def __init__(self, function):
-+        """
-+        :type function: function
-+        """
-+        _Hook.__init__(self, function, "irc_raw")
-+        self.triggers = set()
-+
-+    def add_hook(self, trigger_param, kwargs):
-+        """
-+        :type trigger_param: list[str] | str
-+        :type kwargs: dict[str, unknown]
-+        """
-+        self._add_hook(kwargs)
-+
-+        if isinstance(trigger_param, str):
-+            self.triggers.add(trigger_param)
-+        else:
-+            # it's a list
-+            self.triggers.update(trigger_param)
-+
-+
-+class _EventHook(_Hook):
-+    """
-+    :type types: set[cloudbot.core.events.EventType]
-+    """
-+
-+    def __init__(self, function):
-+        """
-+        :type function: function
-+        """
-+        _Hook.__init__(self, function, "event")
-+        self.types = set()
-+
-+    def add_hook(self, trigger_param, kwargs):
-+        """
-+        :type trigger_param: cloudbot.core.events.EventType | list[cloudbot.core.events.EventType]
-+        :type kwargs: dict[str, unknown]
-+        """
-+        self._add_hook(kwargs)
-+
-+        if isinstance(trigger_param, EventType):
-+            self.types.add(trigger_param)
-+        else:
-+            # it's a list
-+            self.types.update(trigger_param)
-+
-+
-+def _add_hook(func, hook):
-+    if not hasattr(func, "_cloudbot_hook"):
-+        func._cloudbot_hook = {}
-+    else:
-+        assert hook.type not in func._cloudbot_hook  # in this case the hook should be using the add_hook method
-+    func._cloudbot_hook[hook.type] = hook
-+
-+
-+def _get_hook(func, hook_type):
-+    if hasattr(func, "_cloudbot_hook") and hook_type in func._cloudbot_hook:
-+        return func._cloudbot_hook[hook_type]
-+
-+    return None
-+
-+
-+def command(*args, **kwargs):
-+    """External command decorator. Can be used directly as a decorator, or with args to return a decorator.
-+    :type param: str | list[str] | function
-+    """
-+
-+    def _command_hook(func, alias_param=None):
-+        hook = _get_hook(func, "command")
-+        if hook is None:
-+            hook = _CommandHook(func)
-+            _add_hook(func, hook)
-+
-+        hook.add_hook(alias_param, kwargs)
-+        return func
-+
-+    if len(args) == 1 and callable(args[0]):  # this decorator is being used directly
-+        return _command_hook(args[0])
-+    else:  # this decorator is being used indirectly, so return a decorator function
-+        return lambda func: _command_hook(func, alias_param=args)
-+
-+
-+def irc_raw(triggers_param, **kwargs):
-+    """External raw decorator. Must be used as a function to return a decorator
-+    :type triggers_param: str | list[str]
-+    """
-+
-+    def _raw_hook(func):
-+        hook = _get_hook(func, "irc_raw")
-+        if hook is None:
-+            hook = _RawHook(func)
-+            _add_hook(func, hook)
-+
-+        hook.add_hook(triggers_param, kwargs)
-+        return func
-+
-+    if callable(triggers_param):  # this decorator is being used directly, which isn't good
-+        raise TypeError("@irc_raw() must be used as a function that returns a decorator")
-+    else:  # this decorator is being used as a function, so return a decorator
-+        return lambda func: _raw_hook(func)
-+
-+
-+def event(types_param, **kwargs):
-+    """External event decorator. Must be used as a function to return a decorator
-+    :type types_param: cloudbot.core.events.EventType | list[cloudbot.core.events.EventType]
-+    """
-+
-+    def _event_hook(func):
-+        hook = _get_hook(func, "event")
-+        if hook is None:
-+            hook = _EventHook(func)
-+            _add_hook(func, hook)
-+
-+        hook.add_hook(types_param, kwargs)
-+        return func
-+
-+    if callable(types_param):  # this decorator is being used directly, which isn't good
-+        raise TypeError("@irc_raw() must be used as a function that returns a decorator")
-+    else:  # this decorator is being used as a function, so return a decorator
-+        return lambda func: _event_hook(func)
-+
-+
-+def regex(regex_param, **kwargs):
-+    """External regex decorator. Must be used as a function to return a decorator.
-+    :type regex_param: str | re.__Regex | list[str | re.__Regex]
-+    :type flags: int
-+    """
-+
-+    def _regex_hook(func):
-+        hook = _get_hook(func, "regex")
-+        if hook is None:
-+            hook = _RegexHook(func)
-+            _add_hook(func, hook)
-+
-+        hook.add_hook(regex_param, kwargs)
-+        return func
-+
-+    if callable(regex_param):  # this decorator is being used directly, which isn't good
-+        raise TypeError("@regex() hook must be used as a function that returns a decorator")
-+    else:  # this decorator is being used as a function, so return a decorator
-+        return lambda func: _regex_hook(func)
-+
-+
-+def sieve(param=None, **kwargs):
-+    """External sieve decorator. Can be used directly as a decorator, or with args to return a decorator
-+    :type param: function | None
-+    """
-+
-+    def _sieve_hook(func):
-+        assert len(inspect.getargspec(func).args) == 3, \
-+            "Sieve plugin has incorrect argument count. Needs params: bot, input, plugin"
-+
-+        hook = _get_hook(func, "sieve")
-+        if hook is None:
-+            hook = _Hook(func, "sieve")  # there's no need to have a specific SieveHook object
-+            _add_hook(func, hook)
-+
-+        hook._add_hook(kwargs)
-+        return func
-+
-+    if callable(param):
-+        return _sieve_hook(param)
-+    else:
-+        return lambda func: _sieve_hook(func)
-+
-+
-+def onload(param=None, **kwargs):
-+    """External onload decorator. Can be used directly as a decorator, or with args to return a decorator
-+    :type param: function | None
-+    """
-+
-+    def _onload_hook(func):
-+        hook = _get_hook(func, "onload")
-+        if hook is None:
-+            hook = _Hook(func, "onload")
-+            _add_hook(func, hook)
-+
-+        hook._add_hook(kwargs)
-+        return func
-+
-+    if callable(param):
-+        return _onload_hook(param)
-+    else:
-+        return lambda func: _onload_hook(func)
-diff --git a/cloudbot/permissions.py b/cloudbot/permissions.py
-new file mode 100644
-index 0000000..74e4867
---- /dev/null
-+++ b/cloudbot/permissions.py
-@@ -0,0 +1,203 @@
-+from fnmatch import fnmatch
-+import logging
-+
-+logger = logging.getLogger("cloudbot")
-+
-+
-+class PermissionManager(object):
-+    """
-+    :type name: str
-+    :type readable_name: str
-+    :type config: dict[str, ?]
-+    :type group_perms: dict[str, list[str]]
-+    :type group_users: dict[str, list[str]]
-+    :type perm_users: dict[str, list[str]]
-+    """
-+
-+    def __init__(self, conn):
-+        """
-+        :type conn: cloudbot.core.connection.Connection
-+        """
-+        logger.info("[{}] Created permission manager for {}.".format(conn.readable_name, conn.name))
-+
-+        # stuff
-+        self.name = conn.name
-+        self.readable_name = conn.readable_name
-+        self.config = conn.config
-+
-+        self.group_perms = {}
-+        self.group_users = {}
-+        self.perm_users = {}
-+
-+        self.reload()
-+
-+    def reload(self):
-+        self.group_perms = {}
-+        self.group_users = {}
-+        self.perm_users = {}
-+        logger.info("[{}] Reloading permissions for {}.".format(self.readable_name, self.name))
-+        groups = self.config.get("permissions", {})
-+        # work out the permissions and users each group has
-+        for key, value in groups.items():
-+            if not key.islower():
-+                logger.warning("[{}] Warning! Non-lower-case group '{}' in config. This will cause problems when"
-+                               "setting permissions using the bot's permissions commands"
-+                               .format(self.readable_name, key))
-+            key = key.lower()
-+            self.group_perms[key] = []
-+            self.group_users[key] = []
-+            for permission in value["perms"]:
-+                self.group_perms[key].append(permission.lower())
-+            for user in value["users"]:
-+                self.group_users[key].append(user.lower())
-+
-+        for group, users in self.group_users.items():
-+            group_perms = self.group_perms[group]
-+            for perm in group_perms:
-+                if self.perm_users.get(perm) is None:
-+                    self.perm_users[perm] = []
-+                self.perm_users[perm].extend(users)
-+
-+        logger.debug("[{}] Group permissions: {}".format(self.readable_name, self.group_perms))
-+        logger.debug("[{}] Group users: {}".format(self.readable_name, self.group_users))
-+        logger.debug("[{}] Permission users: {}".format(self.readable_name, self.perm_users))
-+
-+    def has_perm_mask(self, user_mask, perm, notice=True):
-+        """
-+        :type user_mask: str
-+        :type perm: str
-+        :rtype: bool
-+        """
-+
-+        if not perm.lower() in self.perm_users:
-+            # no one has access
-+            return False
-+
-+        allowed_users = self.perm_users[perm.lower()]
-+
-+        for allowed_mask in allowed_users:
-+            if fnmatch(user_mask.lower(), allowed_mask):
-+                if notice:
-+                    logger.info("[{}] Allowed user {} access to {}".format(self.readable_name, user_mask, perm))
-+                return True
-+
-+        return False
-+
-+    def get_groups(self):
-+        return set().union(self.group_perms.keys(), self.group_users.keys())
-+
-+    def get_group_permissions(self, group):
-+        """
-+        :type group: str
-+        :rtype: list[str]
-+        """
-+        return self.group_perms.get(group.lower())
-+
-+    def get_group_users(self, group):
-+        """
-+        :type group: str
-+        :rtype: list[str]
-+        """
-+        return self.group_users.get(group.lower())
-+
-+    def get_user_permissions(self, user_mask):
-+        """
-+        :type user_mask: str
-+        :rtype: list[str]
-+        """
-+        permissions = set()
-+        for permission, users in self.perm_users.items():
-+            for mask_to_check in users:
-+                if fnmatch(user_mask.lower(), mask_to_check):
-+                    permissions.add(permission)
-+        return permissions
-+
-+    def get_user_groups(self, user_mask):
-+        """
-+        :type user_mask: str
-+        :rtype: list[str]
-+        """
-+        groups = []
-+        for group, users in self.group_users.items():
-+            for mask_to_check in users:
-+                if fnmatch(user_mask.lower(), mask_to_check):
-+                    groups.append(group)
-+                    continue
-+        return groups
-+
-+    def group_exists(self, group):
-+        """
-+        Checks whether a group exists
-+        :type group: str
-+        :rtype: bool
-+        """
-+        return group.lower() in self.group_perms
-+
-+    def user_in_group(self, user_mask, group):
-+        """
-+        Checks whether a user is matched by any masks in a given group
-+        :type group: str
-+        :type user_mask: str
-+        :rtype: bool
-+        """
-+        users = self.group_users.get(group.lower())
-+        if not users:
-+            return False
-+        for mask_to_check in users:
-+            if fnmatch(user_mask.lower(), mask_to_check):
-+                return True
-+        return False
-+
-+    def remove_group_user(self, group, user_mask):
-+        """
-+        Removes all users that match user_mask from group. Returns a list of user masks removed from the group.
-+        Use permission_manager.reload() to make this change take affect.
-+        Use bot.config.save_config() to save this change to file.
-+        :type group: str
-+        :type user_mask: str
-+        :rtype: list[str]
-+        """
-+        masks_removed = []
-+
-+        config_groups = self.config.get("permissions", {})
-+
-+        for mask_to_check in list(self.group_users[group.lower()]):
-+            if fnmatch(user_mask.lower(), mask_to_check):
-+                masks_removed.append(mask_to_check)
-+                # We're going to act like the group keys are all lowercase.
-+                # The user has been warned (above) if they aren't.
-+                # Okay, maybe a warning, but no support.
-+                if group not in config_groups:
-+                    logger.warning(
-+                        "[{}] Can't remove user from group due to upper-case group names!".format(self.readable_name))
-+                    continue
-+                config_group = config_groups.get(group)
-+                config_users = config_group.get("users")
-+                config_users.remove(mask_to_check)
-+
-+        return masks_removed
-+
-+    def add_user_to_group(self, user_mask, group):
-+        """
-+        Adds user to group. Returns whether this actually did anything.
-+        Use permission_manager.reload() to make this change take affect.
-+        Use bot.config.save_config() to save this change to file.
-+        :type group: str
-+        :type user_mask: str
-+        :rtype: bool
-+        """
-+        if self.user_in_group(user_mask, group):
-+            return False
-+        # We're going to act like the group keys are all lowercase.
-+        # The user has been warned (above) if they aren't.
-+        groups = self.config.get("permissions", {})
-+        if group in groups:
-+            group_dict = groups.get(group)
-+            users = group_dict["users"]
-+            users.append(user_mask)
-+        else:
-+            # create the group
-+            group_dict = {"users": [user_mask], "perms": []}
-+            groups[group] = group_dict
-+
-+        return True
 diff --git a/cloudbot/pluginmanager.py b/cloudbot/pluginmanager.py
 new file mode 100644
-index 0000000..51256a7
+index 0000000..5fec67b
 --- /dev/null
 +++ b/cloudbot/pluginmanager.py
 @@ -0,0 +1,710 @@
@@ -4133,20 +2939,20 @@ index 0000000..51256a7
 +    - RegexPlugin loads a regex parameter, and executes on irc lines which match the regex
 +    - SievePlugin is a catch-all sieve, which all other plugins go through before being executed.
 +
-+    :type bot: cloudbot.core.bot.CloudBot
++    :type bot: cloudbot.bot.CloudBot
 +    :type plugins: dict[str, Plugin]
 +    :type commands: dict[str, CommandHook]
 +    :type raw_triggers: dict[str, list[RawHook]]
 +    :type catch_all_triggers: list[RawHook]
-+    :type event_type_hooks: dict[cloudbot.core.events.EventType, list[EventHook]]
++    :type event_type_hooks: dict[cloudbot.events.EventType, list[EventHook]]
 +    :type regex_hooks: list[(re.__Regex, RegexHook)]
 +    :type sieves: list[SieveHook]
 +    """
 +
 +    def __init__(self, bot):
 +        """
-+        Creates a new PluginManager. You generally only need to do this from inside cloudbot.core.bot.CloudBot
-+        :type bot: cloudbot.core.bot.CloudBot
++        Creates a new PluginManager. You generally only need to do this from inside cloudbot.bot.CloudBot
++        :type bot: cloudbot.bot.CloudBot
 +        """
 +        self.bot = bot
 +
@@ -4360,8 +3166,8 @@ index 0000000..51256a7
 +        """
 +        Prepares arguments for the given hook
 +
-+        :type hook: cloudbot.core.pluginmanager.Hook
-+        :type event: cloudbot.core.events.BaseEvent
++        :type hook: cloudbot.pluginmanager.Hook
++        :type event: cloudbot.events.BaseEvent
 +        :rtype: list
 +        """
 +        parameters = []
@@ -4379,7 +3185,7 @@ index 0000000..51256a7
 +    def _execute_hook_threaded(self, hook, event):
 +        """
 +        :type hook: Hook
-+        :type event: cloudbot.core.events.BaseEvent
++        :type event: cloudbot.events.BaseEvent
 +        """
 +        event.prepare_threaded()
 +
@@ -4396,7 +3202,7 @@ index 0000000..51256a7
 +    def _execute_hook_sync(self, hook, event):
 +        """
 +        :type hook: Hook
-+        :type event: cloudbot.core.events.BaseEvent
++        :type event: cloudbot.events.BaseEvent
 +        """
 +        yield from event.prepare()
 +
@@ -4416,8 +3222,8 @@ index 0000000..51256a7
 +
 +        Returns False if the hook errored, True otherwise.
 +
-+        :type hook: cloudbot.core.pluginmanager.Hook
-+        :type event: cloudbot.core.events.BaseEvent
++        :type hook: cloudbot.pluginmanager.Hook
++        :type event: cloudbot.events.BaseEvent
 +        :rtype: bool
 +        """
 +        try:
@@ -4444,10 +3250,10 @@ index 0000000..51256a7
 +    @asyncio.coroutine
 +    def _sieve(self, sieve, event, hook):
 +        """
-+        :type sieve: cloudbot.core.pluginmanager.Hook
-+        :type event: cloudbot.core.events.BaseEvent
-+        :type hook: cloudbot.core.pluginmanager.Hook
-+        :rtype: cloudbot.core.events.BaseEvent
++        :type sieve: cloudbot.pluginmanager.Hook
++        :type event: cloudbot.events.BaseEvent
++        :type hook: cloudbot.pluginmanager.Hook
++        :rtype: cloudbot.events.BaseEvent
 +        """
 +        try:
 +            if sieve.threaded:
@@ -4467,8 +3273,8 @@ index 0000000..51256a7
 +
 +        Returns False if the hook didn't run successfully, and True if it ran successfully.
 +
-+        :type event: cloudbot.core.events.BaseEvent | cloudbot.core.events.CommandEvent
-+        :type hook: cloudbot.core.pluginmanager.Hook | cloudbot.core.pluginmanager.CommandHook
++        :type event: cloudbot.events.BaseEvent | cloudbot.events.CommandEvent
++        :type hook: cloudbot.pluginmanager.Hook | cloudbot.pluginmanager.CommandHook
 +        :rtype: bool
 +        """
 +        if hook.type != "onload":  # we don't need sieves on onload hooks.
@@ -4556,7 +3362,7 @@ index 0000000..51256a7
 +        """
 +        Creates all sqlalchemy Tables that are registered in this plugin
 +
-+        :type bot: cloudbot.core.bot.CloudBot
++        :type bot: cloudbot.bot.CloudBot
 +        """
 +        if self.tables:
 +            # if there are any tables
@@ -4570,7 +3376,7 @@ index 0000000..51256a7
 +    def unregister_tables(self, bot):
 +        """
 +        Unregisters all sqlalchemy Tables registered to the global metadata by this plugin
-+        :type bot: cloudbot.core.bot.CloudBot
++        :type bot: cloudbot.bot.CloudBot
 +        """
 +        if self.tables:
 +            # if there are any tables
@@ -4727,7 +3533,7 @@ index 0000000..51256a7
 +
 +class EventHook(Hook):
 +    """
-+    :type types: set[cloudbot.core.events.EventType]
++    :type types: set[cloudbot.events.EventType]
 +    """
 +
 +    def __init__(self, plugin, event_hook):
@@ -4771,89 +3577,30 @@ index 0000000..51256a7
 +    "onload": OnloadHook
 +}
 diff --git a/cloudbot/reloader.py b/cloudbot/reloader.py
-new file mode 100644
-index 0000000..44fdef9
---- /dev/null
+index 44fdef9..49ef886 100644
+--- a/cloudbot/reloader.py
 +++ b/cloudbot/reloader.py
-@@ -0,0 +1,68 @@
-+import asyncio
-+
-+from watchdog.observers import Observer
-+from watchdog.tricks import Trick
-+
-+
-+class PluginReloader(object):
-+    def __init__(self, bot):
-+        """
-+        :type bot: cloudbot.core.bot.CloudBot
-+        """
-+        self.observer = Observer()
-+        self.bot = bot
-+        self.reloading = set()
-+        self.event_handler = PluginEventHandler(self, patterns=["*.py"])
-+
-+    def start(self, module_path):
-+        """Starts the plugin reloader
-+        :type module_path: str
-+        """
-+        self.observer.schedule(self.event_handler, module_path, recursive=False)
-+        self.observer.start()
-+
-+    def stop(self):
-+        """Stops the plugin reloader"""
-+        self.observer.stop()
-+
-+    def reload(self, path):
-+        """
-+        Loads or reloads a module, given its file path. Thread safe.
-+
-+        :type path: str
-+        """
-+        if isinstance(path, bytes):
-+            path = path.decode()
-+        self.bot.loop.call_soon_threadsafe(lambda: asyncio.async(self._reload(path), loop=self.bot.loop))
-+
-+    @asyncio.coroutine
-+    def _reload(self, path):
-+        if path in self.reloading:
-+            # we already have a coroutine reloading
-+            return
-+        self.reloading.add(path)
-+        # we don't want to reload more than once every 200 milliseconds, so wait that long to make sure there
-+        # are no other file changes in that time.
-+        yield from asyncio.sleep(0.2)
-+        self.reloading.remove(path)
-+        yield from self.bot.plugin_manager.load_plugin(path)
-+
-+
-+class PluginEventHandler(Trick):
-+    def __init__(self, loader, *args, **kwargs):
-+        """
-+        :type loader: PluginReloader
-+        """
-+        super().__init__(*args, **kwargs)
-+        self.loader = loader
-+
-+    def on_created(self, event):
-+        self.loader.reload(event.src_path)
-+
-+    def on_modified(self, event):
-+        self.loader.reload(event.src_path)
-+
-+    def on_moved(self, event):
-+        # only load if it's moved to a .py file
-+        if event.dest_path.endswith(".py" if isinstance(event.dest_path, str) else b".py"):
-+            self.loader.reload(event.dest_path)
+@@ -7,7 +7,7 @@ from watchdog.tricks import Trick
+ class PluginReloader(object):
+     def __init__(self, bot):
+         """
+-        :type bot: cloudbot.core.bot.CloudBot
++        :type bot: cloudbot.bot.CloudBot
+         """
+         self.observer = Observer()
+         self.bot = bot
 diff --git a/cloudbot/util/hook.py b/cloudbot/util/hook.py
 deleted file mode 100644
-index 06d6ac3..0000000
+index 43b4690..0000000
 --- a/cloudbot/util/hook.py
 +++ /dev/null
-@@ -1,296 +0,0 @@
+@@ -1,298 +0,0 @@
 -import inspect
 -import re
 -import collections
--from cloudbot.core.events import EventType
+-
+-from cloudbot.event import EventType
+-
 -
 -valid_command_re = re.compile(r"^\w+$")
 -
@@ -5147,14 +3894,14 @@ index 06d6ac3..0000000
 -    else:
 -        return lambda func: _onload_hook(func)
 diff --git a/plugins/admin.py b/plugins/admin.py
-index 4ba3007..c36b572 100644
+index def13a9..c36b572 100644
 --- a/plugins/admin.py
 +++ b/plugins/admin.py
 @@ -8,7 +8,7 @@ from cloudbot import hook
  @hook.command("groups", "listgroups", "permgroups", permissions=["permissions_users"], autohelp=False)
  def get_permission_groups(conn):
      """- lists all valid groups
--    :type conn: cloudbot.core.connection.Connection
+-    :type conn: cloudbot.core.connection.Client
 +    :type conn: cloudbot.connection.Connection
      """
      return "Valid groups: {}".format(conn.permissions.get_groups())
@@ -5163,7 +3910,7 @@ index 4ba3007..c36b572 100644
  def get_group_permissions(text, conn, notice):
      """<group> - lists permissions given to <group>
      :type text: str
--    :type conn: cloudbot.core.connection.Connection
+-    :type conn: cloudbot.core.connection.Client
 +    :type conn: cloudbot.connection.Connection
      """
      group = text.strip().lower()
@@ -5172,7 +3919,7 @@ index 4ba3007..c36b572 100644
  def get_group_users(text, conn, notice):
      """<group> - lists users in <group>
      :type text: str
--    :type conn: cloudbot.core.connection.Connection
+-    :type conn: cloudbot.core.connection.Client
 +    :type conn: cloudbot.connection.Connection
      """
      group = text.strip().lower()
@@ -5181,7 +3928,7 @@ index 4ba3007..c36b572 100644
  def get_user_permissions(text, conn, mask, has_permission, notice):
      """[user] - lists all permissions given to [user], or the caller if no user is specified
      :type text: str
--    :type conn: cloudbot.core.connection.Connection
+-    :type conn: cloudbot.core.connection.Client
 +    :type conn: cloudbot.connection.Connection
      :type mask: str
      """
@@ -5190,7 +3937,7 @@ index 4ba3007..c36b572 100644
  def get_user_groups(text, conn, mask, has_permission, notice):
      """[user] - lists all permissions given to [user], or the caller if no user is specified
      :type text: str
--    :type conn: cloudbot.core.connection.Connection
+-    :type conn: cloudbot.core.connection.Client
 +    :type conn: cloudbot.connection.Connection
      :type mask: str
      """
@@ -5200,7 +3947,7 @@ index 4ba3007..c36b572 100644
      """<user> [group] - removes <user> from [group], or from all groups if no group is specified
      :type text: str
 -    :type bot: cloudbot.core.bot.CloudBot
--    :type conn: cloudbot.core.connection.Connection
+-    :type conn: cloudbot.core.connection.Client
 +    :type bot: cloudbot.bot.CloudBot
 +    :type conn: cloudbot.connection.Connection
      """
@@ -5210,7 +3957,7 @@ index 4ba3007..c36b572 100644
  def add_permissions_user(text, conn, bot, notice, reply):
      """<user> <group> - adds <user> to <group>
      :type text: str
--    :type conn: cloudbot.core.connection.Connection
+-    :type conn: cloudbot.core.connection.Client
 -    :type bot: cloudbot.core.bot.CloudBot
 +    :type conn: cloudbot.connection.Connection
 +    :type bot: cloudbot.bot.CloudBot
@@ -5239,7 +3986,7 @@ index 4ba3007..c36b572 100644
  def join(text, conn, notice):
      """<channel> - joins <channel>
      :type text: str
--    :type conn: cloudbot.core.connection.Connection
+-    :type conn: cloudbot.core.connection.Client
 +    :type conn: cloudbot.connection.Connection
      """
      for target in text.split():
@@ -5248,7 +3995,7 @@ index 4ba3007..c36b572 100644
  def part(text, conn, chan, notice):
      """[#channel] - parts [#channel], or the caller's channel if no channel is specified
      :type text: str
--    :type conn: cloudbot.core.connection.Connection
+-    :type conn: cloudbot.core.connection.Client
 +    :type conn: cloudbot.connection.Connection
      :type chan: str
      """
@@ -5257,7 +4004,7 @@ index 4ba3007..c36b572 100644
  def cycle(text, conn, chan, notice):
      """[#channel] - cycles [#channel], or the caller's channel if no channel is specified
      :type text: str
--    :type conn: cloudbot.core.connection.Connection
+-    :type conn: cloudbot.core.connection.Client
 +    :type conn: cloudbot.connection.Connection
      :type chan: str
      """
@@ -5266,7 +4013,7 @@ index 4ba3007..c36b572 100644
  def nick(text, conn, notice):
      """<nick> - changes my nickname to <nick>
      :type text: str
--    :type conn: cloudbot.core.connection.Connection
+-    :type conn: cloudbot.core.connection.Client
 +    :type conn: cloudbot.connection.Connection
      """
      if not re.match("^[a-z0-9_|.-\]\[]*$", text.lower()):
@@ -5275,7 +4022,7 @@ index 4ba3007..c36b572 100644
  def raw(text, conn, notice):
      """<command> - sends <command> as a raw IRC command
      :type text: str
--    :type conn: cloudbot.core.connection.Connection
+-    :type conn: cloudbot.core.connection.Client
 +    :type conn: cloudbot.connection.Connection
      """
      notice("Raw command sent.")
@@ -5284,7 +4031,7 @@ index 4ba3007..c36b572 100644
  def say(text, conn, chan):
      """[#channel] <message> - says <message> to [#channel], or to the caller's channel if no channel is specified
      :type text: str
--    :type conn: cloudbot.core.connection.Connection
+-    :type conn: cloudbot.core.connection.Client
 +    :type conn: cloudbot.connection.Connection
      :type chan: str
      """
@@ -5293,7 +4040,7 @@ index 4ba3007..c36b572 100644
  def message(text, conn):
      """<name> <message> - says <message> to <name>
      :type text: str
--    :type conn: cloudbot.core.connection.Connection
+-    :type conn: cloudbot.core.connection.Client
 +    :type conn: cloudbot.connection.Connection
      """
      split = text.split(None, 1)
@@ -5302,13 +4049,13 @@ index 4ba3007..c36b572 100644
  def me(text, conn, chan):
      """[#channel] <action> - acts out <action> in a [#channel], or in the current channel of none is specified
      :type text: str
--    :type conn: cloudbot.core.connection.Connection
+-    :type conn: cloudbot.core.connection.Client
 +    :type conn: cloudbot.connection.Connection
      :type chan: str
      """
      text = text.strip()
 diff --git a/plugins/attacks.py b/plugins/attacks.py
-index a5c739c..cacca55 100644
+index 5e8831a..cacca55 100644
 --- a/plugins/attacks.py
 +++ b/plugins/attacks.py
 @@ -12,7 +12,7 @@ from cloudbot.util import textgen
@@ -5324,7 +4071,7 @@ index a5c739c..cacca55 100644
  
  def is_self(conn, target):
      """
--    :type conn: cloudbot.core.connection.Connection
+-    :type conn: cloudbot.core.connection.Client
 +    :type conn: cloudbot.connection.Connection
      :type target: str
      """
@@ -5333,7 +4080,7 @@ index a5c739c..cacca55 100644
  def lart(text, conn, nick, notice, action):
      """<user> - LARTs <user>
      :type text: str
--    :type conn: cloudbot.core.connection.Connection
+-    :type conn: cloudbot.core.connection.Client
 +    :type conn: cloudbot.connection.Connection
      :type nick: str
      """
@@ -5342,7 +4089,7 @@ index a5c739c..cacca55 100644
  def insult(text, conn, nick, notice, message):
      """<user> - insults <user>
      :type text: str
--    :type conn: cloudbot.core.connection.Connection
+-    :type conn: cloudbot.core.connection.Client
 +    :type conn: cloudbot.connection.Connection
      :type nick: str
      """
@@ -5351,7 +4098,7 @@ index a5c739c..cacca55 100644
  def flirt(text, conn, nick, notice, message):
      """<user> - flirts with <user>
      :type text: str
--    :type conn: cloudbot.core.connection.Connection
+-    :type conn: cloudbot.core.connection.Client
 +    :type conn: cloudbot.connection.Connection
      :type nick: str
      """
@@ -5360,20 +4107,20 @@ index a5c739c..cacca55 100644
  def kill(text, conn, nick, notice, action):
      """<user> - kills <user>
      :type text: str
--    :type conn: cloudbot.core.connection.Connection
+-    :type conn: cloudbot.core.connection.Client
 +    :type conn: cloudbot.connection.Connection
      :type nick: str
      """
      target = text.strip()
 diff --git a/plugins/core_misc.py b/plugins/core_misc.py
-index e8a24bf..ba9f23e 100644
+index af1eeb4..ba9f23e 100644
 --- a/plugins/core_misc.py
 +++ b/plugins/core_misc.py
 @@ -12,7 +12,7 @@ socket.setdefaulttimeout(10)
  def invite(irc_paramlist, conn):
      """
      :type irc_paramlist: list[str]
--    :type conn: cloudbot.core.connection.Connection
+-    :type conn: cloudbot.core.connection.Client
 +    :type conn: cloudbot.connection.Connection
      """
      invite_join = conn.config.get('invite_join', True)
@@ -5382,7 +4129,7 @@ index e8a24bf..ba9f23e 100644
  @hook.irc_raw('004')
  def onjoin(conn, bot):
      """
--    :type conn: cloudbot.core.connection.IrcConnection
+-    :type conn: cloudbot.core.connection.IRCClient
 -    :type bot: cloudbot.core.bot.CloudBot
 +    :type conn: cloudbot.connection.IrcConnection
 +    :type bot: cloudbot.bot.CloudBot
@@ -5393,13 +4140,13 @@ index e8a24bf..ba9f23e 100644
  @hook.irc_raw('004')
  def keep_alive(conn):
      """
--    :type conn: cloudbot.core.connection.IrcConnection
+-    :type conn: cloudbot.core.connection.IRCClient
 +    :type conn: cloudbot.connection.IrcConnection
      """
      keepalive = conn.config.get('keep_alive', False)
      if keepalive:
 diff --git a/plugins/core_sieve.py b/plugins/core_sieve.py
-index 78e0d48..c2e1f6c 100644
+index df19e51..c2e1f6c 100644
 --- a/plugins/core_sieve.py
 +++ b/plugins/core_sieve.py
 @@ -1,5 +1,6 @@
@@ -5415,7 +4162,7 @@ index 78e0d48..c2e1f6c 100644
  def sieve_suite(bot, event, _hook):
      """
 -    :type bot: cloudbot.core.bot.CloudBot
--    :type event: cloudbot.core.events.BaseEvent
+-    :type event: cloudbot.core.events.Event
 -    :type _hook: cloudbot.core.pluginmanager.Hook
 +    :type bot: cloudbot.bot.CloudBot
 +    :type event: cloudbot.events.BaseEvent
@@ -5424,14 +4171,14 @@ index 78e0d48..c2e1f6c 100644
      conn = event.conn
      # check ignore bots
 diff --git a/plugins/core_tracker.py b/plugins/core_tracker.py
-index 0f7ae77..2c68aaf 100644
+index d1131f4..2c68aaf 100644
 --- a/plugins/core_tracker.py
 +++ b/plugins/core_tracker.py
 @@ -15,7 +15,7 @@ nick_re = re.compile(":(.+?)!")
  @hook.irc_raw("KICK")
  def on_kick(conn, chan, nick):
      """
--    :type conn: cloudbot.core.connection.Connection
+-    :type conn: cloudbot.core.connection.Client
 +    :type conn: cloudbot.connection.Connection
      :type chan: str
      :type nick: str
@@ -5440,7 +4187,7 @@ index 0f7ae77..2c68aaf 100644
  def on_nick(irc_paramlist, conn, irc_raw):
      """
      :type irc_paramlist: list[str]
--    :type conn: cloudbot.core.connection.Connection
+-    :type conn: cloudbot.core.connection.Client
 +    :type conn: cloudbot.connection.Connection
      :type irc_raw: str
      """
@@ -5449,20 +4196,20 @@ index 0f7ae77..2c68aaf 100644
  @hook.irc_raw("JOIN")
  def on_join(conn, chan, nick):
      """
--    :type conn: cloudbot.core.connection.Connection
+-    :type conn: cloudbot.core.connection.Client
 +    :type conn: cloudbot.connection.Connection
      :type chan: str
      :type nick: str
      """
 diff --git a/plugins/correction.py b/plugins/correction.py
-index 58e5bbb..674f4fe 100644
+index c0d7aae..674f4fe 100644
 --- a/plugins/correction.py
 +++ b/plugins/correction.py
 @@ -11,7 +11,7 @@ correction_re = re.compile(r"^[sS]/([^/]*)/([^/]*)(/.*)?\s*$")
  def correction(match, conn, chan, message):
      """
      :type match: re.__Match
--    :type conn: cloudbot.core.connection.Connection
+-    :type conn: cloudbot.core.connection.Client
 +    :type conn: cloudbot.connection.Connection
      :type chan: str
      """
@@ -5644,14 +4391,14 @@ index e2510e9..0e33447 100644
  max_length = 100
  
 diff --git a/plugins/help.py b/plugins/help.py
-index 31677f0..72b51dd 100644
+index 245abaf..72b51dd 100644
 --- a/plugins/help.py
 +++ b/plugins/help.py
 @@ -10,8 +10,8 @@ from cloudbot import hook
  def help_command(text, conn, bot, notice, has_permission):
      """[command] - gives help for [command], or lists all available commands if no command is specified
      :type text: str
--    :type conn: cloudbot.core.connection.Connection
+-    :type conn: cloudbot.core.connection.Client
 -    :type bot: cloudbot.core.bot.CloudBot
 +    :type conn: cloudbot.connection.Connection
 +    :type bot: cloudbot.bot.CloudBot
@@ -5659,72 +4406,73 @@ index 31677f0..72b51dd 100644
      if text:
          searching_for = text.lower().strip()
 diff --git a/plugins/history.py b/plugins/history.py
-index 0631f06..7408c5a 100644
+index b7622b1..7408c5a 100644
 --- a/plugins/history.py
 +++ b/plugins/history.py
-@@ -3,8 +3,9 @@ import time
+@@ -3,9 +3,9 @@ import time
  import asyncio
  import re
  
 -from cloudbot import hook, timesince
--from cloudbot.core.events import EventType
+-from cloudbot.event import EventType
+-
 +from cloudbot import hook
 +from cloudbot.util import timesince
 +from cloudbot.events import EventType
  
  db_ready = []
  
-@@ -22,9 +23,9 @@ def db_init(db, conn_name):
+@@ -23,9 +23,9 @@ def db_init(db, conn_name):
  
  def track_seen(event, db, conn):
      """ Tracks messages for the .seen command
--    :type event: cloudbot.core.events.BaseEvent
+-    :type event: cloudbot.core.events.Event
 +    :type event: cloudbot.events.BaseEvent
      :type db: sqlalchemy.orm.Session
--    :type conn: cloudbot.core.connection.Connection
+-    :type conn: cloudbot.core.connection.Client
 +    :type conn: cloudbot.connection.Connection
      """
      db_init(db, conn)
      # keep private messages private
-@@ -36,8 +37,8 @@ def track_seen(event, db, conn):
+@@ -37,8 +37,8 @@ def track_seen(event, db, conn):
  
  def track_history(event, message_time, conn):
      """
--    :type event: cloudbot.core.events.BaseEvent
--    :type conn: cloudbot.core.connection.Connection
+-    :type event: cloudbot.core.events.Event
+-    :type conn: cloudbot.core.connection.Client
 +    :type event: cloudbot.events.BaseEvent
 +    :type conn: cloudbot.connection.Connection
      """
      try:
          history = conn.history[event.chan]
-@@ -53,8 +54,8 @@ def track_history(event, message_time, conn):
+@@ -54,8 +54,8 @@ def track_history(event, message_time, conn):
  def chat_tracker(event, db, conn):
      """
      :type db: sqlalchemy.orm.Session
--    :type event: cloudbot.core.events.BaseEvent
--    :type conn: cloudbot.core.connection.Connection
+-    :type event: cloudbot.core.events.Event
+-    :type conn: cloudbot.core.connection.Client
 +    :type event: cloudbot.events.BaseEvent
 +    :type conn: cloudbot.connection.Connection
      """
      message_time = time.time()
      track_seen(event, db, conn)
-@@ -65,8 +66,8 @@ def chat_tracker(event, db, conn):
+@@ -66,8 +66,8 @@ def chat_tracker(event, db, conn):
  @hook.command(autohelp=False)
  def resethistory(event, conn):
      """- resets chat history for the current channel
--    :type event: cloudbot.core.events.BaseEvent
--    :type conn: cloudbot.core.connection.Connection
+-    :type event: cloudbot.core.events.Event
+-    :type conn: cloudbot.core.connection.Client
 +    :type event: cloudbot.events.BaseEvent
 +    :type conn: cloudbot.connection.Connection
      """
      try:
          conn.history[event.chan].clear()
-@@ -80,8 +81,8 @@ def resethistory(event, conn):
+@@ -81,8 +81,8 @@ def resethistory(event, conn):
  def seen(text, nick, chan, db, event, conn):
      """<nick> <channel> - tells when a nickname was last in active in one of my channels
      :type db: sqlalchemy.orm.Session
--    :type event: cloudbot.core.events.BaseEvent
--    :type conn: cloudbot.core.connection.Connection
+-    :type event: cloudbot.core.events.Event
+-    :type conn: cloudbot.core.connection.Client
 +    :type event: cloudbot.events.BaseEvent
 +    :type conn: cloudbot.connection.Connection
      """
@@ -5758,14 +4506,14 @@ index 211252f..26dcc11 100644
  hulu_re = re.compile(r'(.*://)(www.hulu.com|hulu.com)(.*)', re.I)
  
 diff --git a/plugins/ignore.py b/plugins/ignore.py
-index a065146..dbd422b 100644
+index f1fd713..dbd422b 100644
 --- a/plugins/ignore.py
 +++ b/plugins/ignore.py
 @@ -2,7 +2,7 @@ import asyncio
  from fnmatch import fnmatch
  
  from cloudbot import hook
--from cloudbot.core.events import EventType
+-from cloudbot.event import EventType
 +from cloudbot.events import EventType
  
  
@@ -5775,7 +4523,7 @@ index a065146..dbd422b 100644
  def ignore_sieve(bot, event, _hook):
      """ blocks events from ignored channels/hosts
 -    :type bot: cloudbot.core.bot.CloudBot
--    :type event: cloudbot.core.events.BaseEvent
+-    :type event: cloudbot.core.events.Event
 -    :type _hook: cloudbot.core.pluginmanager.Hook
 +    :type bot: cloudbot.bot.CloudBot
 +    :type event: cloudbot.events.BaseEvent
@@ -5849,52 +4597,69 @@ index 60c1664..c97c383 100644
  
  @hook.command("lmgtfy", "gfy")
 diff --git a/plugins/log.py b/plugins/log.py
-index b0c9697..e4132d7 100644
+index fb4faea..6f61337 100644
 --- a/plugins/log.py
 +++ b/plugins/log.py
-@@ -5,7 +5,8 @@ import time
+@@ -5,25 +5,7 @@ import time
  
  import cloudbot
  from cloudbot import hook
--from cloudbot.core.events import EventType
+-from cloudbot.event import EventType
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
 +from cloudbot.events import EventType
-+
  
  
  
-@@ -65,7 +66,7 @@ ctcp_unknown_with_message = ("[{server}:{channel}] {nick} [{user}@{host}] "
+@@ -66,7 +48,7 @@ ctcp_unknown_with_message = ("[{server}:{channel}] {nick} [{user}@{host}] "
  def format_event(event):
      """
      Format an event
--    :type event: cloudbot.core.events.BaseEvent
+-    :type event: cloudbot.core.events.Event
 +    :type event: cloudbot.events.BaseEvent
      :rtype: str
      """
  
-@@ -219,7 +220,7 @@ def get_raw_log_stream(server):
+@@ -220,7 +202,7 @@ def get_raw_log_stream(server):
  @hook.irc_raw("*", singlethread=True)
  def log_raw(event):
      """
--    :type event: cloudbot.core.events.BaseEvent
+-    :type event: cloudbot.core.events.Event
 +    :type event: cloudbot.events.BaseEvent
      """
      logging_config = event.bot.config.get("logging", {})
      if not logging_config.get("raw_file_log", False):
-@@ -231,7 +232,7 @@ def log_raw(event):
+@@ -232,7 +214,7 @@ def log_raw(event):
  @hook.irc_raw("*", singlethread=True)
  def log(event):
      """
--    :type event: cloudbot.core.events.BaseEvent
+-    :type event: cloudbot.core.events.Event
 +    :type event: cloudbot.events.BaseEvent
      """
      text = format_event(event)
  
-@@ -245,8 +246,8 @@ def log(event):
+@@ -246,8 +228,8 @@ def log(event):
  @hook.irc_raw("*")
  def console_log(bot, event):
      """
 -    :type bot: cloudbot.core.bot.CloudBot
--    :type event: cloudbot.core.events.BaseEvent
+-    :type event: cloudbot.core.events.Event
 +    :type bot: cloudbot.bot.CloudBot
 +    :type event: cloudbot.events.BaseEvent
      """
@@ -6328,27 +5093,28 @@ index de8c213..1c30574 100644
  
  @hook.command()
 diff --git a/plugins/tell.py b/plugins/tell.py
-index ad95dec..db2f87a 100644
+index 940aa5f..db2f87a 100644
 --- a/plugins/tell.py
 +++ b/plugins/tell.py
-@@ -4,8 +4,9 @@ from datetime import datetime
+@@ -4,9 +4,9 @@ from datetime import datetime
  from sqlalchemy import Table, Column, String, Boolean, DateTime
  from sqlalchemy.sql import select
  
 -from cloudbot import hook, timesince, botvars
--from cloudbot.core.events import EventType
+-from cloudbot.event import EventType
+-
 +from cloudbot import hook
 +from cloudbot.util import timesince, botvars
 +from cloudbot.events import EventType
  
  table = Table(
      'tells',
-@@ -74,8 +75,8 @@ def add_tell(db, server, sender, target, message):
+@@ -75,8 +75,8 @@ def add_tell(db, server, sender, target, message):
  @hook.event(EventType.message, singlethread=True)
  def tellinput(event, conn, db, nick, notice):
      """
--    :type event: cloudbot.core.events.BaseEvent
--    :type conn: cloudbot.core.connection.Connection
+-    :type event: cloudbot.core.events.Event
+-    :type conn: cloudbot.core.connection.Client
 +    :type event: cloudbot.events.BaseEvent
 +    :type conn: cloudbot.connection.Connection
      :type db: sqlalchemy.orm.Session

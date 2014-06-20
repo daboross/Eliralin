@@ -1,11 +1,11 @@
-From 25ff7a3af5b292e177b02babc6cbd519932de046 Mon Sep 17 00:00:00 2001
+From b034319ea1ae7c241cdb27746a70883ecaae25e3 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 26 Apr 2014 18:39:33 -0700
 Subject: [PATCH] Change reply format from ({}) to {},
 
 
 diff --git a/cloudbot/events.py b/cloudbot/events.py
-index c4eb41e..6a28872 100644
+index 8681317..af322cf 100644
 --- a/cloudbot/events.py
 +++ b/cloudbot/events.py
 @@ -248,7 +248,7 @@ class BaseEvent:
