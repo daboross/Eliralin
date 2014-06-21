@@ -1,0 +1,317 @@
+From f55f4b674d59a192410a89c6d4327d3a7a9b3ce9 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Fri, 20 Jun 2014 21:17:32 -0500
+Subject: [PATCH] Redo hook.py a bit to have all hooks support *args, rather
+ than having to pass lists.
+
+
+diff --git a/cloudbot/hook.py b/cloudbot/hook.py
+index 1c67d13..aac1653 100644
+--- a/cloudbot/hook.py
++++ b/cloudbot/hook.py
+@@ -23,7 +23,7 @@ class _Hook():
+         self.type = _type
+         self.kwargs = {}
+ 
+-    def _add_hook(self, kwargs):
++    def _add_hook(self, **kwargs):
+         """
+         :type kwargs: dict[str, unknown]
+         """
+@@ -50,22 +50,25 @@ class _CommandHook(_Hook):
+         else:
+             self.doc = None
+ 
+-    def add_hook(self, alias_param, kwargs):
++    def add_hook(self, *aliases, **kwargs):
+         """
+-        :type alias_param: list[str] | str
++        :type aliases: list[str] | str
+         """
+-        self._add_hook(kwargs)
++        self._add_hook(**kwargs)
++
++        if not aliases:
++            aliases = [self.function.__name__]
++        elif len(aliases) == 1 and not isinstance(aliases[0], str):
++            # we are being passed a list as the first argument, so aliases is in the form of ([item1, item2])
++            aliases = aliases[0]
+ 
+-        if not alias_param:
+-            alias_param = self.function.__name__
+-        if isinstance(alias_param, str):
+-            alias_param = [alias_param]
+         if not self.main_alias:
+-            self.main_alias = alias_param[0]
+-        for alias in alias_param:
++            self.main_alias = aliases[0]
++
++        for alias in aliases:
+             if not valid_command_re.match(alias):
+                 raise ValueError("Invalid command name {}".format(alias))
+-        self.aliases.update(alias_param)
++        self.aliases.update(aliases)
+ 
+ 
+ class _RegexHook(_Hook):
+@@ -80,30 +83,25 @@ class _RegexHook(_Hook):
+         _Hook.__init__(self, function, "regex")
+         self.regexes = []
+ 
+-    def add_hook(self, regex_param, kwargs):
++    def add_hook(self, *regexes, **kwargs):
+         """
+-        :type regex_param: Iterable[str | re.__Regex] | str | re.__Regex
++        :type regexes: Iterable[str | re.__Regex] | str | re.__Regex
+         :type kwargs: dict[str, unknown]
+         """
+-        self._add_hook(kwargs)
+-        # add all regex_parameters to valid regexes
+-        if isinstance(regex_param, str):
+-            # if the parameter is a string, compile and add
+-            self.regexes.append(re.compile(regex_param))
+-        elif hasattr(regex_param, "search"):
+-            # if the parameter is an re.__Regex, just add it
+-            # we only use regex.search anyways, so this is a good determiner
+-            self.regexes.append(regex_param)
+-        else:
+-            assert isinstance(regex_param, collections.Iterable)
+-            # if the parameter is a list, add each one
+-            for re_to_match in regex_param:
+-                if isinstance(re_to_match, str):
+-                    re_to_match = re.compile(re_to_match)
+-                else:
+-                    # make sure that the param is either a compiled regex, or has a search attribute.
+-                    assert hasattr(regex_param, "search")
+-                self.regexes.append(re_to_match)
++        self._add_hook(**kwargs)
++
++        # If we have one argument, and that argument is neither a string or a compiled regex, we're being passed a list
++        if len(regexes) == 1 and not (isinstance(regexes[0], str) or hasattr(regexes, "search")):
++            regexes = regexes[0]  # it's a list we're being passed as the first argument, so take it as a list
++
++        assert isinstance(regexes, collections.Iterable)
++        # if the parameter is a list, add each one
++        for re_to_match in regexes:
++            if isinstance(re_to_match, str):
++                re_to_match = re.compile(re_to_match)
++            # make sure that the param is either a compiled regex, or has a search attribute.
++            assert hasattr(re_to_match, "search")
++            self.regexes.append(re_to_match)
+ 
+ 
+ class _RawHook(_Hook):
+@@ -118,18 +116,17 @@ class _RawHook(_Hook):
+         _Hook.__init__(self, function, "irc_raw")
+         self.triggers = set()
+ 
+-    def add_hook(self, trigger_param, kwargs):
++    def add_hook(self, *triggers, **kwargs):
+         """
+-        :type trigger_param: list[str] | str
++        :type triggers: list[str] | str
+         :type kwargs: dict[str, unknown]
+         """
+-        self._add_hook(kwargs)
++        self._add_hook(**kwargs)
++        if len(triggers) == 1 and not isinstance(triggers[0], str):
++            # we are being passed a list as the first argument, so triggers is in the form of ([item1, item2])
++            triggers = triggers[0]
+ 
+-        if isinstance(trigger_param, str):
+-            self.triggers.add(trigger_param)
+-        else:
+-            # it's a list
+-            self.triggers.update(trigger_param)
++        self.triggers.update(triggers)
+ 
+ 
+ class _EventHook(_Hook):
+@@ -144,18 +141,18 @@ class _EventHook(_Hook):
+         _Hook.__init__(self, function, "event")
+         self.types = set()
+ 
+-    def add_hook(self, trigger_param, kwargs):
++    def add_hook(self, *events, **kwargs):
+         """
+-        :type trigger_param: cloudbot.event.EventType | list[cloudbot.event.EventType]
++        :type events: tuple[cloudbot.event.EventType] | (list[cloudbot.event.EventType])
+         :type kwargs: dict[str, unknown]
+         """
+-        self._add_hook(kwargs)
++        self._add_hook(**kwargs)
+ 
+-        if isinstance(trigger_param, EventType):
+-            self.types.add(trigger_param)
+-        else:
+-            # it's a list
+-            self.types.update(trigger_param)
++        if len(events) == 1 and not isinstance(events[0], str):
++            # we are being passed a list as the first argument, so events is in the form of ([item1, item2])
++            events = events[0]
++
++        self.types.update(events)
+ 
+ 
+ def _add_hook(func, hook):
+@@ -173,85 +170,85 @@ def _get_hook(func, hook_type):
+     return None
+ 
+ 
+-def command(*args, **kwargs):
++def command(*aliases, **kwargs):
+     """External command decorator. Can be used directly as a decorator, or with args to return a decorator.
+-    :type param: str | list[str] | function
++    :type param: tuple[str] | (list[str]) | (function)
+     """
+ 
+-    def _command_hook(func, alias_param=None):
++    def decorator(func):
+         hook = _get_hook(func, "command")
+         if hook is None:
+             hook = _CommandHook(func)
+             _add_hook(func, hook)
+ 
+-        hook.add_hook(alias_param, kwargs)
++        hook.add_hook(*aliases, **kwargs)
+         return func
+ 
+-    if len(args) == 1 and callable(args[0]):  # this decorator is being used directly
+-        return _command_hook(args[0])
++    if len(aliases) == 1 and callable(aliases[0]):  # this decorator is being used directly
++        return decorator(aliases[0])
+     else:  # this decorator is being used indirectly, so return a decorator function
+-        return lambda func: _command_hook(func, alias_param=args)
++        return decorator
+ 
+ 
+-def irc_raw(triggers_param, **kwargs):
++def irc_raw(*triggers, **kwargs):
+     """External raw decorator. Must be used as a function to return a decorator
+-    :type triggers_param: str | list[str]
++    :type triggers: tuple[str] | (list[str])
+     """
+ 
+-    def _raw_hook(func):
++    def decorator(func):
+         hook = _get_hook(func, "irc_raw")
+         if hook is None:
+             hook = _RawHook(func)
+             _add_hook(func, hook)
+ 
+-        hook.add_hook(triggers_param, kwargs)
++        hook.add_hook(*triggers, **kwargs)
+         return func
+ 
+-    if callable(triggers_param):  # this decorator is being used directly, which isn't good
+-        raise TypeError("@irc_raw() must be used as a function that returns a decorator")
++    if len(triggers) == 1 and callable(triggers[0]):  # this decorator is being used directly, which isn't good
++        raise TypeError("irc_raw() must be used as a function that returns a decorator")
+     else:  # this decorator is being used as a function, so return a decorator
+-        return lambda func: _raw_hook(func)
++        return decorator
+ 
+ 
+-def event(types_param, **kwargs):
++def event(*triggers, **kwargs):
+     """External event decorator. Must be used as a function to return a decorator
+-    :type types_param: cloudbot.event.EventType | list[cloudbot.event.EventType]
++    :type triggers: tuple[cloudbot.event.EventType] | (list[cloudbot.event.EventType])
+     """
+ 
+-    def _event_hook(func):
++    def decorator(func):
+         hook = _get_hook(func, "event")
+         if hook is None:
+             hook = _EventHook(func)
+             _add_hook(func, hook)
+ 
+-        hook.add_hook(types_param, kwargs)
++        hook.add_hook(*triggers, **kwargs)
+         return func
+ 
+-    if callable(types_param):  # this decorator is being used directly, which isn't good
+-        raise TypeError("@irc_raw() must be used as a function that returns a decorator")
++    if len(triggers) == 1 and callable(triggers[0]):  # this decorator is being used directly, which isn't good
++        raise TypeError("event() must be used as a function that returns a decorator")
+     else:  # this decorator is being used as a function, so return a decorator
+-        return lambda func: _event_hook(func)
++        return decorator
+ 
+ 
+-def regex(regex_param, **kwargs):
++def regex(*regexes, **kwargs):
+     """External regex decorator. Must be used as a function to return a decorator.
+-    :type regex_param: str | re.__Regex | list[str | re.__Regex]
++    :type regexes: tuple[str | re.__Regex] | (list[str | re.__Regex])
+     :type flags: int
+     """
+ 
+-    def _regex_hook(func):
++    def decorator(func):
+         hook = _get_hook(func, "regex")
+         if hook is None:
+             hook = _RegexHook(func)
+             _add_hook(func, hook)
+ 
+-        hook.add_hook(regex_param, kwargs)
++        hook.add_hook(*regexes, **kwargs)
+         return func
+ 
+-    if callable(regex_param):  # this decorator is being used directly, which isn't good
+-        raise TypeError("@regex() hook must be used as a function that returns a decorator")
++    if len(regexes) == 1 and callable(regexes[0]):  # this decorator is being used directly, which isn't good
++        raise TypeError("regex() hook must be used as a function that returns a decorator")
+     else:  # this decorator is being used as a function, so return a decorator
+-        return lambda func: _regex_hook(func)
++        return decorator
+ 
+ 
+ def sieve(param=None, **kwargs):
+@@ -259,7 +256,7 @@ def sieve(param=None, **kwargs):
+     :type param: function | None
+     """
+ 
+-    def _sieve_hook(func):
++    def decorator(func):
+         assert len(inspect.getargspec(func).args) == 3, \
+             "Sieve plugin has incorrect argument count. Needs params: bot, input, plugin"
+ 
+@@ -268,13 +265,13 @@ def sieve(param=None, **kwargs):
+             hook = _Hook(func, "sieve")  # there's no need to have a specific SieveHook object
+             _add_hook(func, hook)
+ 
+-        hook._add_hook(kwargs)
++        hook._add_hook(**kwargs)
+         return func
+ 
+     if callable(param):
+-        return _sieve_hook(param)
++        return decorator(param)
+     else:
+-        return lambda func: _sieve_hook(func)
++        return decorator
+ 
+ 
+ def onload(param=None, **kwargs):
+@@ -282,7 +279,7 @@ def onload(param=None, **kwargs):
+     :type param: function | None
+     """
+ 
+-    def _onload_hook(func):
++    def decorator(func):
+         hook = _get_hook(func, "onload")
+         if hook is None:
+             hook = _Hook(func, "onload")
+@@ -292,6 +289,6 @@ def onload(param=None, **kwargs):
+         return func
+ 
+     if callable(param):
+-        return _onload_hook(param)
++        return decorator(param)
+     else:
+-        return lambda func: _onload_hook(func)
++        return decorator
+-- 
+2.0.0
+

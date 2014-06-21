@@ -1,4 +1,4 @@
-From 07dd709ef3740901774fa0ac94ea30478ce796f4 Mon Sep 17 00:00:00 2001
+From 41f6dfe1255a18b759368d1e4ca126b3880efed2 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Wed, 18 Jun 2014 17:11:31 -0500
 Subject: [PATCH] Remove two plugin test. Neither work, both depend on
