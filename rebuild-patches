@@ -26,9 +26,32 @@ function save_patches {
 
     log "Patches for $TARGET/$TARGET_BRANCH saved to $PATCH_DIR"
 }
+function save_patches_by_name {
+    case "$1" in
+        re*p*) # re-refactoring-plugins
+            save_patches Refresh-rerefactoring re-refactoring Patches-02-rerefactoring-plugins ;;
+        re*) # re-refactoring
+            save_patches Refresh-rerefactoring re-refactoring-no-plugins Patches-01-rerefactoring ;;
+        c*p*) # connection-emerge-plugins
+            save_patches Refresh-connection-emerge connection-emerge Patches-04-connection-emerge-plugins ;;
+        c*) # connection-emerge
+            save_patches Refresh-connection-emerge connection-emerge-no-plugins Patches-03-connection-emerge ;;
+        e*) # eliralin
+            save_patches Eliralin master Patches-05-eliralin ;;
+        ?*)
+            echo "Expected (re-refactoring-plugins, re-refactoring, connection-emerge-plugins, connection-emerge, eliralin), but found $1"
+    esac
+}
 
-save_patches Refresh-rerefactoring re-refactoring-no-plugins Patches-01-rerefactoring
-save_patches Refresh-rerefactoring re-refactoring Patches-02-rerefactoring-plugins
-save_patches Refresh-connection-emerge connection-emerge-no-plugins Patches-03-connection-emerge
-save_patches Refresh-connection-emerge connection-emerge Patches-04-connection-emerge-plugins
-save_patches Eliralin master Patches-05-eliralin
+if (( "$#" )); then
+    while (( "$#" )); do
+        save_patches_by_name "$1"
+        shift
+    done
+else
+    save_patches_by_name "re-refactoring"
+    save_patches_by_name "re-refactoring-plugins"
+    save_patches_by_name "connection-emerge"
+    save_patches_by_name "connection-emerge-plugins"
+    save_patches_by_name "eliralin"
+fi
