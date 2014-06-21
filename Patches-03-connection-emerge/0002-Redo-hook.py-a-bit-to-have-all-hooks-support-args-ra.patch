@@ -1,4 +1,4 @@
-From f55f4b674d59a192410a89c6d4327d3a7a9b3ce9 Mon Sep 17 00:00:00 2001
+From 0ddc37a315c0895c938589933065067be4df2cbd Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Fri, 20 Jun 2014 21:17:32 -0500
 Subject: [PATCH] Redo hook.py a bit to have all hooks support *args, rather
@@ -6,10 +6,18 @@ Subject: [PATCH] Redo hook.py a bit to have all hooks support *args, rather
 
 
 diff --git a/cloudbot/hook.py b/cloudbot/hook.py
-index 1c67d13..aac1653 100644
+index 1c67d13..90b4de0 100644
 --- a/cloudbot/hook.py
 +++ b/cloudbot/hook.py
-@@ -23,7 +23,7 @@ class _Hook():
+@@ -1,7 +1,6 @@
+ import inspect
+ import re
+ import collections
+-
+ from cloudbot.event import EventType
+ 
+ valid_command_re = re.compile(r"^\w+$")
+@@ -23,7 +22,7 @@ class _Hook():
          self.type = _type
          self.kwargs = {}
  
@@ -18,7 +26,7 @@ index 1c67d13..aac1653 100644
          """
          :type kwargs: dict[str, unknown]
          """
-@@ -50,22 +50,25 @@ class _CommandHook(_Hook):
+@@ -50,22 +49,25 @@ class _CommandHook(_Hook):
          else:
              self.doc = None
  
@@ -54,7 +62,7 @@ index 1c67d13..aac1653 100644
  
  
  class _RegexHook(_Hook):
-@@ -80,30 +83,25 @@ class _RegexHook(_Hook):
+@@ -80,30 +82,25 @@ class _RegexHook(_Hook):
          _Hook.__init__(self, function, "regex")
          self.regexes = []
  
@@ -87,7 +95,7 @@ index 1c67d13..aac1653 100644
 +        self._add_hook(**kwargs)
 +
 +        # If we have one argument, and that argument is neither a string or a compiled regex, we're being passed a list
-+        if len(regexes) == 1 and not (isinstance(regexes[0], str) or hasattr(regexes, "search")):
++        if len(regexes) == 1 and not (isinstance(regexes[0], str) or hasattr(regexes[0], "search")):
 +            regexes = regexes[0]  # it's a list we're being passed as the first argument, so take it as a list
 +
 +        assert isinstance(regexes, collections.Iterable)
@@ -101,7 +109,7 @@ index 1c67d13..aac1653 100644
  
  
  class _RawHook(_Hook):
-@@ -118,18 +116,17 @@ class _RawHook(_Hook):
+@@ -118,18 +115,17 @@ class _RawHook(_Hook):
          _Hook.__init__(self, function, "irc_raw")
          self.triggers = set()
  
@@ -127,7 +135,7 @@ index 1c67d13..aac1653 100644
  
  
  class _EventHook(_Hook):
-@@ -144,18 +141,18 @@ class _EventHook(_Hook):
+@@ -144,18 +140,18 @@ class _EventHook(_Hook):
          _Hook.__init__(self, function, "event")
          self.types = set()
  
@@ -146,7 +154,7 @@ index 1c67d13..aac1653 100644
 -        else:
 -            # it's a list
 -            self.types.update(trigger_param)
-+        if len(events) == 1 and not isinstance(events[0], str):
++        if len(events) == 1 and not isinstance(events[0], EventType):
 +            # we are being passed a list as the first argument, so events is in the form of ([item1, item2])
 +            events = events[0]
 +
@@ -154,7 +162,7 @@ index 1c67d13..aac1653 100644
  
  
  def _add_hook(func, hook):
-@@ -173,85 +170,85 @@ def _get_hook(func, hook_type):
+@@ -173,85 +169,87 @@ def _get_hook(func, hook_type):
      return None
  
  
@@ -171,9 +179,12 @@ index 1c67d13..aac1653 100644
          if hook is None:
              hook = _CommandHook(func)
              _add_hook(func, hook)
- 
+-
 -        hook.add_hook(alias_param, kwargs)
-+        hook.add_hook(*aliases, **kwargs)
++        if len(aliases) == 1 and callable(aliases[0]):
++            hook.add_hook(**kwargs)  # we don't want to pass the function as an argument
++        else:
++            hook.add_hook(*aliases, **kwargs)
          return func
  
 -    if len(args) == 1 and callable(args[0]):  # this decorator is being used directly
@@ -268,7 +279,7 @@ index 1c67d13..aac1653 100644
  
  
  def sieve(param=None, **kwargs):
-@@ -259,7 +256,7 @@ def sieve(param=None, **kwargs):
+@@ -259,7 +257,7 @@ def sieve(param=None, **kwargs):
      :type param: function | None
      """
  
@@ -277,7 +288,7 @@ index 1c67d13..aac1653 100644
          assert len(inspect.getargspec(func).args) == 3, \
              "Sieve plugin has incorrect argument count. Needs params: bot, input, plugin"
  
-@@ -268,13 +265,13 @@ def sieve(param=None, **kwargs):
+@@ -268,13 +266,13 @@ def sieve(param=None, **kwargs):
              hook = _Hook(func, "sieve")  # there's no need to have a specific SieveHook object
              _add_hook(func, hook)
  
@@ -294,7 +305,7 @@ index 1c67d13..aac1653 100644
  
  
  def onload(param=None, **kwargs):
-@@ -282,7 +279,7 @@ def onload(param=None, **kwargs):
+@@ -282,16 +280,16 @@ def onload(param=None, **kwargs):
      :type param: function | None
      """
  
@@ -303,7 +314,10 @@ index 1c67d13..aac1653 100644
          hook = _get_hook(func, "onload")
          if hook is None:
              hook = _Hook(func, "onload")
-@@ -292,6 +289,6 @@ def onload(param=None, **kwargs):
+             _add_hook(func, hook)
+ 
+-        hook._add_hook(kwargs)
++        hook._add_hook(**kwargs)
          return func
  
      if callable(param):
