@@ -1,4 +1,4 @@
-From 0ddc37a315c0895c938589933065067be4df2cbd Mon Sep 17 00:00:00 2001
+From 6b005c7dfab9fd0fc7db01bdc56e686efe8cb62a Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Fri, 20 Jun 2014 21:17:32 -0500
 Subject: [PATCH] Redo hook.py a bit to have all hooks support *args, rather

@@ -1,0 +1,241 @@
+From 1e69cfea400afcfa19c4386befdf50bd31b71af1 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Fri, 20 Jun 2014 22:28:17 -0500
+Subject: [PATCH] Change the way hook.py creates _*Hook objects
+
+Instead of having each decorator create *Hook object, it will just pass the type to _add_hook() (which it already did), and _add_hook will create a new hook if there isn't already one there.
+
+This is in preperation for adding an add_hook function to PluginManager, but it also cleans up hook.py a bit too.
+
+diff --git a/cloudbot/hook.py b/cloudbot/hook.py
+index 90b4de0..015e136 100644
+--- a/cloudbot/hook.py
++++ b/cloudbot/hook.py
+@@ -1,6 +1,7 @@
+ import inspect
+ import re
+ import collections
++
+ from cloudbot.event import EventType
+ 
+ valid_command_re = re.compile(r"^\w+$")
+@@ -12,14 +13,13 @@ class _Hook():
+     :type type: str
+     :type kwargs: dict[str, unknown]
+     """
++    type = None  # subclasses should define this
+ 
+-    def __init__(self, function, _type):
++    def __init__(self, function):
+         """
+         :type function: function
+-        :type _type: str
+         """
+         self.function = function
+-        self.type = _type
+         self.kwargs = {}
+ 
+     def _add_hook(self, **kwargs):
+@@ -35,12 +35,13 @@ class _CommandHook(_Hook):
+     :type main_alias: str
+     :type aliases: set[str]
+     """
++    type = "command"
+ 
+     def __init__(self, function):
+         """
+         :type function: function
+         """
+-        _Hook.__init__(self, function, "command")
++        _Hook.__init__(self, function)
+         self.aliases = set()
+         self.main_alias = None
+ 
+@@ -74,12 +75,13 @@ class _RegexHook(_Hook):
+     """
+     :type regexes: list[re.__Regex]
+     """
++    type = "regex"
+ 
+     def __init__(self, function):
+         """
+         :type function: function
+         """
+-        _Hook.__init__(self, function, "regex")
++        _Hook.__init__(self, function)
+         self.regexes = []
+ 
+     def add_hook(self, *regexes, **kwargs):
+@@ -107,12 +109,13 @@ class _RawHook(_Hook):
+     """
+     :type triggers: set[str]
+     """
++    type = "irc_raw"
+ 
+     def __init__(self, function):
+         """
+         :type function: function
+         """
+-        _Hook.__init__(self, function, "irc_raw")
++        _Hook.__init__(self, function)
+         self.triggers = set()
+ 
+     def add_hook(self, *triggers, **kwargs):
+@@ -132,12 +135,13 @@ class _EventHook(_Hook):
+     """
+     :type types: set[cloudbot.event.EventType]
+     """
++    type = "event"
+ 
+     def __init__(self, function):
+         """
+         :type function: function
+         """
+-        _Hook.__init__(self, function, "event")
++        _Hook.__init__(self, function)
+         self.types = set()
+ 
+     def add_hook(self, *events, **kwargs):
+@@ -154,19 +158,42 @@ class _EventHook(_Hook):
+         self.types.update(events)
+ 
+ 
+-def _add_hook(func, hook):
+-    if not hasattr(func, "_cloudbot_hook"):
+-        func._cloudbot_hook = {}
+-    else:
+-        assert hook.type not in func._cloudbot_hook  # in this case the hook should be using the add_hook method
+-    func._cloudbot_hook[hook.type] = hook
++class _SieveHook(_Hook):
++    type = "sieve"
++
++    def add_hook(self, **kwargs):
++        self._add_hook(**kwargs)
+ 
+ 
+-def _get_hook(func, hook_type):
+-    if hasattr(func, "_cloudbot_hook") and hook_type in func._cloudbot_hook:
+-        return func._cloudbot_hook[hook_type]
++class _OnloadHook(_Hook):
++    type = "onload"
+ 
+-    return None
++    def add_hook(self, **kwargs):
++        self._add_hook(**kwargs)
++
++
++_hook_name_to_hook = {
++    "command": _CommandHook,
++    "regex": _RegexHook,
++    "irc_raw": _RawHook,
++    "event": _EventHook,
++    "sieve": _SieveHook,
++    "onload": _OnloadHook,
++}
++
++
++def _get_or_add_hook(func, hook_type):
++    if hasattr(func, "_cloudbot_hook"):
++        if hook_type in func._cloudbot_hook:
++            hook = func._cloudbot_hook[hook_type]
++        else:
++            hook = _hook_name_to_hook[hook_type](func)  # Make a new hook
++            func._cloudbot_hook[hook_type] = hook
++    else:
++        hook = _hook_name_to_hook[hook_type](func)  # Make a new hook
++        func._cloudbot_hook = {hook_type: hook}
++
++    return hook
+ 
+ 
+ def command(*aliases, **kwargs):
+@@ -175,14 +202,13 @@ def command(*aliases, **kwargs):
+     """
+ 
+     def decorator(func):
+-        hook = _get_hook(func, "command")
+-        if hook is None:
+-            hook = _CommandHook(func)
+-            _add_hook(func, hook)
++        hook = _get_or_add_hook(func, "command")
++
+         if len(aliases) == 1 and callable(aliases[0]):
+             hook.add_hook(**kwargs)  # we don't want to pass the function as an argument
+         else:
+             hook.add_hook(*aliases, **kwargs)
++
+         return func
+ 
+     if len(aliases) == 1 and callable(aliases[0]):  # this decorator is being used directly
+@@ -197,11 +223,7 @@ def irc_raw(*triggers, **kwargs):
+     """
+ 
+     def decorator(func):
+-        hook = _get_hook(func, "irc_raw")
+-        if hook is None:
+-            hook = _RawHook(func)
+-            _add_hook(func, hook)
+-
++        hook = _get_or_add_hook(func, "irc_raw")
+         hook.add_hook(*triggers, **kwargs)
+         return func
+ 
+@@ -217,11 +239,7 @@ def event(*triggers, **kwargs):
+     """
+ 
+     def decorator(func):
+-        hook = _get_hook(func, "event")
+-        if hook is None:
+-            hook = _EventHook(func)
+-            _add_hook(func, hook)
+-
++        hook = _get_or_add_hook(func, "event")
+         hook.add_hook(*triggers, **kwargs)
+         return func
+ 
+@@ -238,11 +256,7 @@ def regex(*regexes, **kwargs):
+     """
+ 
+     def decorator(func):
+-        hook = _get_hook(func, "regex")
+-        if hook is None:
+-            hook = _RegexHook(func)
+-            _add_hook(func, hook)
+-
++        hook = _get_or_add_hook(func, "regex")
+         hook.add_hook(*regexes, **kwargs)
+         return func
+ 
+@@ -261,12 +275,9 @@ def sieve(param=None, **kwargs):
+         assert len(inspect.getargspec(func).args) == 3, \
+             "Sieve plugin has incorrect argument count. Needs params: bot, input, plugin"
+ 
+-        hook = _get_hook(func, "sieve")
+-        if hook is None:
+-            hook = _Hook(func, "sieve")  # there's no need to have a specific SieveHook object
+-            _add_hook(func, hook)
++        hook = _get_or_add_hook(func, "sieve")
++        hook.add_hook(**kwargs)
+ 
+-        hook._add_hook(**kwargs)
+         return func
+ 
+     if callable(param):
+@@ -281,12 +292,8 @@ def onload(param=None, **kwargs):
+     """
+ 
+     def decorator(func):
+-        hook = _get_hook(func, "onload")
+-        if hook is None:
+-            hook = _Hook(func, "onload")
+-            _add_hook(func, hook)
+-
+-        hook._add_hook(**kwargs)
++        hook = _get_or_add_hook(func, "onload")
++        hook.add_hook(**kwargs)
+         return func
+ 
+     if callable(param):
+-- 
+2.0.0
+

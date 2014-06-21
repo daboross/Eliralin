@@ -1,0 +1,421 @@
+From b5b7161126f2d96890ab016a7c54cdbd00a00e9e Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Fri, 20 Jun 2014 23:07:46 -0500
+Subject: [PATCH] Use a HookType enum for identifying hook types, instead of
+ magic strings
+
+
+diff --git a/cloudbot/hook.py b/cloudbot/hook.py
+index 015e136..05c2464 100644
+--- a/cloudbot/hook.py
++++ b/cloudbot/hook.py
+@@ -3,6 +3,7 @@ import re
+ import collections
+ 
+ from cloudbot.event import EventType
++from cloudbot.plugin import HookType
+ 
+ valid_command_re = re.compile(r"^\w+$")
+ 
+@@ -10,7 +11,7 @@ valid_command_re = re.compile(r"^\w+$")
+ class _Hook():
+     """
+     :type function: function
+-    :type type: str
++    :type type: HookType
+     :type kwargs: dict[str, unknown]
+     """
+     type = None  # subclasses should define this
+@@ -35,7 +36,7 @@ class _CommandHook(_Hook):
+     :type main_alias: str
+     :type aliases: set[str]
+     """
+-    type = "command"
++    type = HookType.command
+ 
+     def __init__(self, function):
+         """
+@@ -75,7 +76,7 @@ class _RegexHook(_Hook):
+     """
+     :type regexes: list[re.__Regex]
+     """
+-    type = "regex"
++    type = HookType.regex
+ 
+     def __init__(self, function):
+         """
+@@ -109,7 +110,7 @@ class _RawHook(_Hook):
+     """
+     :type triggers: set[str]
+     """
+-    type = "irc_raw"
++    type = HookType.irc_raw
+ 
+     def __init__(self, function):
+         """
+@@ -135,7 +136,7 @@ class _EventHook(_Hook):
+     """
+     :type types: set[cloudbot.event.EventType]
+     """
+-    type = "event"
++    type = HookType.event
+ 
+     def __init__(self, function):
+         """
+@@ -159,26 +160,26 @@ class _EventHook(_Hook):
+ 
+ 
+ class _SieveHook(_Hook):
+-    type = "sieve"
++    type = HookType.sieve
+ 
+     def add_hook(self, **kwargs):
+         self._add_hook(**kwargs)
+ 
+ 
+ class _OnloadHook(_Hook):
+-    type = "onload"
++    type = HookType.onload
+ 
+     def add_hook(self, **kwargs):
+         self._add_hook(**kwargs)
+ 
+ 
+ _hook_name_to_hook = {
+-    "command": _CommandHook,
+-    "regex": _RegexHook,
+-    "irc_raw": _RawHook,
+-    "event": _EventHook,
+-    "sieve": _SieveHook,
+-    "onload": _OnloadHook,
++    HookType.command: _CommandHook,
++    HookType.regex: _RegexHook,
++    HookType.irc_raw: _RawHook,
++    HookType.event: _EventHook,
++    HookType.sieve: _SieveHook,
++    HookType.onload: _OnloadHook,
+ }
+ 
+ 
+@@ -202,7 +203,7 @@ def command(*aliases, **kwargs):
+     """
+ 
+     def decorator(func):
+-        hook = _get_or_add_hook(func, "command")
++        hook = _get_or_add_hook(func, HookType.command)
+ 
+         if len(aliases) == 1 and callable(aliases[0]):
+             hook.add_hook(**kwargs)  # we don't want to pass the function as an argument
+@@ -223,7 +224,7 @@ def irc_raw(*triggers, **kwargs):
+     """
+ 
+     def decorator(func):
+-        hook = _get_or_add_hook(func, "irc_raw")
++        hook = _get_or_add_hook(func, HookType.irc_raw)
+         hook.add_hook(*triggers, **kwargs)
+         return func
+ 
+@@ -239,7 +240,7 @@ def event(*triggers, **kwargs):
+     """
+ 
+     def decorator(func):
+-        hook = _get_or_add_hook(func, "event")
++        hook = _get_or_add_hook(func, HookType.event)
+         hook.add_hook(*triggers, **kwargs)
+         return func
+ 
+@@ -256,7 +257,7 @@ def regex(*regexes, **kwargs):
+     """
+ 
+     def decorator(func):
+-        hook = _get_or_add_hook(func, "regex")
++        hook = _get_or_add_hook(func, HookType.regex)
+         hook.add_hook(*regexes, **kwargs)
+         return func
+ 
+@@ -275,7 +276,7 @@ def sieve(param=None, **kwargs):
+         assert len(inspect.getargspec(func).args) == 3, \
+             "Sieve plugin has incorrect argument count. Needs params: bot, input, plugin"
+ 
+-        hook = _get_or_add_hook(func, "sieve")
++        hook = _get_or_add_hook(func, HookType.sieve)
+         hook.add_hook(**kwargs)
+ 
+         return func
+@@ -292,7 +293,7 @@ def onload(param=None, **kwargs):
+     """
+ 
+     def decorator(func):
+-        hook = _get_or_add_hook(func, "onload")
++        hook = _get_or_add_hook(func, HookType.onload)
+         hook.add_hook(**kwargs)
+         return func
+ 
+diff --git a/cloudbot/plugin.py b/cloudbot/plugin.py
+index e6719b8..38b8681 100644
+--- a/cloudbot/plugin.py
++++ b/cloudbot/plugin.py
+@@ -1,4 +1,5 @@
+ import asyncio
++import enum
+ import glob
+ import importlib
+ import inspect
+@@ -10,6 +11,7 @@ import sqlalchemy
+ 
+ from cloudbot.event import Event
+ from cloudbot.util import botvars
++from cloudbot.hook import _hook_name_to_hook
+ 
+ logger = logging.getLogger("cloudbot")
+ 
+@@ -28,14 +30,15 @@ def find_hooks(parent, module):
+     sieve = []
+     event = []
+     onload = []
+-    type_lists = {"command": command, "regex": regex, "irc_raw": raw, "sieve": sieve, "event": event, "onload": onload}
++    type_lists = {HookType.command: command, HookType.regex: regex, HookType.irc_raw: raw, HookType.sieve: sieve,
++                  HookType.event: event, HookType.onload: onload}
+     for name, func in module.__dict__.items():
+         if hasattr(func, "_cloudbot_hook"):
+             # if it has cloudbot hook
+             func_hooks = func._cloudbot_hook
+ 
+             for hook_type, func_hook in func_hooks.items():
+-                type_lists[hook_type].append(_hook_name_to_plugin[hook_type](parent, func_hook))
++                type_lists[hook_type].append(_hook_type_to_plugin[hook_type](parent, func_hook))
+ 
+             # delete the hook to free memory
+             del func._cloudbot_hook
+@@ -409,13 +412,13 @@ class PluginManager:
+         :type hook: cloudbot.plugin.Hook | cloudbot.plugin.CommandHook
+         :rtype: bool
+         """
+-        if hook.type != "onload":  # we don't need sieves on onload hooks.
++        if hook.type is not HookType.onload:  # we don't need sieves on onload hooks.
+             for sieve in self.bot.plugin_manager.sieves:
+                 event = yield from self._sieve(sieve, event, hook)
+                 if event is None:
+                     return False
+ 
+-        if hook.type == "command" and hook.auto_help and not event.text and hook.doc is not None:
++        if hook.type is HookType.command and hook.auto_help and not event.text and hook.doc is not None:
+             event.notice_doc()
+             return False
+ 
+@@ -522,7 +525,7 @@ class Hook:
+     """
+     Each hook is specific to one function. This class is never used by itself, rather extended.
+ 
+-    :type type; str
++    :type type: HookType
+     :type plugin: Plugin
+     :type function: callable
+     :type function_name: str
+@@ -532,14 +535,13 @@ class Hook:
+     :type permissions: list[str]
+     :type single_thread: bool
+     """
++    type = None  # to be assigned in subclasses
+ 
+-    def __init__(self, _type, plugin, func_hook):
++    def __init__(self, plugin, func_hook):
+         """
+-        :type _type: str
+         :type plugin: Plugin
+         :type func_hook: hook._Hook
+         """
+-        self.type = _type
+         self.plugin = plugin
+         self.function = func_hook.function
+         self.function_name = self.function.__name__
+@@ -567,7 +569,7 @@ class Hook:
+ 
+     def __repr__(self):
+         return "type: {}, plugin: {}, ignore_bots: {}, permissions: {}, single_thread: {}, threaded: {}".format(
+-            self.type, self.plugin.title, self.ignore_bots, self.permissions, self.single_thread, self.threaded
++            self.type.name, self.plugin.title, self.ignore_bots, self.permissions, self.single_thread, self.threaded
+         )
+ 
+ 
+@@ -578,6 +580,7 @@ class CommandHook(Hook):
+     :type doc: str
+     :type auto_help: bool
+     """
++    type = HookType.command
+ 
+     def __init__(self, plugin, cmd_hook):
+         """
+@@ -592,7 +595,7 @@ class CommandHook(Hook):
+         self.aliases.insert(0, self.name)  # make sure the name, or 'main alias' is in position 0
+         self.doc = cmd_hook.doc
+ 
+-        super().__init__("command", plugin, cmd_hook)
++        super().__init__(plugin, cmd_hook)
+ 
+     def __repr__(self):
+         return "Command[name: {}, aliases: {}, {}]".format(self.name, self.aliases[1:], Hook.__repr__(self))
+@@ -605,6 +608,7 @@ class RegexHook(Hook):
+     """
+     :type regexes: set[re.__Regex]
+     """
++    type = HookType.regex
+ 
+     def __init__(self, plugin, regex_hook):
+         """
+@@ -613,7 +617,7 @@ class RegexHook(Hook):
+         """
+         self.regexes = regex_hook.regexes
+ 
+-        super().__init__("regex", plugin, regex_hook)
++        super().__init__(plugin, regex_hook)
+ 
+     def __repr__(self):
+         return "Regex[regexes: [{}], {}]".format(", ".join(regex.pattern for regex in self.regexes),
+@@ -627,13 +631,14 @@ class RawHook(Hook):
+     """
+     :type triggers: set[str]
+     """
++    type = HookType.irc_raw
+ 
+     def __init__(self, plugin, irc_raw_hook):
+         """
+         :type plugin: Plugin
+         :type irc_raw_hook: cloudbot.util.hook._RawHook
+         """
+-        super().__init__("irc_raw", plugin, irc_raw_hook)
++        super().__init__(plugin, irc_raw_hook)
+ 
+         self.triggers = irc_raw_hook.triggers
+ 
+@@ -648,13 +653,14 @@ class RawHook(Hook):
+ 
+ 
+ class SieveHook(Hook):
++    type = HookType.sieve
++
+     def __init__(self, plugin, sieve_hook):
+         """
+         :type plugin: Plugin
+         :type sieve_hook: cloudbot.util.hook._SieveHook
+         """
+-        # We don't want to thread sieves by default - this is retaining old behavior for compatibility
+-        super().__init__("sieve", plugin, sieve_hook)
++        super().__init__(plugin, sieve_hook)
+ 
+     def __repr__(self):
+         return "Sieve[{}]".format(Hook.__repr__(self))
+@@ -667,13 +673,14 @@ class EventHook(Hook):
+     """
+     :type types: set[cloudbot.event.EventType]
+     """
++    type = HookType.event
+ 
+     def __init__(self, plugin, event_hook):
+         """
+         :type plugin: Plugin
+         :type event_hook: cloudbot.util.hook._EventHook
+         """
+-        super().__init__("event", plugin, event_hook)
++        super().__init__(plugin, event_hook)
+ 
+         self.types = event_hook.types
+ 
+@@ -686,12 +693,14 @@ class EventHook(Hook):
+ 
+ 
+ class OnloadHook(Hook):
++    type = HookType.onload
++
+     def __init__(self, plugin, on_load_hook):
+         """
+         :type plugin: Plugin
+         :type on_load_hook: cloudbot.util.hook._OnLoadHook
+         """
+-        super().__init__("onload", plugin, on_load_hook)
++        super().__init__(plugin, on_load_hook)
+ 
+     def __repr__(self):
+         return "Onload[{}]".format(Hook.__repr__(self))
+@@ -700,11 +709,20 @@ class OnloadHook(Hook):
+         return "onload {} from {}".format(self.function_name, self.plugin.file_name)
+ 
+ 
+-_hook_name_to_plugin = {
+-    "command": CommandHook,
+-    "regex": RegexHook,
+-    "irc_raw": RawHook,
+-    "sieve": SieveHook,
+-    "event": EventHook,
+-    "onload": OnloadHook
++class HookType(enum.Enum):
++    command = 1,
++    regex = 2,
++    event = 4,
++    onload = 5,
++    irc_raw = 6,
++    sieve = 3,
++
++
++_hook_type_to_plugin = {
++    HookType.command: CommandHook,
++    HookType.regex: RegexHook,
++    HookType.irc_raw: RawHook,
++    HookType.sieve: SieveHook,
++    HookType.event: EventHook,
++    HookType.onload: OnloadHook
+ }
+diff --git a/plugins/core_sieve.py b/plugins/core_sieve.py
+index 19693d0..04dbc8d 100644
+--- a/plugins/core_sieve.py
++++ b/plugins/core_sieve.py
+@@ -1,6 +1,7 @@
+ import asyncio
+ 
+ from cloudbot import hook
++from cloudbot.plugin import HookType
+ from cloudbot.util import bucket
+ 
+ TOKENS = 10
+@@ -36,7 +37,7 @@ def sieve_suite(bot, event, _hook):
+                 return None
+ 
+     # check disabled_commands
+-    if _hook.type == "command":
++    if _hook.type is HookType.command:
+         disabled_commands = conn.config.get('disabled_commands', [])
+         if event.triggered_command in disabled_commands:
+             return None
+@@ -55,7 +56,7 @@ def sieve_suite(bot, event, _hook):
+             return None
+ 
+     # check command spam tokens
+-    if _hook.type == "command":
++    if _hook.type is HookType.command:
+         uid = event.chan
+ 
+         if not uid in buckets:
+diff --git a/plugins/ignore.py b/plugins/ignore.py
+index 0372144..6b4711c 100644
+--- a/plugins/ignore.py
++++ b/plugins/ignore.py
+@@ -3,6 +3,7 @@ from fnmatch import fnmatch
+ 
+ from cloudbot import hook
+ from cloudbot.event import EventType
++from cloudbot.plugin import HookType
+ 
+ 
+ @hook.onload
+@@ -32,7 +33,7 @@ def ignore_sieve(bot, event, _hook):
+     :type _hook: cloudbot.plugin.Hook
+     """
+     # don't block event hooks
+-    if _hook.type == "event":
++    if _hook.type is HookType.event:
+         return event
+ 
+     # don't block an event that could be unignoring
+-- 
+2.0.0
+

@@ -1,4 +1,4 @@
-From 9c5a7496d90fd04bde8e794e36a9006a43f34b8b Mon Sep 17 00:00:00 2001
+From 589180b79a2d533ff400a0ad343a7acb5d142baf Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Fri, 20 Jun 2014 14:26:25 -0500
 Subject: [PATCH] Re-refactor things

@@ -1,0 +1,145 @@
+From d1e31c6b300a217a6c8a8c121e3cb61cea22c618 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Fri, 20 Jun 2014 23:20:56 -0500
+Subject: [PATCH] Work in progress: Add add_hook method to PluginManager, and
+ add channel and user tracking.
+
+
+diff --git a/cloudbot/client.py b/cloudbot/client.py
+index 7909fd6..34ebb2e 100644
+--- a/cloudbot/client.py
++++ b/cloudbot/client.py
+@@ -1,4 +1,5 @@
+ import asyncio
++from collections import deque
+ import logging
+ 
+ from cloudbot.permissions import PermissionManager
+@@ -121,3 +122,49 @@ class Client:
+     @property
+     def connected(self):
+         raise NotImplementedError
++
++
++# TODO: Tracking of user 'mode' in channels
++class User:
++    """
++    :param name: The nickname of this User
++    :param ident: The IRC ident of this User, if applicable
++    :param host: The hostname of this User, if applicable
++    :param mask: The IRC mask (nick!ident@host), if applicable
++    :type name: str
++    :type ident: str
++    :type host: str
++    :type mask: str
++    """
++
++    def __init__(self, name, ident, host, mask):
++        self.name = name
++        self.ident = ident
++        self.host = host
++        self.mask = mask
++
++
++class Channel:
++    """
++    name: the name of this channel
++    users: A dict from nickname to User in this channel
++    user_modes: A dict from User to an str containing all of the user's modes in this channel
++    history: A list of (User, timestamp, message content)
++    :type name: str
++    :type users: dict[str, User]
++    :type user_modes: dict[User, str]
++    :type history: deque[(User, datetime, str)]
++
++    """
++
++    def __init__(self, name):
++        self.name = name
++        self.users = {}
++        self.user_modes = {}
++        self.history = deque(maxlen=100)
++
++    def track_message(self):
++        """
++        Adds a message to this channel's history, adding user info from the message as well
++        """
++        pass
+diff --git a/cloudbot/plugin.py b/cloudbot/plugin.py
+index 38b8681..cc8a0d1 100644
+--- a/cloudbot/plugin.py
++++ b/cloudbot/plugin.py
+@@ -297,6 +297,41 @@ class PluginManager:
+             logger.info("Loaded {}".format(hook))
+             logger.debug("Loaded {}".format(repr(hook)))
+ 
++    # TODO: create remove_hook() method
++    def add_hook(self, hook_type, function, *args, **kwargs):
++        """
++        Add an internal hook, like a plugin @hook.X, but for methods in the core. Kind of like an internal event system.
++        :param hook_type: The type of the hook (command, regex, event, sieve, or irc_raw)
++        :param function: The function to call
++        :param args: Arguments to pass to the hook, dependent on the hook type
++        :param kwargs: Keyword arguments to pass to the hook, dependent on the hook type
++        :type hook_type: str
++        """
++        # Get the plugin, or create it - we want one unique plugin for each core file.
++        file = function.__file__
++        # filename is used as the unique key for the plugin.
++        # we prepend internal/ so that this isn't confused with internal plugins.
++        # We *do* assume here that no core files will have the same basename, even if they are in different directories.
++        # I think that is a sane assumption.
++        filename = "internal/" + os.path.basename(file)
++        if filename in self.plugins:
++            plugin = self.plugins[filename]
++        else:
++            filepath = os.path.abspath(file)
++            title = os.path.splitext(filename)[0]
++            plugin = Plugin(filepath, filename, title)
++            self.plugins[filename] = plugin
++
++        # we don't allow onload hooks for internal. We don't have to check a valid type otherwise, because
++        # the _hook_name_to_hook[hook_type] call will raise a KeyError already.
++        if hook_type == "onload":
++            raise KeyError("onload")
++
++        # this might seem a little hacky, but I think it's a good design choice.
++        # hook.py is in charge of argument processing, so it should process them here too
++        _processing_hook = _hook_name_to_hook[hook_type](function)
++        _processing_hook.add_hook(*args, **kwargs)
++
+     def _prepare_parameters(self, hook, event):
+         """
+         Prepares arguments for the given hook
+@@ -478,8 +513,10 @@ class Plugin:
+     :type tables: list[sqlalchemy.Table]
+     """
+ 
+-    def __init__(self, filepath, filename, title, code):
++    def __init__(self, filepath, filename, title, code=None):
+         """
++        :param code: Optional code argument, should be specified for all *actual* plugins.
++                        If provided, all hooks will be retrieved and attached to this plugin from the code.
+         :type filepath: str
+         :type filename: str
+         :type code: object
+@@ -487,10 +524,12 @@ class Plugin:
+         self.file_path = filepath
+         self.file_name = filename
+         self.title = title
+-        self.commands, self.regexes, self.raw_hooks, self.sieves, self.events, self.run_on_load = find_hooks(self, code)
+-        # we need to find tables for each plugin so that they can be unloaded from the global metadata when the
+-        # plugin is reloaded
+-        self.tables = find_tables(code)
++        if code is not None:
++            self.commands, self.regexes, self.raw_hooks, self.sieves, self.events, self.run_on_load = find_hooks(self,
++                                                                                                                 code)
++            # we need to find tables for each plugin so that they can be unloaded from the global metadata when the
++            # plugin is reloaded
++            self.tables = find_tables(code)
+ 
+     @asyncio.coroutine
+     def create_tables(self, bot):
+-- 
+2.0.0
+
