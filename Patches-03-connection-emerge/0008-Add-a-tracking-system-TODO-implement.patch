@@ -1,0 +1,102 @@
+From 40c31c705085cd014d80303af6ed81b1bb3b6c44 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Sun, 22 Jun 2014 02:03:37 -0500
+Subject: [PATCH] Add a tracking system: TODO implement
+
+
+diff --git a/cloudbot/client.py b/cloudbot/client.py
+index 7909fd6..46586e1 100644
+--- a/cloudbot/client.py
++++ b/cloudbot/client.py
+@@ -1,4 +1,6 @@
+ import asyncio
++from collections import deque
++import datetime
+ import logging
+ 
+ from cloudbot.permissions import PermissionManager
+@@ -13,7 +15,7 @@ class Client:
+     :type loop: asyncio.events.AbstractEventLoop
+     :type name: str
+     :type readable_name: str
+-    :type channels: list[str]
++    :type channels: dict[str, Channel]
+     :type config: dict[str, unknown]
+     :type nick: str
+     :type vars: dict
+@@ -121,3 +123,71 @@ class Client:
+     @property
+     def connected(self):
+         raise NotImplementedError
++
++    def _track_message(self, event):
++        pass
++
++
++# TODO: Tracking of user 'mode' in channels
++class User:
++    """
++    :param nick: The nickname of this User
++    :param ident: The IRC ident of this User, if applicable
++    :param host: The hostname of this User, if applicable
++    :param mask: The IRC mask (nick!ident@host), if applicable
++    :type nick: str
++    :type ident: str
++    :type host: str
++    :type mask: str
++    :type mask_known: bool
++    """
++
++    def __init__(self, nick, ident=None, host=None, mask=None):
++        self.nick = nick
++        self.ident = ident
++        self.host = host
++        self.mask = mask
++        self.mask_known = mask is not None
++
++
++class Channel:
++    """
++    name: the name of this channel
++    users: A dict from nickname to User in this channel
++    user_modes: A dict from User to an str containing all of the user's modes in this channel
++    history: A list of (User, timestamp, message content)
++    :type name: str
++    :type users: dict[str, User]
++    :type user_modes: dict[User, str]
++    :type history: deque[(User, datetime, str)]
++
++    """
++
++    def __init__(self, name):
++        self.name = name
++        self.users = {}
++        self.user_modes = {}
++        self.history = deque(maxlen=100)
++        self.topic = ""
++
++    def track_message(self, event):
++        """
++        Adds a message to this channel's history, adding user info from the message as well
++        :type event: cloudbot.event.Event
++        """
++        user = self.users[event.nick.lower()]
++        if not user.mask_known:
++            user.ident = event.user
++            user.host = event.host
++            user.mask = event.mask
++
++        self.history.append(user, datetime.datetime.now())
++
++    def track_join(self, event):
++        self.users[event.nick.lower()] = User(event.nick, event.user, event.host, event.mask)
++
++    def track_part(self, event):
++        del self.users[event.nick.lower()]
++
++    def track_topic(self, event):
++        self.topic = event.content
+\ No newline at end of file
+-- 
+2.0.0
+

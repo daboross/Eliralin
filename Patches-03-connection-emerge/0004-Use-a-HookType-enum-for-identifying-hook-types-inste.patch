@@ -1,4 +1,4 @@
-From 79a9e059ec2ae8b9c173d89071aad90d93ed93b9 Mon Sep 17 00:00:00 2001
+From 65a1dbf364a6b87f3300d634a09875a491547bf9 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Fri, 20 Jun 2014 23:07:46 -0500
 Subject: [PATCH] Use a HookType enum for identifying hook types, instead of

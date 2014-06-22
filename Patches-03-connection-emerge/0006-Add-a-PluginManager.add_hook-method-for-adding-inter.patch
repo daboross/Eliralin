@@ -1,4 +1,4 @@
-From 7a1b40992760f376394f87c330beddd7d4541911 Mon Sep 17 00:00:00 2001
+From 165b8fa63ae1d4df3f28a4de6d2ab80c2bd66704 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 21 Jun 2014 21:00:35 -0500
 Subject: [PATCH] Add a PluginManager.add_hook method, for adding internal
@@ -6,7 +6,7 @@ Subject: [PATCH] Add a PluginManager.add_hook method, for adding internal
 
 
 diff --git a/cloudbot/plugin.py b/cloudbot/plugin.py
-index f029331..9a95188 100644
+index f029331..11daa24 100644
 --- a/cloudbot/plugin.py
 +++ b/cloudbot/plugin.py
 @@ -23,6 +23,10 @@ class HookType(enum.Enum):
@@ -51,8 +51,8 @@ index f029331..9a95188 100644
 +
 +        # we don't allow onload hooks for internal. We don't have to check a valid type otherwise, because
 +        # the _hook_name_to_hook[hook_type] call will raise a KeyError already.
-+        if hook_type == "onload":
-+            raise KeyError("onload")
++        if hook_type is HookType.onload:
++            raise ValueError("onload hooks not allowed")
 +
 +        # this might seem a little hacky, but I think it's a good design choice.
 +        # hook.py is in charge of argument processing, so it should process them here to
