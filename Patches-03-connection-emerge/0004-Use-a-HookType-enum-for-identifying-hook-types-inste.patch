@@ -1,4 +1,4 @@
-From b5b7161126f2d96890ab016a7c54cdbd00a00e9e Mon Sep 17 00:00:00 2001
+From 79a9e059ec2ae8b9c173d89071aad90d93ed93b9 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Fri, 20 Jun 2014 23:07:46 -0500
 Subject: [PATCH] Use a HookType enum for identifying hook types, instead of
@@ -152,7 +152,7 @@ index 015e136..05c2464 100644
          return func
  
 diff --git a/cloudbot/plugin.py b/cloudbot/plugin.py
-index e6719b8..38b8681 100644
+index e6719b8..f029331 100644
 --- a/cloudbot/plugin.py
 +++ b/cloudbot/plugin.py
 @@ -1,4 +1,5 @@
@@ -161,15 +161,23 @@ index e6719b8..38b8681 100644
  import glob
  import importlib
  import inspect
-@@ -10,6 +11,7 @@ import sqlalchemy
- 
- from cloudbot.event import Event
- from cloudbot.util import botvars
-+from cloudbot.hook import _hook_name_to_hook
- 
+@@ -14,6 +15,15 @@ from cloudbot.util import botvars
  logger = logging.getLogger("cloudbot")
  
-@@ -28,14 +30,15 @@ def find_hooks(parent, module):
+ 
++class HookType(enum.Enum):
++    command = 1,
++    regex = 2,
++    event = 4,
++    onload = 5,
++    irc_raw = 6,
++    sieve = 3,
++
++
+ def find_hooks(parent, module):
+     """
+     :type parent: Plugin
+@@ -28,14 +38,15 @@ def find_hooks(parent, module):
      sieve = []
      event = []
      onload = []
@@ -187,7 +195,7 @@ index e6719b8..38b8681 100644
  
              # delete the hook to free memory
              del func._cloudbot_hook
-@@ -409,13 +412,13 @@ class PluginManager:
+@@ -409,13 +420,13 @@ class PluginManager:
          :type hook: cloudbot.plugin.Hook | cloudbot.plugin.CommandHook
          :rtype: bool
          """
@@ -203,7 +211,7 @@ index e6719b8..38b8681 100644
              event.notice_doc()
              return False
  
-@@ -522,7 +525,7 @@ class Hook:
+@@ -522,7 +533,7 @@ class Hook:
      """
      Each hook is specific to one function. This class is never used by itself, rather extended.
  
@@ -212,7 +220,7 @@ index e6719b8..38b8681 100644
      :type plugin: Plugin
      :type function: callable
      :type function_name: str
-@@ -532,14 +535,13 @@ class Hook:
+@@ -532,14 +543,13 @@ class Hook:
      :type permissions: list[str]
      :type single_thread: bool
      """
@@ -229,7 +237,7 @@ index e6719b8..38b8681 100644
          self.plugin = plugin
          self.function = func_hook.function
          self.function_name = self.function.__name__
-@@ -567,7 +569,7 @@ class Hook:
+@@ -567,7 +577,7 @@ class Hook:
  
      def __repr__(self):
          return "type: {}, plugin: {}, ignore_bots: {}, permissions: {}, single_thread: {}, threaded: {}".format(
@@ -238,7 +246,7 @@ index e6719b8..38b8681 100644
          )
  
  
-@@ -578,6 +580,7 @@ class CommandHook(Hook):
+@@ -578,6 +588,7 @@ class CommandHook(Hook):
      :type doc: str
      :type auto_help: bool
      """
@@ -246,7 +254,7 @@ index e6719b8..38b8681 100644
  
      def __init__(self, plugin, cmd_hook):
          """
-@@ -592,7 +595,7 @@ class CommandHook(Hook):
+@@ -592,7 +603,7 @@ class CommandHook(Hook):
          self.aliases.insert(0, self.name)  # make sure the name, or 'main alias' is in position 0
          self.doc = cmd_hook.doc
  
@@ -255,7 +263,7 @@ index e6719b8..38b8681 100644
  
      def __repr__(self):
          return "Command[name: {}, aliases: {}, {}]".format(self.name, self.aliases[1:], Hook.__repr__(self))
-@@ -605,6 +608,7 @@ class RegexHook(Hook):
+@@ -605,6 +616,7 @@ class RegexHook(Hook):
      """
      :type regexes: set[re.__Regex]
      """
@@ -263,7 +271,7 @@ index e6719b8..38b8681 100644
  
      def __init__(self, plugin, regex_hook):
          """
-@@ -613,7 +617,7 @@ class RegexHook(Hook):
+@@ -613,7 +625,7 @@ class RegexHook(Hook):
          """
          self.regexes = regex_hook.regexes
  
@@ -272,7 +280,7 @@ index e6719b8..38b8681 100644
  
      def __repr__(self):
          return "Regex[regexes: [{}], {}]".format(", ".join(regex.pattern for regex in self.regexes),
-@@ -627,13 +631,14 @@ class RawHook(Hook):
+@@ -627,13 +639,14 @@ class RawHook(Hook):
      """
      :type triggers: set[str]
      """
@@ -288,7 +296,7 @@ index e6719b8..38b8681 100644
  
          self.triggers = irc_raw_hook.triggers
  
-@@ -648,13 +653,14 @@ class RawHook(Hook):
+@@ -648,13 +661,14 @@ class RawHook(Hook):
  
  
  class SieveHook(Hook):
@@ -305,7 +313,7 @@ index e6719b8..38b8681 100644
  
      def __repr__(self):
          return "Sieve[{}]".format(Hook.__repr__(self))
-@@ -667,13 +673,14 @@ class EventHook(Hook):
+@@ -667,13 +681,14 @@ class EventHook(Hook):
      """
      :type types: set[cloudbot.event.EventType]
      """
@@ -321,7 +329,7 @@ index e6719b8..38b8681 100644
  
          self.types = event_hook.types
  
-@@ -686,12 +693,14 @@ class EventHook(Hook):
+@@ -686,12 +701,14 @@ class EventHook(Hook):
  
  
  class OnloadHook(Hook):
@@ -337,7 +345,7 @@ index e6719b8..38b8681 100644
  
      def __repr__(self):
          return "Onload[{}]".format(Hook.__repr__(self))
-@@ -700,11 +709,20 @@ class OnloadHook(Hook):
+@@ -700,11 +717,11 @@ class OnloadHook(Hook):
          return "onload {} from {}".format(self.function_name, self.plugin.file_name)
  
  
@@ -348,15 +356,6 @@ index e6719b8..38b8681 100644
 -    "sieve": SieveHook,
 -    "event": EventHook,
 -    "onload": OnloadHook
-+class HookType(enum.Enum):
-+    command = 1,
-+    regex = 2,
-+    event = 4,
-+    onload = 5,
-+    irc_raw = 6,
-+    sieve = 3,
-+
-+
 +_hook_type_to_plugin = {
 +    HookType.command: CommandHook,
 +    HookType.regex: RegexHook,

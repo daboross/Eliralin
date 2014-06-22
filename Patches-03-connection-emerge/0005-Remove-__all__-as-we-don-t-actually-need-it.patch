@@ -1,0 +1,22 @@
+From f14eb109c486410faf082d026a889e2d1ed0ed65 Mon Sep 17 00:00:00 2001
+From: Dabo Ross <daboross@daboross.net>
+Date: Sat, 21 Jun 2014 20:56:28 -0500
+Subject: [PATCH] Remove __all__ as we don't actually need it
+
+
+diff --git a/cloudbot/__init__.py b/cloudbot/__init__.py
+index 6e1578a..bbb72fd 100644
+--- a/cloudbot/__init__.py
++++ b/cloudbot/__init__.py
+@@ -12,8 +12,6 @@ import os
+ 
+ __version__ = "0.1.1.dev0"
+ 
+-__all__ = ["util", "bot", "connection", "config", "permissions", "plugin", "event", "hook", "dev_mode", "log_dir"]
+-
+ 
+ def _setup():
+     default_developer_mode = {"plugin_reloading": False, "config_reloading": True,
+-- 
+2.0.0
+
