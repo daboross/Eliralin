@@ -1,4 +1,4 @@
-From a868677048dd1c0f3f264bb08c7a0d1e637315b4 Mon Sep 17 00:00:00 2001
+From 671dbca38bbff8195d33d969efd9e6c2ac645367 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Sat, 21 Jun 2014 20:56:28 -0500
 Subject: [PATCH] Remove __all__ as we don't actually need it

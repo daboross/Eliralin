@@ -1,4 +1,4 @@
-From d28de2b5216e718b1e5e9dab878493f5d94ed24f Mon Sep 17 00:00:00 2001
+From 488c0410855b3dcc40cab0c14a9b357cf9d29ba6 Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Mon, 2 Jun 2014 02:45:53 -0700
 Subject: [PATCH] Use qx.lc for all shortening, just to test

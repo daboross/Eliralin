@@ -1,4 +1,4 @@
-From 966a050991a46ad2a96179775134c9e0ee6f907c Mon Sep 17 00:00:00 2001
+From 32066db23d2b0114aae6489138610c829464a93d Mon Sep 17 00:00:00 2001
 From: Dabo Ross <daboross@daboross.net>
 Date: Fri, 20 Jun 2014 22:28:17 -0500
 Subject: [PATCH] Change the way hook.py creates _*Hook objects
